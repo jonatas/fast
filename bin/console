@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "fast"
+
+def s(type, *children)
+  Parser::AST::Node.new(type, children)
+end
+
+require "pry"
+Pry.start
