@@ -2,6 +2,8 @@
 
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
+It's inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
+
 To learn more about how AST works, you can install `ruby-parse` and check how is the AST of
 your current code.
 

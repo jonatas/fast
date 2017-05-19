@@ -45,7 +45,7 @@ RSpec.describe Fast do
      expect(Fast.match?(ast_float, expression)).to be_truthy
   end
 
-  it 'matches with captures' do
+  it 'navigates deeply' do
     ast =
       s(:send,
         s(:send,
@@ -61,5 +61,31 @@ RSpec.describe Fast do
      expect(Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d])).to be_truthy
      expect(Fast.match?(ast, [:send, [:send, [:send, [:send, nil, :a], :b], :c], :d])).to be_truthy
      expect(Fast.match?(ast, [:send, [:send, [:send, [:send, nil, '_'], '_'], :c], '_'])).to be_truthy
+  end
+
+  it 'capture nodes or elements' do
+    ast = s(:int, 1)
+    expect(Fast.capture(ast, [:int, 1], 0)).to eq([:int, 1])
+  end
+
+  it 'captures deeply' do
+    ast =
+      s(:send,
+        s(:send,
+          s(:send,
+            s(:send, nil, :a),
+            :b),
+          :c),
+        :d)
+
+    expect(Fast.capture(ast,
+                        [:send,
+                         [:send,
+                          [:send,
+                           [:send, nil, '_'],
+                           '_'],
+                          :c], 
+                         '_'],
+                         3)).to eq([:send, nil, :a])
   end
 end

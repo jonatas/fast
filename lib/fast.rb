@@ -4,7 +4,7 @@ def debug *msg
   puts(*msg)if $debug
 end
 
-$debug = false
+$debug = true
 
 module Fast
   VERSION = "0.1.0"
@@ -23,45 +23,78 @@ module Fast
     LITERAL[token] || token
   end
 
-  def self.match?(ast, fast_search)
-    fast = parse(fast_search)
-    debug "Match>>>>>",ast, "Original: #{fast_search.inspect}, parsed: #{fast.inspect}"
-    head = fast.shift
-    return false unless match_node?(ast, head)
-    # already validated on match_node?
-    if fast.empty?
-      return true
+  def self.capture(ast, fast, *levels)
+    matcher = Matcher.new(ast, fast, capture_levels: levels)
+    if matcher.match?
+      matcher.captures
+    else
+      false
     end
-
-    results = fast.each_with_index.map do |token, i|
-      child = ast.children[i]
-      if token.is_a?(Enumerable)
-        debug "calling recursive match?(#{child}, #{token})"
-        match?(child, token)
-      else
-        matches = match_node?(child, token)
-        if matches && token.respond_to?(:call)
-          debug "fast i is a call return true"
-          next true
-        end
-        matches
-      end
-    end
-    debug "results: #{ results.join(", ") }"
-    results.uniq == [true]
+  end
+  def self.match?(ast, fast)
+    Matcher.new(ast, fast).match?
   end
 
-  def self.match_node? node, expression
-    debug "match_node?",node.inspect, "expression: '#{expression}'"
-    if expression.respond_to?(:call)
-      expression.call(node)
-    elsif expression.is_a?(Symbol)
-      type = node.respond_to?(:type) ? node.type : node
-      debug "#{type} == #{expression}"
-      type == expression
-    else
-      debug "#{node.inspect} == #{expression.inspect}"
-      node == expression
+  class Matcher
+    attr_reader :captures
+    def initialize(ast, fast, capture_levels: [])
+      @ast = ast
+      @fast = fast
+      @captures = []
+      @capture_levels = capture_levels
+    end
+
+    def capturing?
+      !@capture_levels.empty?
+    end
+
+    def match?(ast=@ast, fast=@fast, level: 0)
+      fast = Fast.parse(fast)
+      head = fast.shift
+      return false unless match_node?(ast, head, level: level)
+      if fast.empty?
+        return true
+      end
+
+      results = fast.each_with_index.map do |token, i|
+        child = ast.children[i]
+        if token.is_a?(Enumerable)
+          debug "calling recursive match?(#{child}, #{token})"
+          match?(child, token, level: level + 1)
+        else
+          matches = match_node?(child, token, level: level)
+          if matches && token.respond_to?(:call)
+            debug "token call returned true"
+            next true
+          end
+          matches
+        end
+      end
+      debug "results: #{ results.join(", ") }"
+      results.uniq == [true]
+    end
+
+    def match_node? node, expression, level: 0
+      debug "match_node?",node.inspect, "expression: '#{expression}'"
+      matches =
+        if expression.respond_to?(:call)
+          expression.call(node)
+        elsif expression.is_a?(Symbol)
+          type = node.respond_to?(:type) ? node.type : node
+          debug "#{type} == #{expression}"
+          type == expression
+        else
+          debug "#{node.inspect} == #{expression.inspect}"
+          node == expression
+        end
+
+      if matches && capturing?
+        if @capture_levels.include?(level)
+          capture = expression.is_a?(Symbol) ? node.type : node
+          @captures << capture
+        end
+      end
+      matches
     end
   end
 end
