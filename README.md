@@ -2,8 +2,12 @@
 
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
-To learn more about how AST, install `ruby-parse` and check how is the AST of
+To learn more about how AST works, you can install `ruby-parse` and check how is the AST of
 your current code.
+
+`ruby-parse my-file.rb`
+
+It will output the AST representation.
 
 ## Installation
 
