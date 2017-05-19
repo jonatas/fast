@@ -34,6 +34,17 @@ RSpec.describe Fast do
      expect(Fast.match?(ast, ['_', '_', :+, '_'])).to be_truthy
   end
 
+  it 'matches with custom procs' do
+     ast_int = s(:op_asgn, s(:lvasgn, :a), :+, s(:int, 1))
+     ast_float = s(:op_asgn, s(:lvasgn, :a), :+, s(:float, 1.2))
+     ast_str = s(:op_asgn, s(:lvasgn, :a), :+, s(:str, ""))
+
+     expression = ['_', '_', :+, -> (node) { [:int, :float].include?(node.type)} ]
+     expect(Fast.match?(ast_str, expression)).to be_falsey
+     expect(Fast.match?(ast_int, expression)).to be_truthy
+     expect(Fast.match?(ast_float, expression)).to be_truthy
+  end
+
   it 'matches with captures' do
     ast =
       s(:send,
