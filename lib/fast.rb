@@ -14,16 +14,6 @@ module Fast
     'nil' => nil
   }
 
-  class Find < Array
-    def capturing?
-      false
-    end
-  end
-  class Capture < Array
-    def capturing?
-      true
-    end
-  end
   def self.expression(string)
     tokens = string.scan(/[A-z]+|\(|\)|\.{3}|_|\$/)
 
