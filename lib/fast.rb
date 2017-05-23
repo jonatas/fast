@@ -4,14 +4,46 @@ def debug *msg
   puts(*msg)if $debug
 end
 
-$debug = true
+$debug = false
 
 module Fast
   VERSION = "0.1.0"
   LITERAL = {
     '...' => -> (node) { !node.children.nil? },
     '_'   => -> (node) { debug "_? #{!node.nil?} : #{node}"; !node.nil? },
+    'nil' => nil
   }
+
+  class Find < Array
+    def capturing?
+      false
+    end
+  end
+  class Capture < Array
+    def capturing?
+      true
+    end
+  end
+  def self.expression(string)
+    tokens = string.scan(/[A-z]+|\(|\)|\.{3}|_|\$/)
+
+    stack = []
+    context = []
+
+    tokens.each do |token|
+      if token == '('
+        stack.push context
+        context = []
+      elsif token == ')'
+        l = context
+        context = stack.pop
+        context << l
+      else
+        context << translate(token)
+      end
+    end
+    tokens.include?("(") ? context.first : context
+  end
 
   def self.parse(fast_tree)
     fast_tree.map do |token|
@@ -20,7 +52,11 @@ module Fast
   end
 
   def self.translate(token)
-    LITERAL[token] || token
+    if token.is_a?(String)
+      LITERAL.has_key?(token) ? LITERAL[token] : token.to_sym
+    else
+      token
+    end
   end
 
   def self.capture(ast, fast, *levels)

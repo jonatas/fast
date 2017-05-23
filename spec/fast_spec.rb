@@ -12,6 +12,17 @@ RSpec.describe Fast do
 
   let(:defined_proc) { described_class::LITERAL }
 
+  context '.expression' do
+    it 'wraps the searching array' do
+      expect(Fast.expression('...')).to eq([defined_proc['...']])
+    end
+
+    it 'wraps the searching into an array' do
+      expect(Fast.expression('send ...')).to eq([:send, defined_proc['...']])
+      expect(Fast.expression('(send (send nil :a) :b)')).to eq([:send, [:send, nil, :a], :b])
+      expect(Fast.expression('(send (send (send nil :a) :b) :c)')).to eq([:send, [:send, [:send, nil, :a], :b], :c])
+    end
+  end
 
   it 'parse pre-defined literals into procs' do
     expect(Fast.parse(['...'])).to eq([defined_proc['...']])
