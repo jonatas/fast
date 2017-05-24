@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+
+require 'parser/current'
+require "fast"
+require "coderay"
+
+arguments = ARGV
+pattern = arguments.shift
+show_ast = arguments.delete("--ast")
+$debug = arguments.delete("--debug") || arguments.delete("-d")
+files = arguments || Dir['**/*.rb']
+
+def ast_for_file(file)
+  Parser::CurrentRuby.parse(IO.read(file))
+end
+
+def match pattern, node
+  match = Fast.match?(node, pattern)
+  if match
+    match == true ? node : [match, node]
+  else
+    unless node.children.empty?
+      node.children.grep(Parser::AST::Node).flat_map{|e| match(pattern, e) }.compact
+    end
+  end
+end
+
+def line_and_code(result, show_ast=false)
+  if result.is_a?(Parser::AST::Node) && !show_ast
+    expression = result.loc.expression
+    result = expression.source
+    [ expression.line, " #{CodeRay.scan(result, :ruby).term}"]
+  else
+    [" #{CodeRay.scan(result, :ruby).term}"]
+  end
+end
+
+pattern = Fast.expression(pattern)
+if $debug
+	puts "Expression: #{pattern.inspect}"
+end
+
+files.each do |file|
+  ast = ast_for_file(file)
+  results = match(pattern, ast)
+	next unless results
+  results.each do |result|
+    line = [file, *line_and_code(result,show_ast)]
+    puts line.join(":")
+  end
+end

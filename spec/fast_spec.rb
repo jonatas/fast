@@ -24,6 +24,7 @@ RSpec.describe Fast do
 
     it 'wraps the searching into an array' do
       expect(Fast.expression('send ...')).to eq([f[:send], f[defined_proc['...']]])
+      expect(Fast.expression(':send ...')).to eq([f[:send], f[defined_proc['...']]])
       expect(Fast.expression('(send (send nil :a) :b)')).to eq([f[:send], [f[:send], f[nil], f[:a]], f[:b]])
       expect(Fast.expression('(send (send (send nil :a) :b) :c)')).to eq([f[:send], [f[:send], [f[:send], f[nil], f[:a]], f[:b]], f[:c]])
     end
@@ -70,15 +71,21 @@ RSpec.describe Fast do
 
   it 'navigates deeply' do
     ast = s(:send, s(:send, s(:send, nil, :a), :b), :c)
-    expression = Fast.expression('(send (send (send nil $:a) $:b) $:c)')
-    #$debug = true
+    expression = '(send (send (send nil $_) $_) $_)'
     expect(Fast.match?(ast, expression)).to eq([:a,:b,:c])
-   # $debug = false
   end
 
   it 'captures deeply' do
     ast = s(:send, s(:send, nil, :a), :b)
-    expression = Fast.expression('(send $(send nil :a) :b)')
-    expect(Fast.match?(ast, expression).first).to eq(ast.children.first)
+    capture_node = '(send $(send nil :a) :b)'
+    expect(Fast.match?(ast, capture_node).first).to eq(ast.children.first)
+  end
+
+  it 'captures multiple' do
+   expect(
+     Fast.match?(
+       s(:send, s(:int, 1), :+, s(:int, 2)),
+       '(:send $(:int _) :+ $(:int _))'
+     )).to eq [s(:int, 1), s(:int, 2)]
   end
 end

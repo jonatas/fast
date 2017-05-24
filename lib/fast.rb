@@ -14,8 +14,7 @@ module Fast
   }
 
   def self.expression(string)
-    tokens = string.scan(/[A-z]+|\(|\)|\.{3}|_|\$/)
-
+    tokens = string.scan(/[\+\-\/\*\dA-z]+[\!\?]?|\(|\)|\.{3}|_|\$/)
     stack = []
     context = []
     capturing = false
@@ -96,6 +95,7 @@ module Fast
     end
 
     def match?(ast=@ast, fast=@fast, level: 0)
+      fast = Fast.expression(fast) if fast.is_a?(String)
       fast = Fast.parse(fast)
       head = fast.shift
       return false unless match_node?(ast, head, level: level)
@@ -128,7 +128,10 @@ module Fast
 
     def match_node? node, find, level: 0
       expression = find.token
-      debug "match_node?",node.inspect, "find: #{find}, expr: #{expression.class}, #{level}"
+      if $debug
+        node_start_label = node.inspect.lines[0,3].join
+        debug "#{find}.match_node?(#{node_start_label}...)"
+      end
 
       matches =
         if expression.respond_to?(:call)
