@@ -4,7 +4,6 @@ def debug *msg
   puts(*msg)if $debug
 end
 
-$debug = false
 
 module Fast
   VERSION = "0.1.0"
@@ -19,6 +18,7 @@ module Fast
 
     stack = []
     context = []
+    capturing = false
 
     tokens.each do |token|
       if token == '('
@@ -28,8 +28,13 @@ module Fast
         l = context
         context = stack.pop
         context << l
+        capturing = false
+      elsif token == '$'
+        capturing = true
       else
-        context << translate(token)
+        expression = translate(token, capturing)
+        context << expression
+        capturing = false
       end
     end
     tokens.include?("(") ? context.first : context
@@ -41,37 +46,53 @@ module Fast
     end
   end
 
-  def self.translate(token)
-    if token.is_a?(String)
-      LITERAL.has_key?(token) ? LITERAL[token] : token.to_sym
-    else
-      token
+  class Find < Struct.new(:token)
+    def capturing?
+      false
+    end
+
+    def to_s
+      token.inspect
+    end
+
+    def inspect
+      "f(#{self})"
     end
   end
 
-  def self.capture(ast, fast, *levels)
-    matcher = Matcher.new(ast, fast, capture_levels: levels)
-    if matcher.match?
-      matcher.captures
-    else
-      false
+  class Capture <  Find
+    def inspect
+      "c(#{self})"
+    end
+    def capturing?
+      true
     end
   end
+
+  def self.translate(token, capturing=false)
+    if token.is_a?(Find)
+      token = Capture.new(token.token) if capturing
+      return token
+    end
+
+    expression =
+      if token.is_a?(String)
+        LITERAL.has_key?(token) ? LITERAL[token] : token.to_sym
+      else
+        token
+      end
+    (capturing ? Capture : Find).new(expression)
+  end
+
   def self.match?(ast, fast)
     Matcher.new(ast, fast).match?
   end
 
   class Matcher
-    attr_reader :captures
-    def initialize(ast, fast, capture_levels: [])
+    def initialize(ast, fast)
       @ast = ast
       @fast = fast
       @captures = []
-      @capture_levels = capture_levels
-    end
-
-    def capturing?
-      !@capture_levels.empty?
     end
 
     def match?(ast=@ast, fast=@fast, level: 0)
@@ -79,13 +100,14 @@ module Fast
       head = fast.shift
       return false unless match_node?(ast, head, level: level)
       if fast.empty?
-        return true
+        return true if level > 0
+        return @captures.empty? ? true : @captures
       end
 
       results = fast.each_with_index.map do |token, i|
         child = ast.children[i]
-        if token.is_a?(Enumerable)
-          debug "calling recursive match?(#{child}, #{token})"
+        if token.token.is_a?(Enumerable)
+          debug "calling recursive match?(#{child.inspect}, #{token.class} #{token}, level: #{level + 1})"
           match?(child, token, level: level + 1)
         else
           matches = match_node?(child, token, level: level)
@@ -97,29 +119,36 @@ module Fast
         end
       end
       debug "results: #{ results.join(", ") }"
-      results.uniq == [true]
+      if results.uniq == [true]
+        @captures.empty? ? true : @captures
+      else
+        false
+      end
     end
 
-    def match_node? node, expression, level: 0
-      debug "match_node?",node.inspect, "expression: '#{expression}'"
+    def match_node? node, find, level: 0
+      expression = find.token
+      debug "match_node?",node.inspect, "find: #{find}, expr: #{expression.class}, #{level}"
+
       matches =
         if expression.respond_to?(:call)
+          debug "#proc call: #{expression}.call(#{node})"
           expression.call(node)
         elsif expression.is_a?(Symbol)
           type = node.respond_to?(:type) ? node.type : node
-          debug "#{type} == #{expression}"
+          debug "#type comparison: #{type} == #{expression}"
           type == expression
+        elsif expression.is_a?(Enumerable)
+          match?(node, expression, level: level + 1)
         else
-          debug "#{node.inspect} == #{expression.inspect}"
+          debug "#node comparison: #{node.inspect} == #{expression.inspect}"
           node == expression
         end
 
-      if matches && capturing?
-        if @capture_levels.include?(level)
-          capture = expression.is_a?(Symbol) ? node.type : node
-          @captures << capture
-        end
+      if matches && find.capturing?
+        @captures << node
       end
+
       matches
     end
   end
