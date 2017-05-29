@@ -7,5 +7,10 @@ def s(type, *children)
   Parser::AST::Node.new(type, children)
 end
 
+def reload!
+  load 'lib/fast.rb'
+end
+
 require "pry"
 Pry.start
+
