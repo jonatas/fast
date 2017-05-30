@@ -11,10 +11,6 @@ RSpec.describe Fast do
     Parser::AST::Node.new(type, children)
   end
 
-  it "has a version number" do
-    expect(Fast::VERSION).not_to be nil
-  end
-
   context '.expression' do
     it 'from simple string' do
       expect(Fast.expression('...')).to be_a(Fast::Find)
@@ -171,7 +167,7 @@ RSpec.describe Fast do
         expect(Fast.match?(s(:send, s(:int, 2), :+, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_truthy
         expect(Fast.match?(s(:send, s(:int, 2), :+, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_truthy
         expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_falsy
-        expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), 'send ({int float} _) {+-} (int _)')).to be_truthy
+        expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), '(send ({int float} _) {+-} (int _))')).to be_truthy
       end
 
       it 'for symbols or expressions' do
