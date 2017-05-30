@@ -4,39 +4,65 @@ def debug *msg
   puts(*msg)if $debug
 end
 
-
 module Fast
   VERSION = "0.1.0"
   LITERAL = {
     '...' => -> (node) { !node.children.nil? },
-    '_'   => -> (node) { debug "_? #{!node.nil?} : #{node}"; !node.nil? },
+    '_'   => -> (node) { !node.nil? },
     'nil' => nil
   }
 
+
+  TOKENIZER = /[\+\-\/\*\dA-z]+[\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
+
   def self.expression(string)
-    tokens = string.scan(/[\+\-\/\*\dA-z]+[\!\?]?|\(|\)|\.{3}|_|\$/)
+    tokens = string.scan(TOKENIZER)
     stack = []
     context = []
     capturing = false
-
+    capturing_exp = nil
     tokens.each do |token|
-      if token == '('
+      if token == '(' || token == '{'
+        if capturing
+          capturing_exp = token
+          capturing = false
+        end
         stack.push context
         context = []
       elsif token == ')'
-        l = context
-        context = stack.pop
-        context << l
-        capturing = false
+        expression = context
+        if capturing_exp == "("
+          expression = Capture.new(expression)
+          capturing_exp = nil
+          capturing = false
+        end
+        context = stack.pop || stack.push([]).pop
+        context << expression
       elsif token == '$'
         capturing = true
-      else
-        expression = translate(token, capturing)
+      elsif token == '}'
+        expression = Union.new(context)
+        if capturing_exp == "{"
+          expression = Capture.new(expression)
+          capturing_exp = nil
+          capturing = false
+        end
+        context = stack.pop
         context << expression
-        capturing = false
+      else
+        expression = translate(token)
+        if capturing
+          expression = if expression.is_a?(Find) 
+                         Capture.new(expression.token)
+                       else
+                         Capture.new(expression)
+                       end
+          capturing = false
+        end
+        context << expression
       end
     end
-    tokens.include?("(") ? context.first : context
+    context.size == 1 ? context.first : context
   end
 
   def self.parse(fast_tree)
@@ -46,8 +72,24 @@ module Fast
   end
 
   class Find < Struct.new(:token)
-    def capturing?
-      false
+
+    def match?(node)
+      match_recursive(node, token)
+    end
+
+    def match_recursive(node, expression)
+      if expression.respond_to?(:call)
+        expression.call(node)
+      elsif expression.is_a?(Find)
+        expression.match?(node)
+      elsif expression.is_a?(Symbol)
+        type = node.respond_to?(:type) ? node.type : node
+        type == expression
+      elsif expression.respond_to?(:shift)
+        match_recursive(node, expression.shift)
+      else
+        node == expression
+      end
     end
 
     def to_s
@@ -60,27 +102,49 @@ module Fast
   end
 
   class Capture <  Find
+    attr_reader :captures
+    def initialize(token)
+      self.token = token
+      @captures = []
+    end
+
+    def match? node
+      if super
+        @captures << node
+      end
+    end
+
     def inspect
       "c(#{self})"
     end
-    def capturing?
-      true
+  end
+
+  class Union < Find
+    def match?(node)
+      token.any?{|expression| Fast.match?(node, expression) }
+    end
+
+    def inspect
+      "union(#{token})"
     end
   end
 
-  def self.translate(token, capturing=false)
+  def self.translate(token)
     if token.is_a?(Find)
-      token = Capture.new(token.token) if capturing
       return token
     end
 
     expression =
       if token.is_a?(String)
-        LITERAL.has_key?(token) ? LITERAL[token] : token.to_sym
+        if LITERAL.has_key?(token)
+          LITERAL[token]
+        else
+          token.to_sym
+        end
       else
         token
       end
-    (capturing ? Capture : Find).new(expression)
+    Find.new(expression)
   end
 
   def self.match?(ast, fast)
@@ -90,69 +154,55 @@ module Fast
   class Matcher
     def initialize(ast, fast)
       @ast = ast
-      @fast = fast
+      if fast.is_a?(String)
+        @fast = Fast.expression(fast)
+      else
+        @fast = Fast.parse(fast)
+      end
       @captures = []
     end
 
-    def match?(ast=@ast, fast=@fast, level: 0)
-      fast = Fast.expression(fast) if fast.is_a?(String)
-      fast = Fast.parse(fast)
-      head = fast.shift
-      return false unless match_node?(ast, head, level: level)
-      if fast.empty?
-        return true if level > 0
-        return @captures.empty? ? true : @captures
-      end
+    def match?(ast=@ast, fast=@fast)
+      debug "and parsed #{@fast} becomes #{fast}"
 
-      results = fast.each_with_index.map do |token, i|
-        child = ast.children[i]
-        if token.token.is_a?(Enumerable)
-          debug "calling recursive match?(#{child.inspect}, #{token.class} #{token}, level: #{level + 1})"
-          match?(child, token, level: level + 1)
+      head,*tail = fast
+      return false unless head.match?(ast)
+      if tail.empty?
+        return ast == @ast ? find_captures : true  # root node
+      end
+      child = ast.children
+      results = tail.each_with_index.map do |token, i|
+        if token.is_a?(Array)
+          result = match?(child[i], token)
+          debug "calling recursive match?(#{child[i].inspect}, #{token.class} #{token}) =>>>>>>>>#{ result } "
+          result
         else
-          matches = match_node?(child, token, level: level)
+          matches = token.match?(child[i])
           if matches && token.respond_to?(:call)
-            debug "token call returned true"
+            debug "token call =>>>>>> true"
             next true
-          end
+          end 
+          debug "token is a proc and returned =>>>>>> #{matches}"
           matches
         end
       end
-      debug "results: #{ results.join(", ") }"
-      if results.uniq == [true]
-        @captures.empty? ? true : @captures
+
+      if results.any?{|e|e==false}
+        return false
       else
-        false
+        find_captures
       end
     end
 
-    def match_node? node, find, level: 0
-      expression = find.token
-      if $debug
-        node_start_label = node.inspect.lines[0,3].join
-        debug "#{find}.match_node?(#{node_start_label}...)"
-      end
-
-      matches =
-        if expression.respond_to?(:call)
-          debug "#proc call: #{expression}.call(#{node})"
-          expression.call(node)
-        elsif expression.is_a?(Symbol)
-          type = node.respond_to?(:type) ? node.type : node
-          debug "#type comparison: #{type} == #{expression}"
-          type == expression
-        elsif expression.is_a?(Enumerable)
-          match?(node, expression, level: level + 1)
-        else
-          debug "#node comparison: #{node.inspect} == #{expression.inspect}"
-          node == expression
+    def find_captures(fast=@fast)
+      [*fast].map do |f|
+        case f
+        when Capture
+          f.captures
+        when Array
+          find_captures(f)
         end
-
-      if matches && find.capturing?
-        @captures << node
-      end
-
-      matches
+      end.flatten.compact
     end
   end
 end

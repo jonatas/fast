@@ -4,6 +4,7 @@ RSpec.describe Fast do
 
   let(:f) { -> (arg) { Fast::Find.new(arg) } }
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
+  let(:union) { -> (arg) { Fast::Union.new(arg) } }
 
   def s(type, *children)
     Parser::AST::Node.new(type, children)
@@ -17,9 +18,29 @@ RSpec.describe Fast do
 
   context '.expression' do
     it 'wraps the searching array' do
-      expect(Fast.expression('...')).to eq([f[defined_proc['...']]])
-      expect(Fast.expression('...')).to all(be_a(Fast::Find))
-      expect(Fast.expression('$...')).to all(be_a(Fast::Capture))
+      expect(Fast.expression('...')).to eq(f[defined_proc['...']])
+      expect(Fast.expression('...')).to be_a(Fast::Find)
+      expect(Fast.expression('$...')).to be_a(Fast::Capture)
+      expect(Fast.expression('{}')).to be_a(Fast::Union)
+    end
+
+    it 'works with union and capture' do
+      expect(Fast.expression('(:send $({:int :float} _) :+ $(:int _))')).to eq(
+        [
+          f[:send],
+          c[
+            [
+              union[[f[:int], f[:float]]],
+              f[defined_proc['_']]
+            ]
+          ], f[:+],
+          c[
+            [
+              f[:int],
+              f[defined_proc['_']]
+            ]
+          ]
+        ])
     end
 
     it 'wraps the searching into an array' do
@@ -33,7 +54,7 @@ RSpec.describe Fast do
       expect(Fast.expression('send $...')).to eq([f[:send], c[defined_proc['...']]])
       expect(Fast.expression('send $...')).not_to eq([c[:send], c[defined_proc['...']]])
       expect(Fast.expression('(send (send nil $:a) :b)')).to eq([f[:send], [f[:send], f[nil], c[:a]], f[:b]])
-      expect(Fast.expression('(send $(send nil :a) :b)')).to eq([f[:send], [c[:send], f[nil], f[:a]], f[:b]])
+      expect(Fast.expression('(send $(send nil :a) :b)')).to eq([f[:send], c[[f[:send], f[nil], f[:a]]], f[:b]])
     end
   end
 
@@ -71,14 +92,14 @@ RSpec.describe Fast do
 
   it 'navigates deeply' do
     ast = s(:send, s(:send, s(:send, nil, :a), :b), :c)
-    expression = '(send (send (send nil $_) $_) $_)'
-    expect(Fast.match?(ast, expression)).to eq([:a,:b,:c])
+    expression = '(send (send (send nil _) _) _)'
+    expect(Fast.match?(ast, expression)).to be_truthy
   end
 
   it 'captures deeply' do
-    ast = s(:send, s(:send, nil, :a), :b)
-    capture_node = '(send $(send nil :a) :b)'
-    expect(Fast.match?(ast, capture_node).first).to eq(ast.children.first)
+    ast = s(:send, nil, :a)
+    capture_node = '(send nil $_)'
+    expect(Fast.match?(ast, capture_node)).to eq([:a])
   end
 
   it 'captures multiple' do
@@ -87,5 +108,11 @@ RSpec.describe Fast do
        s(:send, s(:int, 1), :+, s(:int, 2)),
        '(:send $(:int _) :+ $(:int _))'
      )).to eq [s(:int, 1), s(:int, 2)]
+  end
+
+  it 'allows us to join conditions using {}' do
+    expect(Fast.match?(s(:float, 1.2), '({int float} _)')).to be_truthy
+    expect(Fast.match?(s(:int, 1), '({int float} _)')).to be_truthy
+    expect(Fast.match?(s(:str, "1.2"), '({int float} _)')).to be_falsy
   end
 end
