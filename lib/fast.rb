@@ -7,7 +7,7 @@ end
 module Fast
   VERSION = "0.1.0"
   LITERAL = {
-    '...' => -> (node) { !node.children.nil? },
+    '...' => -> (node) { node && !node.children.nil? },
     '_'   => -> (node) { !node.nil? },
     'nil' => nil
   }
@@ -78,6 +78,7 @@ module Fast
         expression.match?(node)
       elsif expression.is_a?(Symbol)
         type = node.respond_to?(:type) ? node.type : node
+        debug "comparing type #{type} == #{expression} => #{type == expression}"
         type == expression
       elsif expression.respond_to?(:shift)
         match_recursive(node, expression.shift)
