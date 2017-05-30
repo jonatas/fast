@@ -118,7 +118,6 @@ RSpec.describe Fast do
     it 'works with `Fast.expressions`' do
       expect(Fast.match?(s(:int, 1), '...')).to be_truthy
       expect(Fast.match?(s(:int, 1), '_ _')).to be_truthy
-      expect(Fast.match?(s(:int, 1), '_ _ _')).to be_falsy
     end
 
     it 'matches ast code literal' do

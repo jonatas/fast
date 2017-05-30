@@ -1,5 +1,6 @@
 require 'bundler/setup'
 require 'parser'
+
 def debug *msg
   puts(*msg)if $debug
 end
@@ -12,51 +13,52 @@ module Fast
     'nil' => nil
   }
 
-
   TOKENIZER = /[\+\-\/\*]|[\dA-z]+[\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
 
-  def self.expression(string)
-    tokens = string.scan(TOKENIZER)
-    stack = []
-    context = []
-    capturing = false
-    capturing_exp = nil
-    tokens.each do |token|
-      if token == '(' || token == '{'
-        if capturing
-          capturing_exp = token
-          capturing = false
-        end
-        stack.push context
-        context = []
-      elsif token == ')'
-        expression = context
-        if capturing_exp == "("
-          expression = Capture.new(expression)
-          capturing_exp = nil
-        end
-        context = stack.pop || stack.push([]).pop
-        context << expression
+  class ExpressionParser
+    def initialize(expression)
+      @tokens = expression.scan TOKENIZER
+    end
+
+    def peek
+      @tokens.first
+    end
+
+    def next_token
+      @tokens.shift
+    end
+
+    def parse
+      if (token = next_token) == '('
+        parse_list
+      elsif token == '{'
+        Union.new(parse_union)
       elsif token == '$'
-        capturing = true
-      elsif token == '}'
-        expression = Union.new(context)
-        if capturing_exp == "{"
-          expression = Capture.new(expression)
-          capturing_exp = nil
-        end
-        context = stack.pop
-        context << expression
+        Capture.new(parse)
+      elsif token =~ /\d+/
+        token.to_i
       else
-        expression = translate(token)
-        if capturing
-          expression = Capture.new(expression)
-          capturing = false
-        end
-        context << expression
+        Fast.translate(token)
       end
     end
-    context.size == 1 ? context.first : context
+
+    def parse_union
+      list = []
+      list << parse until peek == '}'
+      next_token
+      list
+    end
+
+    def parse_list
+      list = []
+      list << parse until peek == ')'
+      next_token
+      list
+    end
+  end
+
+  def self.expression(string)
+    ExpressionParser.new(string).parse
   end
 
   def self.parse(fast_tree)
