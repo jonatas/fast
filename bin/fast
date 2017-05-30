@@ -19,7 +19,7 @@ def match pattern, node
   if match
     match == true ? node : [match, node]
   else
-    unless node.children.empty?
+    if node && node.children.any?
       node.children.grep(Parser::AST::Node).flat_map{|e| match(pattern, e) }.compact
     end
   end
