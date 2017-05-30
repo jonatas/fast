@@ -88,6 +88,7 @@ module Fast
       elsif expression.respond_to?(:shift)
         match_recursive(node, expression.shift)
       else
+        debug "comparing #{node} == #{expression} => #{node == expression}"
         node == expression
       end
     end
@@ -163,27 +164,18 @@ module Fast
     end
 
     def match?(ast=@ast, fast=@fast)
-      debug "and parsed #{@fast} becomes #{fast}"
-
       head,*tail = fast
       return false unless head.match?(ast)
       if tail.empty?
         return ast == @ast ? find_captures : true  # root node
       end
       child = ast.children
+      return false if tail.size != child.size
       results = tail.each_with_index.map do |token, i|
         if token.is_a?(Array)
-          result = match?(child[i], token)
-          debug "calling recursive match?(#{child[i].inspect}, #{token.class} #{token}) =>>>>>>>>#{ result } "
-          result
+          match?(child[i], token)
         else
-          matches = token.match?(child[i])
-          if matches && token.respond_to?(:call)
-            debug "token call =>>>>>> true"
-            next true
-          end 
-          debug "token is a proc and returned =>>>>>> #{matches}"
-          matches
+          token.match?(child[i])
         end
       end
 
