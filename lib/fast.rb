@@ -30,28 +30,19 @@ module Fast
 
     def parse
       if (token = next_token) == '('
-        parse_list
+        parse_untill_peek(')')
       elsif token == '{'
-        Union.new(parse_union)
+        Union.new(parse_untill_peek('}'))
       elsif token == '$'
         Capture.new(parse)
-      elsif token =~ /\d+/
-        token.to_i
       else
         Fast.translate(token)
       end
     end
 
-    def parse_union
+    def parse_untill_peek(token)
       list = []
-      list << parse until peek == '}'
-      next_token
-      list
-    end
-
-    def parse_list
-      list = []
-      list << parse until peek == ')'
+      list << parse until peek == token
       next_token
       list
     end
