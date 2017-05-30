@@ -13,7 +13,7 @@ module Fast
   }
 
 
-  TOKENIZER = /[\+\-\/\*\dA-z]+[\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
+  TOKENIZER = /[\+\-\/\*]|[\dA-z]+[\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
 
   def self.expression(string)
     tokens = string.scan(TOKENIZER)
@@ -34,7 +34,6 @@ module Fast
         if capturing_exp == "("
           expression = Capture.new(expression)
           capturing_exp = nil
-          capturing = false
         end
         context = stack.pop || stack.push([]).pop
         context << expression
@@ -45,18 +44,13 @@ module Fast
         if capturing_exp == "{"
           expression = Capture.new(expression)
           capturing_exp = nil
-          capturing = false
         end
         context = stack.pop
         context << expression
       else
         expression = translate(token)
         if capturing
-          expression = if expression.is_a?(Find) 
-                         Capture.new(expression.token)
-                       else
-                         Capture.new(expression)
-                       end
+          expression = Capture.new(expression)
           capturing = false
         end
         context << expression

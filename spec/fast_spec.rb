@@ -87,7 +87,7 @@ RSpec.describe Fast do
       end
 
       it 'multiple levels' do
-        expect(Fast.expression('(send (send nil $:a) :b)')).to eq([f[:send], [f[:send], f[nil], c[:a]], f[:b]])
+        expect(Fast.expression('(send (send nil $:a) :b)')).to eq([f[:send], [f[:send], f[nil], c[f[:a]]], f[:b]])
         expect(Fast.expression('(send $(send nil :a) :b)')).to eq([f[:send], c[[f[:send], f[nil], f[:a]]], f[:b]])
       end
     end
@@ -161,9 +161,9 @@ RSpec.describe Fast do
 
     context 'union sequence' do
       it 'allows us to join conditions using {}' do
-        expect(Fast.match?(s(:float, 1.2), '({int float} _)')).to be_truthy
-        expect(Fast.match?(s(:int, 1), '({int float} _)')).to be_truthy
-        expect(Fast.match?(s(:str, "1.2"), '({int float} _)')).to be_falsy
+        expect(Fast.match?(s(:float, 1.2), '{int float} _')).to be_truthy
+        expect(Fast.match?(s(:int, 1), '{int float} _')).to be_truthy
+        expect(Fast.match?(s(:str, "1.2"), '{int float} _')).to be_falsy
       end
 
       it 'works in nested levels' do
@@ -171,6 +171,7 @@ RSpec.describe Fast do
         expect(Fast.match?(s(:send, s(:int, 2), :+, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_truthy
         expect(Fast.match?(s(:send, s(:int, 2), :+, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_truthy
         expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_falsy
+        expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), 'send ({int float} _) {+-} (int _)')).to be_truthy
       end
 
       it 'for symbols or expressions' do
