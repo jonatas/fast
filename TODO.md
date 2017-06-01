@@ -1,0 +1,6 @@
+- [ ] Add a friendly debug mode. Allow debug :expression or :match?  independently
+- [ ] Add matcher diagnostics. Allow check details of each matcher in the three
+- [ ] Split stuff into files and add tests for each class
+- [ ] Add negation !{int float}
+- [ ] Extract matchers `s()`, `f()`, `c()`, `union()`
+- [ ] Validate expressions and raise errors for invalid expressions
