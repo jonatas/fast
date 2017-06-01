@@ -15,6 +15,36 @@ module Fast
 
   TOKENIZER = /[\+\-\/\*]|\d+\.\d*|[\dA-z]+[\\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
 
+  def self.valuate(token)
+    if token.is_a?(String)
+      if LITERAL.has_key?(token)
+        LITERAL[token]
+      elsif token =~ /\d+\.\d*/
+        token.to_f
+      elsif token =~ /\d+/
+        token.to_i
+      else
+        token.to_sym
+      end
+    else
+      token
+    end
+  end
+
+  def self.match?(ast, fast)
+    Matcher.new(ast, fast).match?
+  end
+
+  def self.expression(string)
+    ExpressionParser.new(string).parse
+  end
+
+  def self.parse(fast_tree)
+    fast_tree.map do |token|
+      Find.new(Fast.valuate(token))
+    end
+  end
+
   class ExpressionParser
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
@@ -41,16 +71,6 @@ module Fast
       list << parse until @tokens.first == token
       next_token
       list
-    end
-  end
-
-  def self.expression(string)
-    ExpressionParser.new(string).parse
-  end
-
-  def self.parse(fast_tree)
-    fast_tree.map do |token|
-      Find.new(Fast.valuate(token))
     end
   end
 
@@ -95,7 +115,7 @@ module Fast
     end
 
     def to_s
-      "c[#{token}]"
+      "c[#{token} $: #{@captures}]"
     end
   end
 
@@ -109,25 +129,6 @@ module Fast
     end
   end
 
-  def self.valuate(token)
-    if token.is_a?(String)
-      if LITERAL.has_key?(token)
-        LITERAL[token]
-      elsif token =~ /\d+\.\d*/
-        token.to_f
-      elsif token =~ /\d+/
-        token.to_i
-      else
-        token.to_sym
-      end
-    else
-      token
-    end
-  end
-
-  def self.match?(ast, fast)
-    Matcher.new(ast, fast).match?
-  end
 
   class Matcher
     def initialize(ast, fast)
