@@ -13,7 +13,7 @@ module Fast
     'nil' => nil
   }
 
-  TOKENIZER = /[\+\-\/\*]|[\dA-z]+[\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
+  TOKENIZER = /[\+\-\/\*]|\d+\.\d*|[\dA-z]+[\\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
 
   class ExpressionParser
     def initialize(expression)
@@ -32,7 +32,7 @@ module Fast
       elsif token == '$'
         Capture.new(parse)
       else
-        Fast.translate(token)
+        Find.new(Fast.valuate(token))
       end
     end
 
@@ -50,12 +50,11 @@ module Fast
 
   def self.parse(fast_tree)
     fast_tree.map do |token|
-      translate(token) || token
+      Find.new(Fast.valuate(token))
     end
   end
 
   class Find < Struct.new(:token)
-
     def match?(node)
       match_recursive(node, token)
     end
@@ -78,11 +77,7 @@ module Fast
     end
 
     def to_s
-      token.inspect
-    end
-
-    def inspect
-      "f(#{self})"
+      "f[#{token.map(&:to_s)}]"
     end
   end
 
@@ -99,8 +94,8 @@ module Fast
       end
     end
 
-    def inspect
-      "c(#{self})"
+    def to_s
+      "c[#{token}]"
     end
   end
 
@@ -109,27 +104,25 @@ module Fast
       token.any?{|expression| Fast.match?(node, expression) }
     end
 
-    def inspect
-      "union(#{token})"
+    def to_s
+      "union[#{token}]"
     end
   end
 
-  def self.translate(token)
-    if token.is_a?(Find)
-      return token
-    end
-
-    expression =
-      if token.is_a?(String)
-        if LITERAL.has_key?(token)
-          LITERAL[token]
-        else
-          token.to_sym
-        end
+  def self.valuate(token)
+    if token.is_a?(String)
+      if LITERAL.has_key?(token)
+        LITERAL[token]
+      elsif token =~ /\d+\.\d*/
+        token.to_f
+      elsif token =~ /\d+/
+        token.to_i
       else
-        token
+        token.to_sym
       end
-    Find.new(expression)
+    else
+      token
+    end
   end
 
   def self.match?(ast, fast)
