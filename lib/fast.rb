@@ -20,10 +20,6 @@ module Fast
       @tokens = expression.scan TOKENIZER
     end
 
-    def peek
-      @tokens.first
-    end
-
     def next_token
       @tokens.shift
     end
@@ -42,7 +38,7 @@ module Fast
 
     def parse_untill_peek(token)
       list = []
-      list << parse until peek == token
+      list << parse until @tokens.first == token
       next_token
       list
     end
