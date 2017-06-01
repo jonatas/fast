@@ -1,10 +1,6 @@
 require 'bundler/setup'
 require 'parser'
 
-def debug *msg
-  puts(*msg)if $debug
-end
-
 module Fast
   VERSION = "0.1.0"
   LITERAL = {
@@ -14,22 +10,6 @@ module Fast
   }
 
   TOKENIZER = /[\+\-\/\*]|\d+\.\d*|[\dA-z]+[\\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
-
-  def self.valuate(token)
-    if token.is_a?(String)
-      if LITERAL.has_key?(token)
-        LITERAL[token]
-      elsif token =~ /\d+\.\d*/
-        token.to_f
-      elsif token =~ /\d+/
-        token.to_i
-      else
-        token.to_sym
-      end
-    else
-      token
-    end
-  end
 
   def self.match?(ast, fast)
     Matcher.new(ast, fast).match?
@@ -41,7 +21,7 @@ module Fast
 
   def self.parse(fast_tree)
     fast_tree.map do |token|
-      Find.new(Fast.valuate(token))
+      Find.new(token)
     end
   end
 
@@ -62,7 +42,7 @@ module Fast
       elsif token == '$'
         Capture.new(parse)
       else
-        Find.new(Fast.valuate(token))
+        Find.new(token)
       end
     end
 
@@ -75,6 +55,10 @@ module Fast
   end
 
   class Find < Struct.new(:token)
+    def initialize(token)
+      self.token = valuate(token)
+    end
+
     def match?(node)
       match_recursive(node, token)
     end
@@ -86,18 +70,34 @@ module Fast
         expression.match?(node)
       elsif expression.is_a?(Symbol)
         type = node.respond_to?(:type) ? node.type : node
-        debug "comparing type #{type} == #{expression} => #{type == expression}"
         type == expression
       elsif expression.respond_to?(:shift)
         match_recursive(node, expression.shift)
       else
-        debug "comparing #{node} == #{expression} => #{node == expression}"
         node == expression
       end
     end
 
     def to_s
       "f[#{token.map(&:to_s)}]"
+    end
+
+    private
+
+    def valuate(token)
+      if token.is_a?(String)
+        if LITERAL.has_key?(token)
+          LITERAL[token]
+        elsif token =~ /\d+\.\d*/
+          token.to_f
+        elsif token =~ /\d+/
+          token.to_i
+        else
+          token.to_sym
+        end
+      else
+        token
+      end
     end
   end
 
@@ -128,7 +128,6 @@ module Fast
       "union[#{token}]"
     end
   end
-
 
   class Matcher
     def initialize(ast, fast)
