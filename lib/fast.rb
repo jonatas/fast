@@ -104,7 +104,7 @@ module Fast
   class Capture <  Find
     attr_reader :captures
     def initialize(token)
-      self.token = token
+      super
       @captures = []
     end
 
