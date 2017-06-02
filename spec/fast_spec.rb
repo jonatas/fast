@@ -19,8 +19,8 @@ RSpec.describe Fast do
     end
 
     it 'allows proc shortcuts' do
-      expect(Fast.expression('...')).to eq(f[defined_proc['...']])
-      expect(Fast.expression('_')).to eq(f[defined_proc['_']])
+      expect(Fast.expression('...')).to eq(f['...'])
+      expect(Fast.expression('_')).to eq(f['_'])
     end
 
     it 'ignore semicolon' do
@@ -29,33 +29,33 @@ RSpec.describe Fast do
 
     it 'ignore empty spaces' do
       expect(Fast.expression('(send     (send     nil                   _)                    _)'))
-                    .to eq([f[:send],[f[:send], f[nil], f[defined_proc['_']]],f[defined_proc['_']]])
+                    .to eq([f['send'],[f['send'], f['nil'], f['_']],f['_']])
     end
 
     it 'wraps expressions deeply' do
-      expect(Fast.expression('(send (send nil a) b)')).to eq([f[:send], [f[:send], f[nil], f[:a]], f[:b]])
-      expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f[:send], [f[:send], [f[:send], f[nil], f[:a]], f[:b]], f[:c]])
+      expect(Fast.expression('(send (send nil a) b)')).to eq([f['send'], [f['send'], f['nil'], f['a']], f['b']])
+      expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f['send'], [f['send'], [f['send'], f['nil'], f['a']], f['b']], f['c']])
     end
 
     context 'union sequence' do
       specify do
         expect(
           Fast.expression(
-            '(:send $({:int :float} _) :+ $(:int _))'
+            '(send $({int float} _) + $(int _))'
           )
         ).to eq(
           [
-            f[:send],
+            f['send'],
             c[
               [
-                union[[f[:int], f[:float]]],
-                f[defined_proc['_']]
+                union[[f['int'], f['float']]],
+                f['_']
               ]
-            ], f[:+],
+            ], f['+'],
             c[
               [
-                f[:int],
-                f[defined_proc['_']]
+                f['int'],
+                f['_']
               ]
             ]
           ])
@@ -78,13 +78,13 @@ RSpec.describe Fast do
       end
 
       it 'expressions deeply' do
-        expect(Fast.expression('(send (send nil a) b)')).to eq([f[:send], [f[:send], f[nil], f[:a]], f[:b]])
-        expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f[:send], [f[:send], [f[:send], f[nil], f[:a]], f[:b]], f[:c]])
+        expect(Fast.expression('(send (send nil a) b)')).to eq([f['send'], [f['send'], f['nil'], f['a']], f['b']])
+        expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f['send'], [f['send'], [f['send'], f['nil'], f['a']], f['b']], f['c']])
       end
 
       it 'multiple levels' do
-        expect(Fast.expression('(send (send nil $:a) :b)')).to eq([f[:send], [f[:send], f[nil], c[f[:a]]], f[:b]])
-        expect(Fast.expression('(send $(send nil :a) :b)')).to eq([f[:send], c[[f[:send], f[nil], f[:a]]], f[:b]])
+        expect(Fast.expression('(send (send nil $a) b)')).to eq([f['send'], [f['send'], f['nil'], c[f['a']]], f['b']])
+        expect(Fast.expression('(send $(send nil a) b)')).to eq([f['send'], c[[f['send'], f['nil'], f['a']]], f['b']])
       end
     end
   end
@@ -94,12 +94,12 @@ RSpec.describe Fast do
       it 'converts everything to a find' do
         expect(Fast.parse([1])).to eq([f[1]])
         expect(Fast.parse([:sym])).to eq([f[:sym]])
-        expect(Fast.parse(['sym'])).to eq([f[:sym]])
+        expect(Fast.parse(['sym'])).to eq([f['sym']])
       end
 
       it '... and _ into pre-defined procs' do
-        expect(Fast.parse(['...'])).to eq([f[defined_proc['...']]])
-        expect(Fast.parse([1,'_'])).to eq([f[1], f[defined_proc['_']]])
+        expect(Fast.parse(['...'])).to eq([f['...']])
+        expect(Fast.parse([1,'_'])).to eq([f[1], f['_']])
       end
 
       it 'nil into nil' do

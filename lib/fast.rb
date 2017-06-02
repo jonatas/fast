@@ -56,11 +56,11 @@ module Fast
 
   class Find < Struct.new(:token)
     def initialize(token)
-      self.token = valuate(token)
+      self.token = token
     end
 
     def match?(node)
-      match_recursive(node, token)
+      match_recursive(node, valuate(token))
     end
 
     def match_recursive(node, expression)
