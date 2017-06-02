@@ -38,7 +38,7 @@ module Fast
       if (token = next_token) == '('
         parse_untill_peek(')')
       elsif token == '{'
-        Union.new(parse_untill_peek('}'))
+        Any.new(parse_untill_peek('}'))
       elsif token == '$'
         Capture.new(parse)
       else
@@ -119,13 +119,13 @@ module Fast
     end
   end
 
-  class Union < Find
+  class Any < Find
     def match?(node)
       token.any?{|expression| Fast.match?(node, expression) }
     end
 
     def to_s
-      "union[#{token}]"
+      "any[#{token}]"
     end
   end
 

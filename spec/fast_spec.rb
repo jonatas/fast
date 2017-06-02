@@ -4,7 +4,7 @@ RSpec.describe Fast do
 
   let(:f) { -> (arg) { Fast::Find.new(arg) } }
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
-  let(:union) { -> (arg) { Fast::Union.new(arg) } }
+  let(:any) { -> (arg) { Fast::Any.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
 
   def s(type, *children)
@@ -15,7 +15,7 @@ RSpec.describe Fast do
     it 'from simple string' do
       expect(Fast.expression('...')).to be_a(Fast::Find)
       expect(Fast.expression('$...')).to be_a(Fast::Capture)
-      expect(Fast.expression('{}')).to be_a(Fast::Union)
+      expect(Fast.expression('{}')).to be_a(Fast::Any)
     end
 
     it 'allows proc shortcuts' do
@@ -37,7 +37,7 @@ RSpec.describe Fast do
       expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f['send'], [f['send'], [f['send'], f['nil'], f['a']], f['b']], f['c']])
     end
 
-    context 'union sequence' do
+    context 'Any sequence' do
       specify do
         expect(
           Fast.expression(
@@ -48,7 +48,7 @@ RSpec.describe Fast do
             f['send'],
             c[
               [
-                union[[f['int'], f['float']]],
+                any[[f['int'], f['float']]],
                 f['_']
               ]
             ], f['+'],
@@ -154,8 +154,8 @@ RSpec.describe Fast do
       ).to be_truthy
     end
 
-    context 'union sequence' do
-      it 'allows us to join conditions using {}' do
+    context '`any`' do
+      it 'allows us to see if any condition matches {}' do
         expect(Fast.match?(s(:float, 1.2), '{int float} _')).to be_truthy
         expect(Fast.match?(s(:int, 1), '{int float} _')).to be_truthy
         expect(Fast.match?(s(:str, "1.2"), '{int float} _')).to be_falsy
