@@ -51,16 +51,12 @@ module Fast
     end
 
     def parse
-      if (token = next_token) == '('
-        parse_untill_peek(')')
-      elsif token == '{'
-        Any.new(parse_untill_peek('}'))
-      elsif token == '$'
-        Capture.new(parse)
-      elsif token == '!'
-        Not.new(parse)
-      else
-        Find.new(token)
+      case (token = next_token)
+      when '(' then parse_untill_peek(')')
+      when '{' then Any.new(parse_untill_peek('}'))
+      when '$' then Capture.new(parse)
+      when '!' then Not.new(parse)
+      else Find.new(token)
       end
     end
 
