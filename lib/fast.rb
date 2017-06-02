@@ -14,17 +14,17 @@ module Fast
     |
     \d+\.\d*              # decimals and floats
     |
-    [\dA-z]+[\\!\?]?      # Numbers or words
+    _                     # something not nil: match
     |
-    \(|\)                 # Parens `(` and `)` for tuples
+    \.{3}                 # a node with children: ...
     |
-    \{|\}                 # Curly Brackets `{` and `}` for Any
+    [\dA-z_]+[\\!\?]?     # method names or numbers
     |
-    \.{3}                 # A node with children: ...
+    \(|\)                 # parens `(` and `)` for tuples
     |
-    _                     # Something not nil: match
+    \{|\}                 # curly brackets `{` and `}` for any
     |
-    \$                    # Capture
+    \$                    # capture
   /x
 
   def self.match?(ast, fast)
