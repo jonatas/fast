@@ -9,7 +9,23 @@ module Fast
     'nil' => nil
   }
 
-  TOKENIZER = /[\+\-\/\*]|\d+\.\d*|[\dA-z]+[\\!\?]?|\(|\)|\{|\}|\.{3}|_|\$/
+  TOKENIZER = %r/
+    [\+\-\/\*\\!]         # operators or negation
+    |
+    \d+\.\d*              # decimals and floats
+    |
+    [\dA-z]+[\\!\?]?      # Numbers or words
+    |
+    \(|\)                 # Parens `(` and `)` for tuples
+    |
+    \{|\}                 # Curly Brackets `{` and `}` for Any
+    |
+    \.{3}                 # A node with children: ...
+    |
+    _                     # Something not nil: match
+    |
+    \$                    # Capture
+  /x
 
   def self.match?(ast, fast)
     Matcher.new(ast, fast).match?
@@ -41,6 +57,8 @@ module Fast
         Any.new(parse_untill_peek('}'))
       elsif token == '$'
         Capture.new(parse)
+      elsif token == '!'
+        Not.new(parse)
       else
         Find.new(token)
       end
@@ -126,6 +144,12 @@ module Fast
 
     def to_s
       "any[#{token}]"
+    end
+  end
+
+  class Not < Find
+    def match?(node)
+      !super
     end
   end
 

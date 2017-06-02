@@ -3,6 +3,7 @@ require "spec_helper"
 RSpec.describe Fast do
 
   let(:f) { -> (arg) { Fast::Find.new(arg) } }
+  let(:nf) { -> (arg) { Fast::Not.new(arg) } }
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
   let(:any) { -> (arg) { Fast::Any.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
@@ -16,6 +17,7 @@ RSpec.describe Fast do
       expect(Fast.expression('...')).to be_a(Fast::Find)
       expect(Fast.expression('$...')).to be_a(Fast::Capture)
       expect(Fast.expression('{}')).to be_a(Fast::Any)
+      expect(Fast.expression('!')).to be_a(Fast::Not)
     end
 
     it 'allows proc shortcuts' do
@@ -61,6 +63,16 @@ RSpec.describe Fast do
           ])
       end
     end
+
+    context 'Not negates with !' do
+      specify do
+        expect(Fast.expression('!str')).to eq(nf[f['str']])
+        expect(Fast.expression('!{str sym}')).to eq(nf[any[[f['str'],f['sym']]]])
+        expect(Fast.expression('!(int _)')).to eq(nf[[f['int'],f['_']]])
+        expect(Fast.expression('{_ !_}')).to eq(any[[f['_'],nf[f['_']]]])
+      end
+    end
+
 
     context 'capture with $' do
       it 'any level' do
@@ -171,6 +183,15 @@ RSpec.describe Fast do
 
       it 'for symbols or expressions' do
         expect(Fast.match?(s(:send, s(:float, 1.2), :+, s(:int, 1)), '(send ({int float} _) :+ (int _))')).to be_truthy
+      end
+    end
+
+    context '`not` negates with !' do
+      specify do
+        expect(Fast.match?(s(:float, 1.0), '!(int _)')).to be_truthy
+        expect(Fast.match?(s(:float, 1.0), '!(float _)')).to be_falsy
+        expect(Fast.match?(s(:sym, :sym), '!({str int float} _)')).to be_truthy
+        expect(Fast.match?(s(:int, 1), '!({str int float} _)')).to be_falsy
       end
     end
   end
