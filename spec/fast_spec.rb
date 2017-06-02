@@ -101,25 +101,6 @@ RSpec.describe Fast do
     end
   end
 
-  describe '.parse' do
-    context 'pre process arrays' do
-      it 'converts everything to a find' do
-        expect(Fast.parse([1])).to eq([f[1]])
-        expect(Fast.parse([:sym])).to eq([f[:sym]])
-        expect(Fast.parse(['sym'])).to eq([f['sym']])
-      end
-
-      it '... and _ into pre-defined procs' do
-        expect(Fast.parse(['...'])).to eq([f['...']])
-        expect(Fast.parse([1,'_'])).to eq([f[1], f['_']])
-      end
-
-      it 'nil into nil' do
-        expect(Fast.parse([nil])).to eq([f[nil]])
-      end
-    end
-  end
-
   describe '.match?' do
     it 'matches AST code with a pure array' do
       expect(Fast.match?(s(:int, 1), [:int, 1])).to be_truthy

@@ -35,12 +35,6 @@ module Fast
     ExpressionParser.new(string).parse
   end
 
-  def self.parse(fast_tree)
-    fast_tree.map do |token|
-      Find.new(token)
-    end
-  end
-
   class ExpressionParser
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
@@ -155,7 +149,7 @@ module Fast
       if fast.is_a?(String)
         @fast = Fast.expression(fast)
       else
-        @fast = Fast.parse(fast)
+        @fast = fast.map(&Find.method(:new))
       end
       @captures = []
     end
