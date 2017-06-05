@@ -178,14 +178,14 @@ module Fast
     end
 
     def find_captures(fast=@fast)
-      [*fast].map do |f|
-        case f
-        when Capture
-          f.captures
-        when Array
-          find_captures(f)
-        end
-      end.flatten.compact
+      case fast
+      when Capture
+        fast.captures
+      when Array
+        fast.flat_map(&method(:find_captures)).compact
+      when Find
+        find_captures(fast.token)
+      end
     end
   end
 end

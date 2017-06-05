@@ -75,20 +75,6 @@ RSpec.describe Fast do
 
 
     context 'capture with $' do
-      it 'any level' do
-        expect(Fast.match?(s(:send, nil, :a), '(send nil $_)')).to eq([:a])
-        expect(Fast.match?(s(:int, 1),        '($(int _))'   )).to eq([s(:int, 1)])
-        expect(Fast.match?(s(:sym, :a),       '(sym $_)'     )).to eq([:a])
-      end
-
-      it 'multiple nodes' do
-        expect(
-          Fast.match?(
-            s(:send, s(:int, 1), :+, s(:int, 2)),
-            '(:send $(:int _) :+ $(:int _))'
-          )).to eq [s(:int, 1), s(:int, 2)]
-      end
-
       it 'expressions deeply' do
         expect(Fast.expression('(send (send nil a) b)')).to eq([f['send'], [f['send'], f['nil'], f['a']], f['b']])
         expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f['send'], [f['send'], [f['send'], f['nil'], f['a']], f['b']], f['c']])
@@ -109,8 +95,8 @@ RSpec.describe Fast do
     end
 
     it 'works with `Fast.expressions`' do
-      expect(Fast.match?(s(:int, 1), '...')).to be_truthy
-      expect(Fast.match?(s(:int, 1), '_ _')).to be_truthy
+      expect(Fast.match?(s(:int, 1), '(...)')).to be_truthy
+      expect(Fast.match?(s(:int, 1), '(_ _)')).to be_truthy
     end
 
     it 'matches ast code literal' do
@@ -173,6 +159,46 @@ RSpec.describe Fast do
         expect(Fast.match?(s(:float, 1.0), '!(float _)')).to be_falsy
         expect(Fast.match?(s(:sym, :sym), '!({str int float} _)')).to be_truthy
         expect(Fast.match?(s(:int, 1), '!({str int float} _)')).to be_falsy
+      end
+    end
+
+    context 'capture with `$`' do
+      it 'any level' do
+        expect(Fast.match?(s(:send, nil, :a), '(send nil $_)')).to eq([:a])
+        expect(Fast.match?(s(:int, 1),        '($(int _))'   )).to eq([s(:int, 1)])
+        expect(Fast.match?(s(:sym, :a),       '(sym $_)'     )).to eq([:a])
+      end
+
+      it 'multiple nodes' do
+        expect(
+          Fast.match?(
+            s(:send, s(:int, 1), :+, s(:int, 2)),
+            '(:send $(:int _) :+ $(:int _))'
+          )).to eq [s(:int, 1), s(:int, 2)]
+      end
+
+      it 'captures specific children' do
+        expect(
+          Fast.match?(
+            s(:send, s(:int, 1), :+, s(:int, 2)),
+            '(send (int $_) :+ (int $_))'
+          )).to eq [1,2]
+      end
+
+      it 'captures complex negated joined condition' do
+        expect(Fast.match?(s(:sym, :sym), '$!({str int float} _)')).to eq([s(:sym, :sym)])
+      end
+
+      it 'captures diverse things' do
+        ast = s(:def,
+                :reverse_string,
+                s(:args, s(:arg, :string)),
+                s(:send, s(:lvar, :string), :reverse))
+
+        expect(Fast.match?(ast, '(def $_ ... ...)')).to eq([:reverse_string])
+        expect(Fast.match?(ast, '(def $reverse_string ... ...)')).to eq([:reverse_string])
+        expect(Fast.match?(ast, '(def reverse_string (args (arg $_)) ...)')).to eq([:string])
+        expect(Fast.match?(ast, '(def reverse_string (args (arg _)) $...)')).to eq([s(:send, s(:lvar, :string), :reverse)])
       end
     end
   end
