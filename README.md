@@ -1,5 +1,7 @@
 # Fast
 
+[![Build Status](https://travis-ci.org/jonatas/fast.svg?branch=master)](https://travis-ci.org/jonatas/fast)
+
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
 It's inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
