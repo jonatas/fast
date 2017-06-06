@@ -45,6 +45,7 @@ files.each do |file|
   results = match(pattern, ast)
 	next unless results
   results.each do |result|
+    next if result.nil? || result == []
     line = [file, *line_and_code(result,show_ast)]
     puts line.join(":")
   end
