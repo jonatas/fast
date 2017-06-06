@@ -46,15 +46,15 @@ module Fast
 
     def parse
       case (token = next_token)
-      when '(' then parse_untill_peek(')')
-      when '{' then Any.new(parse_untill_peek('}'))
+      when '(' then parse_until_peek(')')
+      when '{' then Any.new(parse_until_peek('}'))
       when '$' then Capture.new(parse)
       when '!' then Not.new(parse)
       else Find.new(token)
       end
     end
 
-    def parse_untill_peek(token)
+    def parse_until_peek(token)
       list = []
       list << parse until @tokens.first == token
       next_token
