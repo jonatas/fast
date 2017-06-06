@@ -29,7 +29,7 @@ Or install it yourself as:
 
     $ gem install fast
 
-## Usage
+## How it works
 
 The idea is search in abstract tree using a simple expression build with an array:
 
@@ -89,16 +89,15 @@ Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d]) # => true
 It also knows how to parse strings:
 
 ```ruby
-ast        = s(:send, s(:send, s(:send, nil, :a), :b), :c)
-expression = '(send (send (send nil $_) $_) $_)'
-Fast.match?(ast, expression)) # => [:a,:b,:c]
+expression = '(send (send (send (send nil $_) $_) $_) $_)'
+Fast.match?(ast, expression)) # => [:a, :b, :c, :d]
 ```
 
 It will also inject a executable named `fast` and you can use it to search and
 find code by this kind of expression
 
 ```
-$ fast '(:def :match_node? _ )' lib/*.rb                                                                                                              20:36:21
+$ fast '(:def :match_node? _ )' lib/fast.rb                                                                                                              20:36:21
 ```
 
 ## Development
