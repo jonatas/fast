@@ -89,50 +89,17 @@ Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d]) # => true
 It also knows how to parse strings:
 
 ```ruby
-ast = s(:send, s(:send, s(:send, nil, :a), :b), :c)
+ast        = s(:send, s(:send, s(:send, nil, :a), :b), :c)
 expression = '(send (send (send nil $_) $_) $_)'
 Fast.match?(ast, expression)) # => [:a,:b,:c]
 ```
 
 It will also inject a executable named `fast` and you can use it to search and
 find code by this kind of expression
+
 ```
 $ fast '(:def :match_node? _ )' lib/*.rb                                                                                                              20:36:21
 ```
-
-The output should be the following:
-
-```ruby
-
-lib/fast.rb:129: def match_node? node, find, level: 0
-      expression = find.token
-      if $debug
-        node_start_label = node.inspect.lines[0,3].join
-        debug "#{find}.match_node?(#{node_start_label}...)"
-      end
-
-      matches =
-        if expression.respond_to?(:call)
-          debug "#proc call: #{expression}.call(#{node})"
-          expression.call(node)
-        elsif expression.is_a?(Symbol)
-          type = node.respond_to?(:type) ? node.type : node
-          debug "#type comparison: #{type} == #{expression}"
-          type == expression
-        elsif expression.is_a?(Enumerable)
-          match?(node, expression, level: level + 1)
-        else
-          debug "#node comparison: #{node.inspect} == #{expression.inspect}"
-          node == expression
-        end
-
-      if matches && find.capturing?
-        @captures << node
-      end
-
-      matches
-    end
- ```
 
 ## Development
 
