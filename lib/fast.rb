@@ -1,5 +1,6 @@
 require 'bundler/setup'
 require 'parser'
+require 'parser/current'
 
 module Fast
   VERSION = "0.1.0"
@@ -29,6 +30,28 @@ module Fast
 
   def self.match?(ast, fast)
     Matcher.new(ast, fast).match?
+  end
+
+  def self.search_file pattern, file
+    node = ast_from_file(file)
+    search pattern, node
+  end
+
+  def self.search pattern, node
+    if (match = Fast.match?(node, pattern))
+      match == true ? node : [match, node]
+    else
+      if node && node.children.any?
+        node.children
+          .grep(Parser::AST::Node)
+          .flat_map{|e| search(pattern, e) }
+          .compact.flatten.uniq
+      end
+    end
+  end
+
+  def self.ast_from_file(file)
+    Parser::CurrentRuby.parse(IO.read(file))
   end
 
   def self.expression(string)

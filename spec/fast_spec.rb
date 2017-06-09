@@ -202,4 +202,78 @@ RSpec.describe Fast do
       end
     end
   end
+
+  context 'search in files' do
+    before do
+      File.open('sample.rb', 'w+') do |file|
+        file.puts <<~RUBY
+        class SelfPromotion
+
+          AUTHOR = "Jônatas Davi Paganini"
+
+          def initialize(name, language='pt')
+            @name = name
+            @lang = language if LANGUAGES.include?(language)
+          end
+
+          def welcome
+            case @lang
+            when 'pt' then puts "Olá \#{@name}"
+            when 'es' then puts "Hola \#{@name}"
+            else puts "Hello \#{@name}"
+            end
+          end
+
+          def self.thanks
+            welcome_message = new('friend', 'en')
+            message = [AUTHOR, "wants to say", welcome_message]
+            puts message.join(' ')
+          end
+        end
+        RUBY
+      end
+    end
+
+    it 'capture things flatten and unique nodes' do
+      result = Fast.search_file('$def', 'sample.rb')
+      method_names = result.map(&:children).map(&:first)
+      expect(method_names).to eq([:initialize, :welcome])
+    end
+
+    specify do
+      res = Fast.search_file('$(dstr _)', 'sample.rb')
+      strings = res.map{|node|node.loc.expression.source}
+      expect(strings).to eq [
+        "\"Olá \#{@name}\"",
+        "\"Hola \#{@name}\"",
+        "\"Hello \#{@name}\""
+      ]
+    end
+
+    specify do
+      res = Fast.search_file('(send nil :puts $...)', 'sample.rb')
+      strings = res.select{|n|n.type == :dstr}.map{|node|node.loc.expression.source}
+      expect(strings).to eq [
+        "\"Olá \#{@name}\"",
+        "\"Hola \#{@name}\"",
+        "\"Hello \#{@name}\""
+      ]
+    end
+
+    specify do
+      result = Fast.search_file('$(ivar _ ...)', 'sample.rb')
+      instance_variable_names = result.map(&:children).map(&:first)
+      expect(instance_variable_names).to eq(%i[@lang @name])
+    end
+
+    specify do
+      result = Fast.search_file('$(lvar _ ...)', 'sample.rb')
+      local_variable_names = result.map(&:children).map(&:first)
+      expect(local_variable_names).to eq(%i[name language welcome_message message])
+    end
+
+    after do
+      File.delete('sample.rb')
+    end
+  end
 end
