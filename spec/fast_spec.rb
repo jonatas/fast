@@ -7,6 +7,7 @@ RSpec.describe Fast do
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
   let(:any) { -> (arg) { Fast::Any.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
+  let(:ast) { -> (string) { Parser::CurrentRuby.parse(string) }  }
 
   def s(type, *children)
     Parser::AST::Node.new(type, children)
@@ -283,6 +284,18 @@ RSpec.describe Fast do
       expect(result.first).to eq("Jônatas Davi Paganini")
     end
 
+    context 'replace' do
+      specify do
+        expect(
+          Fast.replace(
+          ast['a = 1'],
+          '$(lvasgn _ ...)',
+           -> (node) { replace(node.location.name, 'variable_renamed') }
+          )
+        ).to eq ["variable_renamed = 1"]
+      end
+    end
+
     after do
       File.delete('sample.rb')
     end
@@ -298,22 +311,6 @@ RSpec.describe Fast do
          int == (int 1) # => true
          1 == 1 # => true
       OUTPUT
-    end
-  end
-
-  context 'replace' do
-    specify do
-      expect(
-        Fast.replace(
-          s(:lvasgn, :a, s(:int, 1)),
-          '$(lvasgn _ ...)',
-          -> (node) { s(node.type, :b, *node.children[1..-1]) }
-        )
-      ).to eq(
-        [
-          s(:lvasgn, :b, s(:int, 1)),
-        ]
-      )
     end
   end
 

@@ -35,7 +35,17 @@ module Fast
   def self.replace(ast, fast, replacement)
     nodes = match?(ast, fast)
     return unless nodes && !nodes.empty?
-    nodes.grep(Parser::AST::Node).map(&replacement)
+    buffer = Parser::Source::Buffer.new('replacement')
+    buffer.source = ast.loc.expression.source
+    to_replace = nodes.grep(Parser::AST::Node)
+    types = to_replace.map(&:type).uniq
+    types.map do |type|
+      Class.new(Parser::Rewriter) do
+        define_method "on_#{type}" do |node|
+          instance_exec node, &replacement
+        end
+      end.new.rewrite(buffer, ast)
+    end
   end
 
   def self.search_file pattern, file
@@ -58,6 +68,12 @@ module Fast
 
   def self.ast_from_file(file)
     Parser::CurrentRuby.parse(IO.read(file))
+  end
+
+  def self.buffer_for(file)
+    buffer = Parser::Source::Buffer.new(file.to_s)
+    buffer.source = IO.read(file)
+    buffer
   end
 
   def self.expression(string)
