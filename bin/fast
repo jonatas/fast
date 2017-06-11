@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
+#
+$LOAD_PATH.unshift(File.expand_path('../../lib', __FILE__))
 
-require "./lib/fast"
+require "fast"
 require "coderay"
 
 arguments = ARGV
@@ -32,7 +34,7 @@ end
 files.each do |file|
   results =
     if debug
-      Fast.diagnostic { Fast.search_file(pattern, file) }
+      Fast.debug { Fast.search_file(pattern, file) }
     else
       Fast.search_file(pattern, file)
     end
