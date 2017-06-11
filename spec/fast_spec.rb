@@ -272,8 +272,33 @@ RSpec.describe Fast do
       expect(local_variable_names).to eq(%i[name language welcome_message message])
     end
 
+    it 'captures const symbol' do
+      result = Fast.search_file('(casgn nil $_ ...)', 'sample.rb')
+      expect(result.first).to eq(:AUTHOR)
+      expect(result.last).to eq(s(:casgn, nil, :AUTHOR, s(:str, "Jônatas Davi Paganini")))
+    end
+
+    it 'captures const assignment values' do
+      result = Fast.search_file('(casgn nil _ (str $_))', 'sample.rb')
+      expect(result.first).to eq("Jônatas Davi Paganini")
+    end
+
     after do
       File.delete('sample.rb')
     end
   end
+
+  context 'debug' do
+    specify do
+      expect do
+        Fast.debug do
+          Fast.match?(s(:int, 1), [:int, 1])
+        end
+      end.to output(<<~OUTPUT).to_stdout
+         int == (int 1) # => true
+         1 == 1 # => true
+      OUTPUT
+    end
+  end
+
 end

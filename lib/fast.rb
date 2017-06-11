@@ -58,6 +58,28 @@ module Fast
     ExpressionParser.new(string).parse
   end
 
+  def self.debug
+    return yield if Find.instance_methods.include?(:debug)
+    Find.class_eval do
+      alias original_match_recursive match_recursive
+      def match_recursive a, b
+        match = original_match_recursive(a, b)
+        debug(a, b, match)
+        match
+      end
+      def debug a, b, match
+        puts "#{b} == #{a} # => #{match}"
+      end
+    end
+
+    result = yield
+
+    Find.class_eval do
+      alias match_recursive original_match_recursive
+    end
+    result
+  end
+
   class ExpressionParser
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
@@ -110,7 +132,7 @@ module Fast
     end
 
     def to_s
-      "f[#{token.map(&:to_s)}]"
+      "f[#{[*token].join(', ')}]"
     end
 
     private

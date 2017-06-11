@@ -93,12 +93,30 @@ expression = '(send (send (send (send nil $_) $_) $_) $_)'
 Fast.match?(ast, expression)) # => [:a, :b, :c, :d]
 ```
 
+If something does not work you can debug with a block:
+
+```ruby
+Fast.debug { Fast.match?(s(:int, 1), [:int, 1]) }
+```
+
+It will output each comparison to stdout:
+
+```
+int == (int 1) # => true
+1 == 1 # => true
+```
+
+## Search in files
+
 It will also inject a executable named `fast` and you can use it to search and
 find code by this kind of expression
 
 ```
 $ fast '(:def :match_node? _ )' lib/fast.rb                                                                                                              20:36:21
 ```
+
+- Use `-d` or `--debug` for enable debug mode.
+- Use `--ast` to output the AST instead of the original code
 
 ## Development
 

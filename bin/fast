@@ -6,7 +6,7 @@ require "coderay"
 arguments = ARGV
 pattern = arguments.shift
 show_ast = arguments.delete("--ast")
-$debug = arguments.delete("--debug") || arguments.delete("-d")
+debug = arguments.delete("--debug") || arguments.delete("-d")
 files = arguments || Dir['**/*.rb']
 directories =  arguments.select{|a|File.directory?(a)}
 if directories.any?
@@ -24,13 +24,21 @@ def line_and_code(result, show_ast=false)
 end
 
 pattern = Fast.expression(pattern)
-if $debug
+
+if debug
   puts "Expression: #{pattern.map(&:to_s)}"
 end
 
 files.each do |file|
-  results = Fast.search_file(pattern, file)
-	next unless results
+  results =
+    if debug
+      Fast.diagnostic { Fast.search_file(pattern, file) }
+    else
+      Fast.search_file(pattern, file)
+    end
+
+  next unless results
+
   results.each do |result|
     next if result.nil? || result == []
     line = [file, *line_and_code(result,show_ast)]
