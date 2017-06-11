@@ -301,4 +301,20 @@ RSpec.describe Fast do
     end
   end
 
+  context 'replace' do
+    specify do
+      expect(
+        Fast.replace(
+          s(:lvasgn, :a, s(:int, 1)),
+          '$(lvasgn _ ...)',
+          -> (node) { s(node.type, :b, *node.children[1..-1]) }
+        )
+      ).to eq(
+        [
+          s(:lvasgn, :b, s(:int, 1)),
+        ]
+      )
+    end
+  end
+
 end

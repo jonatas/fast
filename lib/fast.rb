@@ -32,6 +32,12 @@ module Fast
     Matcher.new(ast, fast).match?
   end
 
+  def self.replace(ast, fast, replacement)
+    nodes = match?(ast, fast)
+    return unless nodes && !nodes.empty?
+    nodes.grep(Parser::AST::Node).map(&replacement)
+  end
+
   def self.search_file pattern, file
     node = ast_from_file(file)
     search pattern, node
