@@ -2,7 +2,7 @@
 
 
 Gem::Specification.new do |spec|
-  spec.name          = "fast"
+  spec.name          = "ffast"
   spec.version       = '0.0.1'
   spec.authors       = ["Jônatas Davi Paganini"]
   spec.email         = ["jonatas.paganini@toptal.com"]
