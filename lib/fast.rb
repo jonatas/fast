@@ -228,19 +228,20 @@ module Fast
         return ast == @ast ? find_captures : true  # root node
       end
       child = ast.children
-      return false if tail.size != child.size
-      results = tail.each_with_index.map do |token, i|
-        if token.is_a?(Array)
+      tail.each_with_index.each do |token, i|
+        matched = if token.is_a?(Array)
           match?(child[i], token)
         else
           token.match?(child[i])
         end
+        return false unless matched
       end
 
-      if results.any?{|e|e==false}
-        return false
+      captures = find_captures
+      if captures&.empty?
+        return true
       else
-        find_captures
+        captures
       end
     end
 

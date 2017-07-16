@@ -106,11 +106,14 @@ RSpec.describe Fast do
 
     it 'matches ast deeply ' do
       ast = s(:op_asgn, s(:lvasgn, :a), :+, s(:int, 1))
-      expect(Fast.match?(ast, [:op_asgn, '...'])).to be_falsy
-      expect(Fast.match?(ast, [:op_asgn, '...', '_', '...'])).to be_truthy
-      expect(Fast.match?(ast, [[:op_asgn, '...']])).to be_truthy
-      expect(Fast.match?(ast, [:op_asgn, '_', '_', '_'])).to be_truthy
-      expect(Fast.match?(ast, ['_', '_', :+, '_'])).to be_truthy
+      expect(
+        Fast.match?(ast, [:op_asgn, '...']) &&
+        Fast.match?(ast, [:op_asgn, '...', '_', '...']) &&
+        Fast.match?(ast, [[:op_asgn, '...']]) &&
+        Fast.match?(ast, [:op_asgn, '_', '_', '_']) &&
+        Fast.match?(ast, ['_', '_', :+, '_'])
+      ).to be_truthy
+      expect(Fast).not_to be_match(ast, ['_', '_', :-, '_'])
     end
 
     it 'can mix custom procs' do
