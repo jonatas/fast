@@ -23,6 +23,7 @@ RSpec.describe Fast do
       expect(Fast.expression('!')).to be_a(Fast::Not)
       expect(Fast.expression('?')).to be_a(Fast::Maybe)
       expect(Fast.expression('^')).to be_a(Fast::Parent)
+      expect(Fast.expression('\\1')).to be_a(Fast::FindWithCapture)
     end
 
     it 'allows proc shortcuts' do
@@ -184,6 +185,27 @@ RSpec.describe Fast do
         expect(Fast.match?(code["a.b"], '(send ?(send nil a) b)')).to be_truthy
         expect(Fast.match?(code["b"],   '(send ?(send nil a) b)')).to be_truthy
         expect(Fast.match?(code["b.a"], '(send ?(send nil a) b)')).to be_falsy
+      end
+    end
+
+    context 'reuse elements captured previously in the search with `\\<capture-index>`' do
+      it 'any level' do
+        expect(Fast.match?(s(:send, nil, :a), '(send nil $_)')).to eq([:a])
+        expect(Fast.match?(s(:int, 1),        '($(int _))'   )).to eq([s(:int, 1)])
+        expect(Fast.match?(s(:sym, :a),       '(sym $_)'     )).to eq([:a])
+      end
+
+      it 'allow reuse captured symbols' do
+        ast = code["def name; person.name end"]
+        expect(Fast.match?(ast,'(def $_ ... (send (send nil _) \1))')).to eq([:name]) 
+      end
+
+      it 'allow reuse captured nodes' do
+        expect(Fast.match?(code["a = 1\nb = 1"], '(begin (lvasgn _ $(...)) (lvasgn _ \1))')).to eq([s(:int, 1)])
+      end
+
+      it 'allow reuse captured integers' do
+        expect(Fast.match?(code["a = 1\nb = 1"], '(begin (lvasgn _ (int $_)) (lvasgn _ (int \1)))')).to eq([1])
       end
     end
 

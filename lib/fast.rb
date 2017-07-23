@@ -30,6 +30,8 @@ module Fast
     \{|\}                 # curly brackets `{` and `}` for any
     |
     \$                    # capture
+    |
+    \\\d                  # find using captured expression
   /x
 
   def self.match?(ast, fast)
@@ -102,6 +104,7 @@ module Fast
 
     Find.class_eval do
       alias match_recursive original_match_recursive
+      remove_method :debug
     end
     result
   end
@@ -124,6 +127,7 @@ module Fast
       when '!' then Not.new(parse)
       when '?' then Maybe.new(parse)
       when '^' then Parent.new(parse)
+      when '\\' then FindWithCapture.new(parse)
       else Find.new(token)
       end
     end
@@ -180,6 +184,24 @@ module Fast
       else
         token
       end
+    end
+  end
+
+  class FindWithCapture <  Find
+    attr_writer :previous_captures
+
+    def initialize(token)
+      token = token.token if token.respond_to?(:token)
+      raise 'You must use captures!' unless token
+      @capture_index = token.to_i
+    end
+
+    def match?(node)
+      node == @previous_captures[@capture_index-1]
+    end
+
+    def to_s
+      "fc[\\#{@capture_index}]"
     end
   end
 
@@ -253,11 +275,15 @@ module Fast
       end
       child = ast.children
       tail.each_with_index.each do |token, i|
-        matched = if token.is_a?(Array)
-          match?(child[i], token)
-        else
-          token.match?(child[i])
-        end
+        matched =
+          if token.is_a?(Array)
+            match?(child[i], token)
+          elsif token.is_a?(Fast::FindWithCapture)
+            token.previous_captures = find_captures
+            token.match?(child[i])
+          else
+            token.match?(child[i])
+          end
         return false unless matched
       end
 
