@@ -4,7 +4,10 @@
 
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
-It's inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
+Ruby allow us to do the same thing in a few ways then it's hard to check
+how the code is written.
+
+The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
 
 To learn more about how AST works, you can install `ruby-parse` and check how is the AST of
 your current code.
@@ -18,7 +21,7 @@ It will output the AST representation.
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'fast'
+gem 'ffast'
 ```
 
 And then execute:
@@ -27,7 +30,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install fast
+    $ gem install ffast
 
 ## How it works
 
