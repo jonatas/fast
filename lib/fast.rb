@@ -19,6 +19,8 @@ module Fast
     |
     \.{3}                 # a node with children: ...
     |
+    \^                   # node has children with
+    |
     \?                    # maybe expression
     |
     [\dA-z_]+[\\!\?]?     # method names or numbers
@@ -121,6 +123,7 @@ module Fast
       when '$' then Capture.new(parse)
       when '!' then Not.new(parse)
       when '?' then Maybe.new(parse)
+      when '^' then Parent.new(parse)
       else Find.new(token)
       end
     end
@@ -166,7 +169,7 @@ module Fast
     def valuate(token)
       if token.is_a?(String)
         if LITERAL.has_key?(token)
-          LITERAL[token]
+          valuate(LITERAL[token])
         elsif token =~ /\d+\.\d*/
           token.to_f
         elsif token =~ /\d+/
@@ -195,6 +198,17 @@ module Fast
 
     def to_s
       "c[#{token} $: #{@captures}]"
+    end
+  end
+
+  class Parent <  Find
+    alias match_node match?
+    def match? node
+      node.children.grep(Parser::AST::Node).any?(&method(:match_node))
+    end
+
+    def to_s
+      "^#{token}"
     end
   end
 
@@ -235,7 +249,7 @@ module Fast
       head,*tail = fast
       return false unless head.match?(ast)
       if tail.empty?
-        return ast == @ast ? find_captures : true  # root node
+        return ast == @ast ? find_captures : true # root node
       end
       child = ast.children
       tail.each_with_index.each do |token, i|
@@ -247,17 +261,13 @@ module Fast
         return false unless matched
       end
 
-      captures = find_captures
-      if captures&.empty?
-        return true
-      else
-        captures
-      end
+      find_captures
     end
 
     def find_captures(fast=@fast)
       case fast
       when Capture
+        return true if fast == @fast && fast.captures.empty?
         fast.captures
       when Array
         fast.flat_map(&method(:find_captures)).compact

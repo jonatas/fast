@@ -7,6 +7,7 @@ RSpec.describe Fast do
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
   let(:any) { -> (arg) { Fast::Any.new(arg) } }
   let(:maybe) { -> (arg) { Fast::Maybe.new(arg) } }
+  let(:parent) { -> (arg) { Fast::Parent.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
   let(:code) { -> (string) { Parser::CurrentRuby.parse(string) }  }
 
@@ -21,6 +22,7 @@ RSpec.describe Fast do
       expect(Fast.expression('{}')).to be_a(Fast::Any)
       expect(Fast.expression('!')).to be_a(Fast::Not)
       expect(Fast.expression('?')).to be_a(Fast::Maybe)
+      expect(Fast.expression('^')).to be_a(Fast::Parent)
     end
 
     it 'allows proc shortcuts' do
@@ -222,6 +224,17 @@ RSpec.describe Fast do
         expect(Fast.match?(ast, '(def $reverse_string ... ...)')).to eq([:reverse_string])
         expect(Fast.match?(ast, '(def reverse_string (args (arg $_)) ...)')).to eq([:string])
         expect(Fast.match?(ast, '(def reverse_string (args (arg _)) $...)')).to eq([s(:send, s(:lvar, :string), :reverse)])
+      end
+    end
+
+    context '`Parent` can follow expression in children with `^`' do
+      it "ignores type and search in children using expression following" do
+        expect(Fast.match?(code["a = 1"], '^(int _)')).to be_truthy
+      end
+
+      it 'captures parent of parent and also ignore non node children' do
+        ast = code["b = a = 1"]
+        expect(Fast.match?(ast, '$^^(int _)')).to eq([ast])
       end
     end
   end
