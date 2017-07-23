@@ -19,6 +19,8 @@ module Fast
     |
     \.{3}                 # a node with children: ...
     |
+    \?                    # maybe expression
+    |
     [\dA-z_]+[\\!\?]?     # method names or numbers
     |
     \(|\)                 # parens `(` and `)` for tuples
@@ -102,6 +104,7 @@ module Fast
     result
   end
 
+
   class ExpressionParser
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
@@ -117,6 +120,7 @@ module Fast
       when '{' then Any.new(parse_until_peek('}'))
       when '$' then Capture.new(parse)
       when '!' then Not.new(parse)
+      when '?' then Maybe.new(parse)
       else Find.new(token)
       end
     end
@@ -207,6 +211,12 @@ module Fast
   class Not < Find
     def match?(node)
       !super
+    end
+  end
+
+  class Maybe < Find
+    def match?(node)
+      node.nil? || super
     end
   end
 

@@ -6,8 +6,9 @@ RSpec.describe Fast do
   let(:nf) { -> (arg) { Fast::Not.new(arg) } }
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
   let(:any) { -> (arg) { Fast::Any.new(arg) } }
+  let(:maybe) { -> (arg) { Fast::Maybe.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
-  let(:ast) { -> (string) { Parser::CurrentRuby.parse(string) }  }
+  let(:code) { -> (string) { Parser::CurrentRuby.parse(string) }  }
 
   def s(type, *children)
     Parser::AST::Node.new(type, children)
@@ -19,6 +20,7 @@ RSpec.describe Fast do
       expect(Fast.expression('$...')).to be_a(Fast::Capture)
       expect(Fast.expression('{}')).to be_a(Fast::Any)
       expect(Fast.expression('!')).to be_a(Fast::Not)
+      expect(Fast.expression('?')).to be_a(Fast::Maybe)
     end
 
     it 'allows proc shortcuts' do
@@ -74,6 +76,13 @@ RSpec.describe Fast do
       end
     end
 
+    context 'Maybe allow partial existence with ?' do
+      specify do
+        expect(Fast.expression('?str')).to eq(maybe[f['str']])
+        expect(Fast.expression('?!str')).to eq(maybe[nf[f['str']]])
+        expect(Fast.expression('?{str sym}')).to eq(maybe[any[[f['str'], f['sym']]]])
+      end
+    end
 
     context 'capture with $' do
       it 'expressions deeply' do
@@ -159,10 +168,20 @@ RSpec.describe Fast do
 
     context '`not` negates with !' do
       specify do
-        expect(Fast.match?(s(:float, 1.0), '!(int _)')).to be_truthy
-        expect(Fast.match?(s(:float, 1.0), '!(float _)')).to be_falsy
-        expect(Fast.match?(s(:sym, :sym), '!({str int float} _)')).to be_truthy
-        expect(Fast.match?(s(:int, 1), '!({str int float} _)')).to be_falsy
+        expect(Fast.match?(code["1.0"], '!(int _)')).to be_truthy
+        expect(Fast.match?(code["1.0"], '!(float _)')).to be_falsy
+        expect(Fast.match?(code[":sym"], '!({str int float} _)')).to be_truthy
+        expect(Fast.match?(code["1"], '!({str int float} _)')).to be_falsy
+      end
+    end
+
+    context '`maybe` do partial search with `?`' do
+      specify do
+        expect(Fast.match?(code["a.b"], '(send (send nil _) _)')).to be_truthy
+        expect(Fast.match?(code["a.b"], '(send (send nil a) b)')).to be_truthy
+        expect(Fast.match?(code["a.b"], '(send ?(send nil a) b)')).to be_truthy
+        expect(Fast.match?(code["b"],   '(send ?(send nil a) b)')).to be_truthy
+        expect(Fast.match?(code["b.a"], '(send ?(send nil a) b)')).to be_falsy
       end
     end
 
@@ -291,7 +310,7 @@ RSpec.describe Fast do
       specify do
         expect(
           Fast.replace(
-          ast['a = 1'],
+          code['a = 1'],
           '$(lvasgn _ ...)',
            -> (node) { replace(node.location.name, 'variable_renamed') }
           )
