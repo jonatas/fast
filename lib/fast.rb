@@ -34,21 +34,30 @@ module Fast
     \\\d                  # find using captured expression
   /x
 
-  def self.match?(ast, fast)
-    Matcher.new(ast, fast).match?
+  def self.match?(ast, search)
+    Matcher.new(ast, search).match?
   end
 
-  def self.replace(ast, fast, replacement)
-    nodes = match?(ast, fast)
+  def self.replace(ast, search, replacement)
+    nodes = match?(ast, search)
     return unless nodes && !nodes.empty?
     buffer = Parser::Source::Buffer.new('replacement')
     buffer.source = ast.loc.expression.source
     to_replace = nodes.grep(Parser::AST::Node)
+    if to_replace.empty? # when there's no node, use the root
+      to_replace = [ast]
+    end
     types = to_replace.map(&:type).uniq
     types.map do |type|
       Class.new(Parser::Rewriter) do
         define_method "on_#{type}" do |node|
-          instance_exec node, &replacement
+          if Fast.match?(node, search)
+            if  replacement.parameters.length == 1
+              instance_exec node, &replacement
+            else
+              instance_exec node, nodes, &replacement
+            end
+          end
         end
       end.new.rewrite(buffer, ast)
     end

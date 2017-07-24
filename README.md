@@ -109,6 +109,47 @@ int == (int 1) # => true
 1 == 1 # => true
 ```
 
+## Use previous captures in search
+
+Imagine you're looking for a method that is just delegating something to
+another method, like:
+
+```ruby
+def name
+  person.name
+end
+```
+
+This can be represented as the following AST:
+
+```
+(def :name
+  (args)
+  (send
+    (send nil :person) :name))
+```
+
+Then, let's build a search for methods that calls an attribute with the same
+name:
+
+```ruby
+Fast.match?(ast,'(def $_ ... (send (send nil _) \1))') # => [:name]
+```
+
+And if I want to refactor a code and use `delegate <attribute>, to: <object>`, try with replace:
+
+```ruby
+Fast.replace ast,
+  '(def $_ ... (send (send nil $_) \1))',
+  -> (node, captures) {
+    attribute, object = captures
+    replace(
+      node.location.expression,
+      "delegate :#{attribute}, to: :#{object}"
+    )
+  }
+```
+
 ## Search in files
 
 It will also inject a executable named `fast` and you can use it to search and

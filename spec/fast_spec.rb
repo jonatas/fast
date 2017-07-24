@@ -351,6 +351,17 @@ RSpec.describe Fast do
           )
         ).to eq ["variable_renamed = 1"]
       end
+
+      specify do
+        expect(
+          Fast.replace(
+            code['def name; person.name end'],
+            '(def $_ ... (send (send nil $_) \1))',
+          -> (node, captures) { 
+              replace(node.location.expression, "delegate #{captures[0].inspect}, to: #{captures[1].inspect}") }
+          )
+        ).to eq ["delegate :name, to: :person"]
+      end
     end
 
     after do
