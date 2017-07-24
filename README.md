@@ -7,14 +7,21 @@ Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 Ruby allow us to do the same thing in a few ways then it's hard to check
 how the code is written.
 
+## Syntax for find in AST
+
+The current version cover the following elements:
+
+- `()` to represent a **node** search
+- `{}` is for **any** match
+- `$` is for **capture**
+- `_` is **something** not nil
+- `nil` matches exactly **nil**
+- `...` is a **node** with children
+- `^` is to get the **parent node** of an expression
+- `?` is for **maybe**
+- `\1` to use the first **previous captured** element
+
 The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
-
-To learn more about how AST works, you can install `ruby-parse` and check how is the AST of
-your current code.
-
-`ruby-parse my-file.rb`
-
-It will output the AST representation.
 
 ## Installation
 
@@ -91,12 +98,6 @@ We can match "a node with children" using `...`:
 ```ruby
 Fast.match?(ast, '(lvasgn value ...)') # true
 ```
-
-Lets learn more about this shortcuts:
-
-- `$` is for **capture**
-- `_` is **something**
-- `...` is a **node** with children
 
 You can use `$` to capture a node:
 
