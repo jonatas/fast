@@ -36,38 +36,111 @@ Or install it yourself as:
 
 The idea is search in abstract tree using a simple expression build with an array:
 
-The following code:
+A simple integer in ruby:
 
 ```ruby
-a += 1
+1
 ```
 
-Generates the following AST representation:
+Is represented by:
 
 ```ruby
-ast =
-  s(:op_asgn,
-    s(:lvasgn, :a),
-    :+,
-    s(:int, 1)
-  )
+s(:int, 1)
 ```
 
 Basically `s` represents `Parser::AST::Node` and the node has a `#type` and `#children`.
 
-You can try to search by nodes that is using `:op_asgn` with some children using `...`:
-
 ```ruby
-Fast.match?(ast, [:op_asgn, '...']) # => true
+def s(type, *children)
+  Parser::AST::Node.new(type, children)
+end
 ```
 
-You can also check if the element is not nil with `_`:
+A local variable assignment:
 
 ```ruby
-Fast.match?(ast, [:op_asgn, '_', '_', '_'])) # => true
+value = 42
 ```
 
-You can go deeply with the arrays. Let's suppose we have a hardcore call to
+Can be represented with:
+
+```ruby
+ast = s(:lvasgn, :value, s(:int, 42))
+```
+
+Now, lets find local variable named `value` with an value `42`:
+
+```ruby
+Fast.match?(ast, '(lvasgn value (int 42))') # true
+```
+
+Lets abstract a bit and allow any integer value using `_` as a shortcut:
+
+```ruby
+Fast.match?(ast, '(lvasgn value (int _))') # true
+```
+
+Lets abstract more and allow float or integer:
+
+```ruby
+Fast.match?(ast, '(lvasgn value ({float int} _))') # true
+```
+
+We can match "a node with children" using `...`:
+
+```ruby
+Fast.match?(ast, '(lvasgn value ...)') # true
+```
+
+Lets learn more about this shortcuts:
+
+- `$` is for **capture**
+- `_` is **something**
+- `...` is a **node** with children
+
+You can use `$` to capture a node:
+
+```ruby
+Fast.match?(ast, '(lvasgn value $...)') # => [s(:int, 42)]
+```
+
+Or match any local variable assignment combining both `_` and `...`:
+
+```ruby
+Fast.match?(ast, '(lvasgn _ ...)') # true
+```
+
+You can also use captures in any levels you want:
+
+```ruby
+Fast.match?(ast, '(lvasgn $_ $...)') # [:value, s(:int, 42)]
+```
+
+Keep in mind that `_` means something not nil and `...` means a node with
+children.
+
+Then, if do you get a method declared:
+
+```ruby
+def my_method
+  call_other_method
+end
+```
+It will be represented with the following structure:
+
+```ruby
+ast =
+  s(:def, :my_method,
+    s(:args),
+    s(:send, nil, :call_other_method))
+```
+
+Keep an eye on the node `(args)`.
+
+Then you know you can't use `...` but you can match with `(_)` to match with
+such case.
+
+Let's test a few other examples. You can go deeply with the arrays. Let's suppose we have a hardcore call to
 `a.b.c.d` and the following AST represents it:
 
 ```ruby
@@ -81,7 +154,7 @@ ast =
     :d)
 ```
 
-You can search using sub-arrays in the same way:
+You can search using sub-arrays with pure values or shortcuts:
 
 ```ruby
 Fast.match?(ast, [:send, [:send, '...'], :d]) # => true
@@ -89,11 +162,13 @@ Fast.match?(ast, [:send, [:send, '...'], :c]) # => false
 Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d]) # => true
 ```
 
-It also knows how to parse strings:
+And also work with expressions:
 
 ```ruby
-expression = '(send (send (send (send nil $_) $_) $_) $_)'
-Fast.match?(ast, expression)) # => [:a, :b, :c, :d]
+Fast.match?(
+  ast,
+  '(send (send (send (send nil $_) $_) $_) $_)'
+) # => [:a, :b, :c, :d]
 ```
 
 If something does not work you can debug with a block:
@@ -153,10 +228,10 @@ Fast.replace ast,
 ## Search in files
 
 It will also inject a executable named `fast` and you can use it to search and
-find code by this kind of expression
+find code using the concept:
 
 ```
-$ fast '(:def :match_node? _ )' lib/fast.rb                                                                                                              20:36:21
+$ fast '(def match?)' lib/fast.rb
 ```
 
 - Use `-d` or `--debug` for enable debug mode.

@@ -197,7 +197,7 @@ RSpec.describe Fast do
 
       it 'allow reuse captured symbols' do
         ast = code["def name; person.name end"]
-        expect(Fast.match?(ast,'(def $_ ... (send (send nil _) \1))')).to eq([:name]) 
+        expect(Fast.match?(ast,'(def $_ (_) (send (send nil _) \1))')).to eq([:name])
       end
 
       it 'allow reuse captured nodes' do
@@ -356,7 +356,7 @@ RSpec.describe Fast do
         expect(
           Fast.replace(
             code['def name; person.name end'],
-            '(def $_ ... (send (send nil $_) \1))',
+            '(def $_ (_) (send (send nil $_) \1))',
           -> (node, captures) { 
               replace(node.location.expression, "delegate #{captures[0].inspect}, to: #{captures[1].inspect}") }
           )

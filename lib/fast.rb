@@ -5,7 +5,7 @@ require 'parser/current'
 module Fast
   VERSION = "0.1.0"
   LITERAL = {
-    '...' => -> (node) { node && !node.children.nil? },
+    '...' => -> (node) { node && node.children.any? },
     '_'   => -> (node) { !node.nil? },
     'nil' => nil
   }
@@ -299,10 +299,21 @@ module Fast
       find_captures
     end
 
-    def find_captures(fast=@fast)
+    def has_captures?(fast=@fast)
       case fast
       when Capture
-        return true if fast == @fast && fast.captures.empty?
+        true
+      when Array
+        fast.any?(&method(:has_captures?))
+      when Find
+        has_captures?(fast.token)
+      end
+    end
+
+    def find_captures(fast=@fast)
+      return true if fast == @fast && !has_captures?(fast)
+      case fast
+      when Capture
         fast.captures
       when Array
         fast.flat_map(&method(:find_captures)).compact
