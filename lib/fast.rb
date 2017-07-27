@@ -39,44 +39,44 @@ module Fast
   end
 
   def self.replace(ast, search, replacement)
-    nodes = match?(ast, search)
-    return unless nodes && !nodes.empty?
     buffer = Parser::Source::Buffer.new('replacement')
     buffer.source = ast.loc.expression.source
-    to_replace = nodes.grep(Parser::AST::Node)
-    if to_replace.empty? # when there's no node, use the root
-      to_replace = [ast]
-    end
-    types = to_replace.map(&:type).uniq
-    types.map do |type|
-      Class.new(Parser::Rewriter) do
+    to_replace = search(ast, search)
+    types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
+    Class.new(Parser::Rewriter) do
+      types.map do |type|
         define_method "on_#{type}" do |node|
-          if Fast.match?(node, search)
-            if  replacement.parameters.length == 1
+          if captures = Fast.match?(node, search)
+            if replacement.parameters.length == 1
               instance_exec node, &replacement
             else
-              instance_exec node, nodes, &replacement
+              instance_exec node, captures, &replacement
             end
           end
         end
-      end.new.rewrite(buffer, ast)
-    end
+      end
+    end.new.rewrite(buffer, ast)
+  end
+
+  def self.replace_file(file, search, replacement)
+    ast = ast_from_file(file)
+    replace(ast, search, replacement)
   end
 
   def self.search_file pattern, file
     node = ast_from_file(file)
-    search pattern, node
+    search node, pattern
   end
 
-  def self.search pattern, node
+  def self.search node, pattern
     if (match = Fast.match?(node, pattern))
-      match == true ? node : [match, node]
+      yield node, match if block_given?
+      [node, match]
     else
       if node && node.children.any?
         node.children
           .grep(Parser::AST::Node)
-          .flat_map{|e| search(pattern, e) }
-          .compact.flatten.uniq
+          .flat_map{|e| search(e, pattern) }.compact.uniq.flatten
       end
     end
   end
@@ -133,7 +133,7 @@ module Fast
       when '(' then parse_until_peek(')')
       when '{' then Any.new(parse_until_peek('}'))
       when '$' then Capture.new(parse)
-      when '!' then Not.new(parse)
+      when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
       when '^' then Parent.new(parse)
       when '\\' then FindWithCapture.new(parse)
@@ -143,7 +143,7 @@ module Fast
 
     def parse_until_peek(token)
       list = []
-      list << parse until @tokens.first == token
+      list << parse until @tokens.empty? || @tokens.first == token
       next_token
       list
     end

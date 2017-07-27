@@ -212,6 +212,8 @@ name:
 Fast.match?(ast,'(def $_ ... (send (send nil _) \1))') # => [:name]
 ```
 
+### Fast.replace
+
 And if I want to refactor a code and use `delegate <attribute>, to: <object>`, try with replace:
 
 ```ruby
@@ -226,7 +228,38 @@ Fast.replace ast,
   }
 ```
 
-## Search in files
+### Replacing file
+
+Now let's imagine we have real files like `sample.rb` with the following code:
+
+```ruby
+def good_bye
+  message = ["good", "bye"]
+  puts message.join(' ')
+end
+```
+
+And we decide to remove the `message` variable and put it inline with the `puts`.
+
+Basically, we need to find the local variable assignment, store the value in
+memory. Remove the assignment expression and use the value where the variable
+is being called.
+
+```ruby
+assignment = nil
+Fast.replace_file('sample.rb', '({ lvasgn lvar } message )',
+  -> (node, _) {
+    if node.type == :lvasgn
+      assignment = node.children.last
+      remove(node.location.expression)
+    elsif node.type == :lvar
+      replace(node.location.expression, assignment.location.expression.source)
+    end
+  }
+)
+```
+
+## `fast` in the command line
 
 It will also inject a executable named `fast` and you can use it to search and
 find code using the concept:

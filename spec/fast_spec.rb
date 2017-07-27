@@ -20,10 +20,18 @@ RSpec.describe Fast do
       expect(Fast.expression('...')).to be_a(Fast::Find)
       expect(Fast.expression('$...')).to be_a(Fast::Capture)
       expect(Fast.expression('{}')).to be_a(Fast::Any)
-      expect(Fast.expression('!')).to be_a(Fast::Not)
+
       expect(Fast.expression('?')).to be_a(Fast::Maybe)
       expect(Fast.expression('^')).to be_a(Fast::Parent)
       expect(Fast.expression('\\1')).to be_a(Fast::FindWithCapture)
+    end
+
+    it '`!` isolated should be a find' do
+      expect(Fast.expression('!')).to be_a(Fast::Find) 
+    end
+
+    it '`!` negate expression after it' do
+      expect(Fast.expression('! a')).to be_a(Fast::Not)
     end
 
     it 'allows proc shortcuts' do
@@ -331,14 +339,14 @@ RSpec.describe Fast do
     end
 
     it 'captures const symbol' do
-      result = Fast.search_file('(casgn nil $_ ...)', 'sample.rb')
-      expect(result.first).to eq(:AUTHOR)
-      expect(result.last).to eq(s(:casgn, nil, :AUTHOR, s(:str, "Jônatas Davi Paganini")))
+      node, capture = Fast.search_file('(casgn nil $_ ...)', 'sample.rb')
+      expect(capture).to eq(:AUTHOR)
+      expect(node).to eq(s(:casgn, nil, :AUTHOR, s(:str, "Jônatas Davi Paganini")))
     end
 
     it 'captures const assignment values' do
-      result = Fast.search_file('(casgn nil _ (str $_))', 'sample.rb')
-      expect(result.first).to eq("Jônatas Davi Paganini")
+      _, capture= Fast.search_file('(casgn nil _ (str $_))', 'sample.rb')
+      expect(capture).to eq("Jônatas Davi Paganini")
     end
 
     context 'replace' do
@@ -349,10 +357,10 @@ RSpec.describe Fast do
           '$(lvasgn _ ...)',
            -> (node) { replace(node.location.name, 'variable_renamed') }
           )
-        ).to eq ["variable_renamed = 1"]
+        ).to eq "variable_renamed = 1"
       end
 
-      specify do
+      specify 'refactor to use delegate instead of create a method' do
         expect(
           Fast.replace(
             code['def name; person.name end'],
@@ -360,7 +368,58 @@ RSpec.describe Fast do
           -> (node, captures) { 
               replace(node.location.expression, "delegate #{captures[0].inspect}, to: #{captures[1].inspect}") }
           )
-        ).to eq ["delegate :name, to: :person"]
+        ).to eq "delegate :name, to: :person"
+      end
+
+      specify 'refactor showing how to use any instead of something not empty' do
+        expect(
+          Fast.replace(
+            code['!a.empty?'],
+            '(send (send (send nil $_ ) empty?) !)',
+          -> (node, captures) { replace(node.location.expression, "#{captures[0]}.any?") }
+          )
+        ).to eq "a.any?"
+      end
+
+      specify 'refactor showing that it replaces deeply in the tree' do
+        expect(
+          Fast.replace(
+            code['puts "something" if !a.empty?'],
+            '(send (send (send nil $_ ) empty?) !)',
+            -> (node, captures) { replace(node.location.expression, "#{captures[0]}.any?") }
+          )
+        ).to eq 'puts "something" if a.any?'
+      end
+    end
+
+    describe "replace file" do
+      specify "rename constant" do
+        expect(Fast.replace_file(
+          'sample.rb',
+          '({casgn const} nil AUTHOR )',
+          -> (node, _) {
+            if node.type == :const
+              replace(node.location.expression, "CREATOR")
+            else
+              replace(node.location.name, "CREATOR")
+            end
+          }).lines.grep(/CREATOR/).size).to eq 2
+      end
+
+      specify "inline local variable" do
+        assignment = nil
+        expect(Fast.replace_file(
+          'sample.rb',
+          '({lvar lvasgn } message )',
+          -> (node, _) {
+            if node.type == :lvasgn
+              assignment = node.children.last
+              remove(node.location.expression)
+            else
+              replace(node.location.expression, assignment.location.expression.source)
+            end
+          }).lines.map(&:chomp).map(&:strip))
+            .to include(%|puts [AUTHOR, "wants to say", welcome_message].join(' ')|)
       end
     end
 
