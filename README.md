@@ -155,12 +155,20 @@ ast =
     :d)
 ```
 
-You can search using sub-arrays with pure values or shortcuts:
+You can search using sub-arrays with **pure values**, or **shortcuts** or
+**procs**:
 
 ```ruby
 Fast.match?(ast, [:send, [:send, '...'], :d]) # => true
 Fast.match?(ast, [:send, [:send, '...'], :c]) # => false
 Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d]) # => true
+```
+
+Shortcuts like `...` and `_` are just literals for procs. Then you can use
+procs directly too:
+
+```ruby
+Fast.match?(ast, [:send, [ -> (node) { node.type == :send }, [:send, '...'], :c], :d]) # => true
 ```
 
 And also work with expressions:
