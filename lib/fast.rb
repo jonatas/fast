@@ -71,7 +71,7 @@ module Fast
   def self.search node, pattern
     if (match = Fast.match?(node, pattern))
       yield node, match if block_given?
-      [node, match]
+      match != true ? [node, match] : [node]
     else
       if node && node.children.any?
         node.children
