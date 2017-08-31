@@ -390,6 +390,16 @@ RSpec.describe Fast do
           )
         ).to eq 'puts "something" if a.any?'
       end
+
+      specify "refactor to use shortcut instead of blocks" do
+        expect(Fast.replace(
+          code['(1..100).map { |i| i.to_s }'],
+           '(block ... (args (arg $_) ) (send (lvar \1) $_))',
+            -> (node, captures) {
+              replacement = node.children[0].location.expression.source + "(&:#{captures.last})"
+              replace(node.location.expression, replacement) }
+        )).to eq('(1..100).map(&:to_s)')
+      end
     end
 
     describe "replace file" do

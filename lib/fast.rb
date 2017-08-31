@@ -44,6 +44,9 @@ module Fast
     to_replace = search(ast, search)
     types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
     Class.new(Parser::Rewriter) do
+      define_method "buffer" do
+        buffer
+      end
       types.map do |type|
         define_method "on_#{type}" do |node|
           if captures = Fast.match?(node, search)
