@@ -19,11 +19,13 @@ module Fast
     |
     \.{3}                 # a node with children: ...
     |
-    \^                   # node has children with
+    \[|\]                 # square brackets `[` and `]` for all
+    |
+    \^                    # node has children with
     |
     \?                    # maybe expression
     |
-    [\dA-z_]+[\\!\?]?     # method names or numbers
+    [\d\w_]+[\\!\?]?      # method names or numbers
     |
     \(|\)                 # parens `(` and `)` for tuples
     |
@@ -106,6 +108,7 @@ module Fast
         match = original_match_recursive(a, b)
         debug(a, b, match)
         match
+
       end
       def debug a, b, match
         puts "#{b} == #{a} # => #{match}"
@@ -135,6 +138,7 @@ module Fast
       case (token = next_token)
       when '(' then parse_until_peek(')')
       when '{' then Any.new(parse_until_peek('}'))
+      when '[' then All.new(parse_until_peek(']'))
       when '$' then Capture.new(parse)
       when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
@@ -253,6 +257,16 @@ module Fast
 
     def to_s
       "any[#{token}]"
+    end
+  end
+
+  class All < Find
+    def match?(node)
+      token.all?{|expression|expression.match?(node) }
+    end
+
+    def to_s
+      "all[#{token}]"
     end
   end
 

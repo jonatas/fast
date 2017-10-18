@@ -12,8 +12,9 @@ how the code is written.
 The current version cover the following elements:
 
 - `()` to represent a **node** search
-- `{}` is for **any** match
-- `$` is for **capture**
+- `{}` is for **any** matches like **union** conditions with **or** operator
+- `[]` is for **all** matches like **intersect** conditions with **and** operator
+- `$` is for **capture** current expression
 - `_` is **something** not nil
 - `nil` matches exactly **nil**
 - `...` is a **node** with children
@@ -81,7 +82,7 @@ Now, lets find local variable named `value` with an value `42`:
 Fast.match?(ast, '(lvasgn value (int 42))') # true
 ```
 
-Lets abstract a bit and allow any integer value using `_` as a shortcut:
+Lets abstract a bit and allow some integer value using `_` as a shortcut:
 
 ```ruby
 Fast.match?(ast, '(lvasgn value (int _))') # true
@@ -92,6 +93,14 @@ Lets abstract more and allow float or integer:
 ```ruby
 Fast.match?(ast, '(lvasgn value ({float int} _))') # true
 ```
+
+Or combine multiple assertions using `[]` to join conditions:
+
+```ruby
+Fast.match?(ast, '(lvasgn value ([!str !hash !array] _))') # true
+```
+
+Matches all local variables not string **and** not hash **and** not array.
 
 We can match "a node with children" using `...`:
 
@@ -105,7 +114,7 @@ You can use `$` to capture a node:
 Fast.match?(ast, '(lvasgn value $...)') # => [s(:int, 42)]
 ```
 
-Or match any local variable assignment combining both `_` and `...`:
+Or match whatever local variable assignment combining both `_` and `...`:
 
 ```ruby
 Fast.match?(ast, '(lvasgn _ ...)') # true

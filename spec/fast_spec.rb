@@ -6,6 +6,7 @@ RSpec.describe Fast do
   let(:nf) { -> (arg) { Fast::Not.new(arg) } }
   let(:c) { -> (arg) { Fast::Capture.new(arg) } }
   let(:any) { -> (arg) { Fast::Any.new(arg) } }
+  let(:all) { -> (arg) { Fast::All.new(arg) } }
   let(:maybe) { -> (arg) { Fast::Maybe.new(arg) } }
   let(:parent) { -> (arg) { Fast::Parent.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
@@ -20,6 +21,7 @@ RSpec.describe Fast do
       expect(Fast.expression('...')).to be_a(Fast::Find)
       expect(Fast.expression('$...')).to be_a(Fast::Capture)
       expect(Fast.expression('{}')).to be_a(Fast::Any)
+      expect(Fast.expression('[]')).to be_a(Fast::All)
 
       expect(Fast.expression('?')).to be_a(Fast::Maybe)
       expect(Fast.expression('^')).to be_a(Fast::Parent)
@@ -75,6 +77,13 @@ RSpec.describe Fast do
               ]
             ]
           ])
+      end
+    end
+    context 'All sequence' do
+      specify do
+        puts(Fast.expression('[!str !sym]'))
+          puts(all[[nf[f['str']], nf[f['sym']]]])
+        expect(Fast.expression('[!str !sym]')).to eq(all[[nf[f['str']], nf[f['sym']]]])
       end
     end
 
@@ -174,6 +183,15 @@ RSpec.describe Fast do
 
       it 'for symbols or expressions' do
         expect(Fast.match?(s(:send, s(:float, 1.2), :+, s(:int, 1)), '(send ({int float} _) :+ (int _))')).to be_truthy
+      end
+    end
+
+    context '`all`' do
+      it 'allows join expressions with `and`' do
+        Fast.debug do
+          expect(Fast.match?(s(:int, 3), '([!str !hash] _)')).to be_truthy
+          expect(Fast.match?(s(:int, 3), '(int [!1 !2])')).to be_truthy
+        end
       end
     end
 
