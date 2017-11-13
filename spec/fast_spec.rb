@@ -372,7 +372,7 @@ RSpec.describe Fast do
         expect(
           Fast.replace(
           code['a = 1'],
-          '$(lvasgn _ ...)',
+          '(lvasgn _ ...)',
            -> (node) { replace(node.location.name, 'variable_renamed') }
           )
         ).to eq "variable_renamed = 1"
@@ -384,7 +384,8 @@ RSpec.describe Fast do
             code['def name; person.name end'],
             '(def $_ (_) (send (send nil $_) \1))',
           -> (node, captures) { 
-              replace(node.location.expression, "delegate #{captures[0].inspect}, to: #{captures[1].inspect}") }
+              new_source = "delegate :#{captures[0]}, to: :#{captures[1]}"
+              replace(node.location.expression, new_source) }
           )
         ).to eq "delegate :name, to: :person"
       end
