@@ -410,6 +410,21 @@ RSpec.describe Fast do
         ).to eq 'puts "something" if a.any?'
       end
 
+      specify 'use `match_index` to filter an specific occurence' do
+        expect(
+        
+          Fast.replace(
+            code['create(:a, :b, :c);create(:b, :c, :d)'],
+            '(send nil :create)',
+            -> (node, captures) {
+              if match_index == 2
+                replace(node.location.selector, "build_stubbed")
+              end
+            }
+          )
+        ).to eq('create(:a, :b, :c);build_stubbed(:b, :c, :d)')
+      end
+
       specify "refactor to use shortcut instead of blocks" do
         expect(Fast.replace(
           code['(1..100).map { |i| i.to_s }'],
