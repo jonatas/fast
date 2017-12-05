@@ -6,23 +6,23 @@ require 'fast'
 # successfully passed the specs
 #
 # $ ruby experimental_replacement.rb spec/*/*_spec.rb
-def experimental_spec(file)
+def experimental_spec(file, name)
   parts = file.split('/')
   dir = parts[0..-2]
-  filename = "experiment_#{parts[-1]}"
+  filename = "experiment_#{name}_#{parts[-1]}"
   File.join(*dir, filename)
 end
 
-def experiment(file, search, replacement)
+def experiment(file, name, search, replacement)
   ast = Fast.ast_from_file(file)
 
   results = Fast.search(ast, search)
   unless results.empty?
     new_content = Fast.replace_file(file, search, replacement)
-    new_spec = experimental_spec(file)
+    new_spec = experimental_spec(file, name)
     return if File.exist?(new_spec)
     File.open(new_spec, 'w+') { |f| f.puts new_content }
-    if system("rspec #{new_spec}")
+    if system("bin/spring rspec --fail-fast #{new_spec}")
       system "mv #{new_spec} #{file}"
       puts "✅ #{file}"
     else
@@ -36,5 +36,9 @@ rescue
 end
 
 ARGV.each do |file|
-  experiment(file, '(send nil create)', ->(node) { replace(node.location.selector, 'build_stubbed') })
+  [
+    #Thread.new { experiment(file, 'build_stubbed', '(send nil create)', ->(node) { replace(node.location.selector, 'build_stubbed') }) },
+    experiment(file, 'seed', '(send nil create)', ->(node) { replace(node.location.selector, 'seed') })
+
+  ] #.each(&:join)
 end

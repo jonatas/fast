@@ -368,4 +368,64 @@ module Fast
       end
     end
   end
+  
+  class Experiment
+    attr_reader :ok_experiments, :fail_experiments
+    def initialize(file)
+      @file = file
+      @ok_experiments = []
+      @fail_experiments = []
+    end
+    def experimental_filename(occurrence)
+      parts = @file.split('/')
+      dir = parts[0..-2]
+      filename = "experiment_#{occurrence}_#{parts[-1]}"
+      File.join(*dir, filename)
+    end
+
+    def ok(occurrence)
+      @ok_experiments << occurrence
+      if occurrence.is_a?(Array)
+        occurrence.each do |element|
+          @ok_experiments.delete(element)
+        end
+      end
+    end
+
+    def fail(occurrence)
+      @fail_experiments << occurrence
+    end
+
+    def partial_replace(expression, replacement, index=nil)
+      this = self
+
+      new_content =  Fast.replace_file @file, expression, -> (node,*captures) do
+        if index.nil?
+          this.partial_replace(expression, replacement, match_index)
+        elsif match_index == index 
+          instance_exec(node, *captures, &replacement)
+        end
+        if new_content
+          write_experiment_file(index, new_content)
+        end
+      end
+    end
+
+    def write_experiment_file(index, new_content)
+      filename = experimental_filename(index)
+      File.open(filename, 'w+') {|f|f.puts new_content}
+      filename
+    end
+
+    def suggest_experiment_joins
+      @ok_experiments.combination(2).to_a.map{|e|e.flatten.uniq.sort}.uniq - @fail_experiments - @ok_experiments
+    end
+
+    def run(expression, replacement)
+      partial_replace(expression, replacement) do |experiment_file|
+        # run spec
+        # report ok or fail
+      end
+    end
+  end
 end
