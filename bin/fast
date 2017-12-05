@@ -9,10 +9,13 @@ arguments = ARGV
 pattern = arguments.shift
 show_ast = arguments.delete("--ast")
 debug = arguments.delete("--debug") || arguments.delete("-d")
-files = arguments || Dir['**/*.rb']
-directories =  arguments.select{|a|File.directory?(a)}
+files = arguments || '.'
+directories =  arguments.select(&File.method(:directory?))
+
 if directories.any?
-  files = directories.flat_map{|dir|Dir["#{dir}/*.rb"]}
+  files -= directories
+  files |= directories.flat_map{|dir|Dir["#{dir}/**/*.rb"]}
+  files.uniq!
 end
 
 
