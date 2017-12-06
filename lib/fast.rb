@@ -127,6 +127,16 @@ module Fast
     result
   end
 
+  def self.ruby_files_from(files)
+    directories = files.select(&File.method(:directory?))
+
+    if directories.any?
+      files -= directories
+      files |= directories.flat_map{|dir|Dir["#{dir}/**/*.rb"]}
+      files.uniq!
+    end
+    files
+  end
 
   class ExpressionParser
     def initialize(expression)

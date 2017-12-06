@@ -9,15 +9,7 @@ arguments = ARGV
 pattern = arguments.shift
 show_ast = arguments.delete("--ast")
 debug = arguments.delete("--debug") || arguments.delete("-d")
-files = arguments || '.'
-directories =  arguments.select(&File.method(:directory?))
-
-if directories.any?
-  files -= directories
-  files |= directories.flat_map{|dir|Dir["#{dir}/**/*.rb"]}
-  files.uniq!
-end
-
+files = Fast.ruby_files_from(arguments || '.')
 
 def line_for(result)
   if result.is_a?(Parser::AST::Node)
