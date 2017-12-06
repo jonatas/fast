@@ -187,7 +187,9 @@ module Fast
         type = node.respond_to?(:type) ? node.type : node
         type == expression
       elsif expression.respond_to?(:shift)
-        match_recursive(node, expression.shift)
+        expression.each_with_index.all? do |exp, i|
+          match_recursive(i == 0 ? node : node.children[i-1], exp)
+        end
       else
         node == expression
       end

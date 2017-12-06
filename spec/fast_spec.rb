@@ -138,9 +138,7 @@ RSpec.describe Fast do
       expect(
         Fast.match?(ast, [:op_asgn, '...']) &&
         Fast.match?(ast, [:op_asgn, '...', '_', '...']) &&
-        Fast.match?(ast, [[:op_asgn, '...']]) &&
-        Fast.match?(ast, [:op_asgn, '_', '_', '_']) &&
-        Fast.match?(ast, ['_', '_', :+, '_'])
+        Fast.match?(ast, [:op_asgn, '_', '_', '_'])
       ).to be_truthy
       expect(Fast).not_to be_match(ast, ['_', '_', :-, '_'])
     end
@@ -345,13 +343,13 @@ RSpec.describe Fast do
     end
 
     specify do
-      result = Fast.search_file('$(ivar _ ...)', 'sample.rb')
+      result = Fast.search_file('$(ivar _)', 'sample.rb')
       instance_variable_names = result.map(&:children).map(&:first)
       expect(instance_variable_names).to eq(%i[@lang @name])
     end
 
     specify do
-      result = Fast.search_file('$(lvar _ ...)', 'sample.rb')
+      result = Fast.search_file('$(lvar _)', 'sample.rb')
       local_variable_names = result.map(&:children).map(&:first)
       expect(local_variable_names).to eq(%i[name language welcome_message message])
     end
