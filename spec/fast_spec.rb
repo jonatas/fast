@@ -16,7 +16,7 @@ RSpec.describe Fast do
     Parser::AST::Node.new(type, children)
   end
 
-  context '.expression' do
+  describe '.expression' do
     it 'from simple string' do
       expect(Fast.expression('...')).to be_a(Fast::Find)
       expect(Fast.expression('$...')).to be_a(Fast::Capture)
@@ -55,13 +55,9 @@ RSpec.describe Fast do
       expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f['send'], [f['send'], [f['send'], f['nil'], f['a']], f['b']], f['c']])
     end
 
-    context 'Any sequence' do
-      specify do
-        expect(
-          Fast.expression(
-            '(send $({int float} _) + $(int _))'
-          )
-        ).to eq(
+    describe '`{}`' do
+      it "works as `or` allowing to match any internal expression" do
+        expect( Fast.expression('(send $({int float} _) + $(int _))')).to eq(
           [
             f['send'],
             c[
@@ -79,80 +75,99 @@ RSpec.describe Fast do
           ])
       end
     end
-    context 'All sequence' do
-      specify do
+
+    describe '`[]`' do
+      it "works as `and` allowing to match all internal expression" do
         puts(Fast.expression('[!str !sym]'))
           puts(all[[nf[f['str']], nf[f['sym']]]])
         expect(Fast.expression('[!str !sym]')).to eq(all[[nf[f['str']], nf[f['sym']]]])
       end
     end
 
-    context 'Not negates with !' do
-      specify do
+    describe '`!`' do
+      it 'negates inverting the logic' do
         expect(Fast.expression('!str')).to eq(nf[f['str']])
+      end
+      it 'negates nested expressions' do
         expect(Fast.expression('!{str sym}')).to eq(nf[any[[f['str'],f['sym']]]])
+      end
+      it 'negates entire nodes' do
         expect(Fast.expression('!(int _)')).to eq(nf[[f['int'],f['_']]])
-        expect(Fast.expression('{_ !_}')).to eq(any[[f['_'],nf[f['_']]]])
       end
     end
 
-    context 'Maybe allow partial existence with ?' do
-      specify do
+    describe '`?`' do
+      it 'allow partial existence' do
         expect(Fast.expression('?str')).to eq(maybe[f['str']])
+      end
+
+      it 'allow maybe not combined with `!`' do
         expect(Fast.expression('?!str')).to eq(maybe[nf[f['str']]])
+      end
+
+      it 'allow maybe combined with or' do
         expect(Fast.expression('?{str sym}')).to eq(maybe[any[[f['str'], f['sym']]]])
       end
     end
 
-    context 'capture with $' do
-      it 'expressions deeply' do
-        expect(Fast.expression('(send (send nil a) b)')).to eq([f['send'], [f['send'], f['nil'], f['a']], f['b']])
-        expect(Fast.expression('(send (send (send nil a) b) c)')).to eq([f['send'], [f['send'], [f['send'], f['nil'], f['a']], f['b']], f['c']])
+    describe '`$`' do
+      it 'captures internal references' do
+        expect(Fast.expression('(send (send nil $a) b)')).to eq([f['send'], [f['send'], f['nil'], c[f['a']]], f['b']])
       end
 
-      it 'multiple levels' do
-        expect(Fast.expression('(send (send nil $a) b)')).to eq([f['send'], [f['send'], f['nil'], c[f['a']]], f['b']])
+      it 'captures internal nodes' do
         expect(Fast.expression('(send $(send nil a) b)')).to eq([f['send'], c[[f['send'], f['nil'], f['a']]], f['b']])
       end
     end
   end
 
   describe '.match?' do
-    it 'matches AST code with a pure array' do
-      expect(Fast.match?(s(:int, 1), [:int, 1])).to be_truthy
-      expect(Fast.match?(s(:send, nil, :method), [:send, nil, :method])).to be_truthy
-      expect(Fast.match?(s(:send, s(:send, nil, :object), :method), [:send, [:send, nil, :object], :method])).to be_truthy
+    context 'with pure array expression' do
+      it 'matches AST code with a pure array' do
+        expect(Fast).to be_match(s(:int, 1), [:int, 1])
+      end
+
+      it 'matches deeply with sub arrays' do
+        expect(Fast).to be_match(s(:send, s(:send, nil, :object), :method), [:send, [:send, nil, :object], :method])
+      end
+
+      context 'with complex AST' do
+        let(:ast) { code['a += 1'] }
+        it 'matches ending expression soon' do
+          expect(Fast).to be_match(ast, [:op_asgn, '...'])
+        end
+
+        it 'matches going deep in the details' do
+          expect(Fast).to be_match(ast, [:op_asgn, '...', '_'])
+        end
+
+        it 'matches going deeply with multiple skips' do
+          expect(Fast).to be_match(ast, [:op_asgn, '...', '_', '...'])
+        end
+      end
     end
 
-    it 'works with `Fast.expressions`' do
-      expect(Fast.match?(s(:int, 1), '(...)')).to be_truthy
-      expect(Fast.match?(s(:int, 1), '(_ _)')).to be_truthy
+    context 'with `Fast.expressions`' do
+      it { expect(Fast).to be_match(s(:int, 1), '(...)') }
+      it { expect(Fast).to be_match(s(:int, 1), '(_ _)') }
     end
 
-    it 'matches ast code literal' do
-      expect(Fast.match?(s(:int, 1), [:int, 1])).to be_truthy
-    end
+    context 'when mixing procs inside expressions' do
+      let(:expression) do
+        ['_', '_', :+, -> (node) { [:int, :float].include?(node.type)}]
+      end
 
-    it 'matches ast deeply ' do
-      ast = s(:op_asgn, s(:lvasgn, :a), :+, s(:int, 1))
-      expect(
-        Fast.match?(ast, [:op_asgn, '...']) &&
-        Fast.match?(ast, [:op_asgn, '...', '_', '...']) &&
-        Fast.match?(ast, [:op_asgn, '_', '_', '_'])
-      ).to be_truthy
-      expect(Fast).not_to be_match(ast, ['_', '_', :-, '_'])
-    end
+      it 'matches int' do
+        expect(Fast).to be_match(code['a += 1'], expression)
+      end
 
-    it 'can mix custom procs' do
-      ast_int = s(:op_asgn, s(:lvasgn, :a), :+, s(:int, 1))
-      ast_float = s(:op_asgn, s(:lvasgn, :a), :+, s(:float, 1.2))
-      ast_str = s(:op_asgn, s(:lvasgn, :a), :+, s(:str, ""))
-      int_or_float = -> (node) { [:int, :float].include?(node.type)} 
+      it 'matches float' do
+        expect(Fast).to be_match(code['a += 1.2'], expression)
+      end
 
-      expression = ['_', '_', :+, int_or_float ]
-      expect(Fast.match?(ast_str, expression)).to be_falsey
-      expect(Fast.match?(ast_int, expression)).to be_truthy
-      expect(Fast.match?(ast_float, expression)).to be_truthy
+      it 'does not match string' do
+        expect(Fast).not_to be_match(code['a += ""'], expression)
+      end
     end
 
     it 'ignores empty spaces' do
@@ -164,45 +179,45 @@ RSpec.describe Fast do
       ).to be_truthy
     end
 
-    context '`any`' do
-      it 'allows us to see if any condition matches {}' do
-        expect(Fast.match?(s(:float, 1.2), '{int float} _')).to be_truthy
-        expect(Fast.match?(s(:int, 1), '{int float} _')).to be_truthy
-        expect(Fast.match?(s(:str, "1.2"), '{int float} _')).to be_falsy
+    describe '`{}`' do
+      it 'allows build `or` operator' do
+        expect(Fast).to be_match(code['1.2'], '{int float} _')
+        expect(Fast).to be_match(code['1'], '{int float} _')
+        expect(Fast).not_to be_match(code['""'], '{int float} _')
       end
 
       it 'works in nested levels' do
-        expect(Fast.match?(s(:send, s(:float, 1.2), :+, s(:int, 1)), '(send ({int float} _) :+ (int _))')).to be_truthy
-        expect(Fast.match?(s(:send, s(:int, 2), :+, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_truthy
-        expect(Fast.match?(s(:send, s(:int, 2), :+, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_truthy
-        expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), '(send ({int float} _) + (int _))')).to be_falsy
-        expect(Fast.match?(s(:send, s(:int, 2), :-, s(:int, 5)), '(send ({int float} _) {+-} (int _))')).to be_truthy
+        expect(Fast).to be_match(code['1.2 + 1'], '(send ({int float} _) :+ (int _))')
+        expect(Fast).to be_match(code['2 + 5'], '(send ({int float} _) + (int _))')
       end
 
-      it 'for symbols or expressions' do
-        expect(Fast.match?(s(:send, s(:float, 1.2), :+, s(:int, 1)), '(send ({int float} _) :+ (int _))')).to be_truthy
+      it 'does not match if the correct operator is missing' do
+        expect(Fast).not_to be_match(code['2 - 5'], '(send ({int float} _) + (int _))')
       end
-    end
 
-    context '`all`' do
-      it 'allows join expressions with `and`' do
-        Fast.debug do
-          expect(Fast.match?(s(:int, 3), '([!str !hash] _)')).to be_truthy
-          expect(Fast.match?(s(:int, 3), '(int [!1 !2])')).to be_truthy
-        end
+      it 'matches with the correct operator' do
+        expect(Fast).to be_match(code['2 - 5'], '(send ({int float} _) {+-} (int _))')
       end
     end
 
-    context '`not` negates with !' do
-      specify do
-        expect(Fast.match?(code["1.0"], '!(int _)')).to be_truthy
-        expect(Fast.match?(code["1.0"], '!(float _)')).to be_falsy
-        expect(Fast.match?(code[":sym"], '!({str int float} _)')).to be_truthy
-        expect(Fast.match?(code["1"], '!({str int float} _)')).to be_falsy
+    describe '`[]`' do
+      it 'join expressions with `and`' do
+        expect(Fast).to be_match(code['3'], '([!str !hash] _)')
+      end
+
+      it 'allow join in any level' do
+        expect(Fast).to be_match(code['3'], '(int [!1 !2])')
       end
     end
 
-    context '`maybe` do partial search with `?`' do
+    describe '`not` negates with !' do
+      it { expect(Fast).to be_match(code["1.0"], '!(int _)') }
+      it { expect(Fast).not_to be_match(code["1"], '!(int _)') }
+      it { expect(Fast).to be_match(code[":symbol"], '!({str int float} _)') }
+      it { expect(Fast).not_to be_match(code["1"], '!({str int float} _)') }
+    end
+
+    describe '`maybe` do partial search with `?`' do
       specify do
         expect(Fast.match?(code["a.b"], '(send (send nil _) _)')).to be_truthy
         expect(Fast.match?(code["a.b"], '(send (send nil a) b)')).to be_truthy
@@ -212,7 +227,7 @@ RSpec.describe Fast do
       end
     end
 
-    context 'reuse elements captured previously in the search with `\\<capture-index>`' do
+    describe 'reuse elements captured previously in the search with `\\<capture-index>`' do
       it 'any level' do
         expect(Fast.match?(s(:send, nil, :a), '(send nil $_)')).to eq([:a])
         expect(Fast.match?(s(:int, 1),        '($(int _))'   )).to eq([s(:int, 1)])
@@ -233,7 +248,7 @@ RSpec.describe Fast do
       end
     end
 
-    context 'capture with `$`' do
+    describe 'capture with `$`' do
       it 'any level' do
         expect(Fast.match?(s(:send, nil, :a), '(send nil $_)')).to eq([:a])
         expect(Fast.match?(s(:int, 1),        '($(int _))'   )).to eq([s(:int, 1)])
@@ -273,7 +288,7 @@ RSpec.describe Fast do
       end
     end
 
-    context '`Parent` can follow expression in children with `^`' do
+    describe '`Parent` can follow expression in children with `^`' do
       it "ignores type and search in children using expression following" do
         expect(Fast.match?(code["a = 1"], '^(int _)')).to be_truthy
       end
@@ -285,7 +300,7 @@ RSpec.describe Fast do
     end
   end
 
-  context 'search in files' do
+  describe 'search in files' do
     before do
       File.open('sample.rb', 'w+') do |file|
         file.puts <<~RUBY
@@ -365,7 +380,7 @@ RSpec.describe Fast do
       expect(capture).to eq("Jônatas Davi Paganini")
     end
 
-    context 'replace' do
+    describe 'replace' do
       specify do
         expect(
           Fast.replace(
@@ -470,7 +485,7 @@ RSpec.describe Fast do
     end
   end
 
-  context '.debug' do
+  describe '.debug' do
     specify do
       expect do
         Fast.debug do
