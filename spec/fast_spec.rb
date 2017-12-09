@@ -470,7 +470,7 @@ RSpec.describe Fast do
     end
   end
 
-  context 'debug' do
+  context '.debug' do
     specify do
       expect do
         Fast.debug do
@@ -483,4 +483,28 @@ RSpec.describe Fast do
     end
   end
 
+  describe '.capture' do
+    it 'captures single element' do
+      expect(Fast.capture(code['a = 1'], '(lvasgn _ (int $_))')).to eq(1)
+    end
+
+    it 'captures array elements' do
+      expect(Fast.capture(code['a = 1'], '(lvasgn $_ (int $_))')).to eq([:a, 1])
+    end
+
+    it 'captures nodes' do
+      expect(Fast.capture(code['a = 1'], '(lvasgn _ $(int _))')).to eq(code['1'])
+    end
+
+    it 'captures multiple nodes' do
+      expect(Fast.capture(code['a = 1'], '$(lvasgn _ (int _))')).to eq(code['a = 1'])
+    end
+  end
+
+  describe '.ruby_files_from' do
+    it 'captures ruby files from directory' do
+      expect(Fast.ruby_files_from('lib')).to eq(['lib/fast.rb'])
+      expect(Fast.ruby_files_from('spec')).to eq(['spec/spec_helper.rb', 'spec/fast_spec.rb'])
+    end
+  end
 end

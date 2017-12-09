@@ -89,6 +89,20 @@ module Fast
     end
   end
 
+  def self.capture node, pattern
+    res =
+      if (match = Fast.match?(node, pattern))
+        match == true ? node : match
+      else
+        if node && node.children.any?
+          node.children
+            .grep(Parser::AST::Node)
+            .flat_map{|child| capture(child, pattern) }.compact.flatten
+        end
+      end
+    res&.size == 1 ? res[0] : res
+  end
+
   def self.ast_from_file(file)
     Parser::CurrentRuby.parse(IO.read(file))
   end
@@ -127,7 +141,7 @@ module Fast
     result
   end
 
-  def self.ruby_files_from(files)
+  def self.ruby_files_from(*files)
     directories = files.select(&File.method(:directory?))
 
     if directories.any?

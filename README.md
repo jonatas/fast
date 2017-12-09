@@ -229,6 +229,28 @@ name:
 Fast.match?(ast,'(def $_ ... (send (send nil _) \1))') # => [:name]
 ```
 
+### Fast.search
+
+Search allows you to go deeply in the AST, collecting nodes that matches with
+the expression. It also returns captures if they exist.
+
+```ruby
+Fast.search(code('a = 1'), '(int _)') # => s(:int, 1)
+```
+
+If you use captures, it returns the node and the captures respectively:
+
+```ruby
+Fast.search(code('a = 1'), '(int $_)') # => [s(:int, 1), 1]
+```
+
+### Fast.capture
+
+To pick just the captures and ignore the nodes, use `Fast.capture`:
+
+```ruby
+Fast.capture(code('a = 1'), '(int $_)') # => 1
+```
 ### Fast.replace
 
 And if I want to refactor a code and use `delegate <attribute>, to: <object>`, try with replace:
@@ -275,6 +297,39 @@ Fast.replace_file('sample.rb', '({ lvasgn lvar } message )',
   }
 )
 ```
+
+## Other useful functions
+
+To manipulate ruby files, some times you'll need some extra tasks.
+
+### Fast.ast_from_File(file)
+
+This method parses the code and load into a AST representation.
+
+```ruby
+Fast.ast_from_file('sample.rb')
+```
+
+### Fast.search_file
+
+You can use `search_file` and pass the path for search for expressions inside
+files.
+
+```ruby
+Fast.search_file('file.rb', expression)
+```
+
+It's simple combination of `Fast.ast_from_file` with `Fast.search`.
+
+### Fast.ruby_files_from(arguments)
+
+You'll be probably looking for multiple ruby files, then this method fetches
+all internal `.rb` files 
+
+```ruby
+Fast.ruby_files_from(['lib']) # => ["lib/fast.rb"]
+```
+
 
 ## `fast` in the command line
 
