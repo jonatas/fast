@@ -518,8 +518,8 @@ RSpec.describe Fast do
 
   describe '.ruby_files_from' do
     it 'captures ruby files from directory' do
-      expect(Fast.ruby_files_from('lib')).to eq(['lib/fast.rb'])
-      expect(Fast.ruby_files_from('spec')).to eq(['spec/spec_helper.rb', 'spec/fast_spec.rb'])
+      expect(Fast.ruby_files_from('lib')).to match_array(['lib/fast.rb'])
+      expect(Fast.ruby_files_from('spec')).to match_array(['spec/spec_helper.rb', 'spec/fast_spec.rb'])
     end
   end
 end
