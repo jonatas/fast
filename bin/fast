@@ -9,7 +9,7 @@ arguments = ARGV
 pattern = arguments.shift
 show_ast = arguments.delete("--ast")
 debug = arguments.delete("--debug") || arguments.delete("-d")
-files = Fast.ruby_files_from(arguments || '.')
+files = Fast.ruby_files_from(*arguments || '.')
 
 def line_for(result)
   if result.is_a?(Parser::AST::Node)
