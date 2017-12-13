@@ -371,15 +371,17 @@ module Fast
   
   class Experiment
     attr_reader :ok_experiments, :fail_experiments
-    def initialize(file)
+    def initialize(file, search)
       @file = file
+      @ast = Fast.ast_from_file(file)
+      @search = search
       @ok_experiments = []
       @fail_experiments = []
     end
-    def experimental_filename(occurrence)
+    def experimental_filename(combination)
       parts = @file.split('/')
       dir = parts[0..-2]
-      filename = "experiment_#{occurrence}_#{parts[-1]}"
+      filename = "experiment_#{[*combination].join('_')}_#{parts[-1]}"
       File.join(*dir, filename)
     end
 
@@ -396,17 +398,21 @@ module Fast
       @fail_experiments << occurrence
     end
 
-    def partial_replace(expression, replacement, index=nil)
+    def search_cases
+      Fast.search(@ast, @search) || []
+    end
+
+    def partial_replace(replacement, *indices)
       this = self
 
-      new_content =  Fast.replace_file @file, expression, -> (node,*captures) do
-        if index.nil?
+      new_content =  Fast.replace_file @file, @search, -> (node,*captures) do
+        if indices.nil? || indices.empty?
           this.partial_replace(expression, replacement, match_index)
-        elsif match_index == index 
+        elsif indices.include?(match_index)
           instance_exec(node, *captures, &replacement)
         end
         if new_content
-          write_experiment_file(index, new_content)
+          write_experiment_file(indices, new_content)
         end
       end
     end
@@ -417,8 +423,25 @@ module Fast
       filename
     end
 
-    def suggest_experiment_joins
-      @ok_experiments.combination(2).to_a.map{|e|e.flatten.uniq.sort}.uniq - @fail_experiments - @ok_experiments
+    def suggest_combinations
+      if @ok_experiments.empty?
+        search_cases.size.times.map(&:next)
+      else
+        @ok_experiments
+          .combination(2)
+          .map{|e|e.flatten.uniq.sort}
+          .uniq - @fail_experiments - @ok_experiments
+      end
+    end
+
+    def done!
+      count_executed_combinations = @fail_experiments.size + @ok_experiments.size
+      puts "Done with #{@file} after #{count_executed_combinations}"
+      if perfect_combination = @ok_experiments.last
+        puts "mv #{experimental_filename(perfect_combination)} #{@file}"
+        `mv #{experimental_filename(perfect_combination)} #{@file}`
+      end
+
     end
 
     def run(expression, replacement)

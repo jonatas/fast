@@ -535,7 +535,7 @@ RSpec.describe Fast do
       tempfile.path
     end
 
-    subject { Fast::Experiment.new(spec) }
+    subject { Fast::Experiment.new(spec, '(send nil :create)' ) }
 
     describe "#filename" do
       it { expect(subject.experimental_filename(1)).to include('experiment_1') }
@@ -544,18 +544,18 @@ RSpec.describe Fast do
     describe "#replace" do
       let(:replacement) { -> (node, _) { replace(node.loc.selector, 'build_stubbed') } }
       specify do
-        expect(subject.partial_replace('(send nil :create)', replacement, 1)).to eq(<<~RUBY.chomp)
+        expect(subject.partial_replace(replacement, 1)).to eq(<<~RUBY.chomp)
           let(:user) { build_stubbed(:user) }
           let(:address) { create(:address) }
         RUBY
-        expect(subject.partial_replace('(send nil :create)', replacement, 2)).to eq(<<~RUBY.chomp)
+        expect(subject.partial_replace(replacement, 2)).to eq(<<~RUBY.chomp)
           let(:user) { create(:user) }
           let(:address) { build_stubbed(:address) }
         RUBY
       end
     end
 
-    describe "#suggest_experiment_joins" do
+    describe "#suggest_combinations" do
       before do
         subject.ok(1)
         subject.fail(2)
@@ -566,30 +566,30 @@ RSpec.describe Fast do
 
       specify do
         expect(subject.ok_experiments).to eq([1, 3, 4, 5])
-        expect(subject.suggest_experiment_joins).to match_array([
-          [1, 3], [1, 4], [1, 5], [3, 4], [3, 5], [4,5]
+        expect(subject.suggest_combinations).to match_array([
+          [1, 3], [1, 4], [1, 5], [3, 4], [3, 5], [4, 5]
         ])
 
         subject.ok([1,3])
         subject.fail([1,4])
 
-        expect(subject.suggest_experiment_joins).to eq([[4, 5], [1, 3, 4], [1, 3, 5]])
+        expect(subject.suggest_combinations).to eq([[4, 5], [1, 3, 4], [1, 3, 5]])
 
         subject.fail([1,3,4])
 
-        expect(subject.suggest_experiment_joins).to eq([[4, 5], [ 1, 3, 5]])
+        expect(subject.suggest_combinations).to eq([[4, 5], [ 1, 3, 5]])
 
         subject.fail([4,5])
 
-        expect(subject.suggest_experiment_joins).to eq([[ 1, 3, 5]])
+        expect(subject.suggest_combinations).to eq([[ 1, 3, 5]])
 
         subject.ok([1,3,5])
 
-        expect(subject.suggest_experiment_joins).to eq([[1, 3, 4, 5]])
+        expect(subject.suggest_combinations).to eq([[1, 3, 4, 5]])
 
         subject.ok([1, 3, 4, 5])
 
-        expect(subject.suggest_experiment_joins).to be_empty
+        expect(subject.suggest_combinations).to be_empty
       end
     end
   end
