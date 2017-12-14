@@ -424,7 +424,7 @@ module Fast
     end
 
     def suggest_combinations
-      if @ok_experiments.empty?
+      if @ok_experiments.empty? && @fail_experiments.empty?
         search_cases.size.times.map(&:next)
       else
         @ok_experiments
