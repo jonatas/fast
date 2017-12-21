@@ -45,25 +45,12 @@ module Fast
     buffer.source = ast.loc.expression.source
     to_replace = search(ast, search)
     types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
-    Class.new(Parser::Rewriter) do
-      attr_reader :match_index
-      define_method "buffer" do
-        buffer
-      end
-      types.map do |type|
-        define_method "on_#{type}" do |node|
-          if captures = Fast.match?(node, search)
-            @match_index ||= 0
-            @match_index += 1
-            if replacement.parameters.length == 1
-              instance_exec node, &replacement
-            else
-              instance_exec node, captures, &replacement
-            end
-          end
-        end
-      end
-    end.new.rewrite(buffer, ast)
+    rewriter = Rewriter.new
+    rewriter.buffer = buffer
+    rewriter.search = search
+    rewriter.replacement = replacement
+    rewriter.affect_types(*types)
+    rewriter.rewrite(buffer, ast)
   end
 
   def self.replace_file(file, search, replacement)
@@ -150,6 +137,33 @@ module Fast
       files.uniq!
     end
     files
+  end
+
+  class Rewriter < Parser::Rewriter
+    attr_reader :match_index
+    attr_accessor :buffer, :search, :replacement
+    def initialize *args
+      super
+      @match_index = 0
+    end
+    def match? node
+      Fast.match?(node, search)
+    end
+    def affect_types(*types)
+      types.map do |type|
+        self.class.send :define_method, "on_#{type}" do |node|
+          if captures = match?(node)
+            @match_index += 1
+            if replacement.parameters.length == 1
+              instance_exec node, &replacement
+            else
+              instance_exec node, captures, &replacement
+            end
+          end
+          super(node)
+        end
+      end
+    end
   end
 
   class ExpressionParser
@@ -403,17 +417,14 @@ module Fast
     end
 
     def partial_replace(replacement, *indices)
-      this = self
-
-      new_content =  Fast.replace_file @file, @search, -> (node,*captures) do
-        if indices.nil? || indices.empty?
-          this.partial_replace(expression, replacement, match_index)
-        elsif indices.include?(match_index)
+      new_content = Fast.replace_file @file, @search, -> (node,*captures) do
+        if indices.nil? || indices.empty? || indices.include?(match_index)
           instance_exec(node, *captures, &replacement)
         end
-        if new_content
-          write_experiment_file(indices, new_content)
-        end
+      end
+      if new_content
+        write_experiment_file(indices, new_content)
+        new_content
       end
     end
 
