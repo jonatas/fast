@@ -419,7 +419,11 @@ module Fast
     def partial_replace(replacement, *indices)
       new_content = Fast.replace_file @file, @search, -> (node,*captures) do
         if indices.nil? || indices.empty? || indices.include?(match_index)
-          instance_exec(node, *captures, &replacement)
+          if replacement.parameters.length == 1
+            instance_exec node, &replacement
+          else
+            instance_exec node, *captures, &replacement
+          end
         end
       end
       if new_content
