@@ -30,7 +30,7 @@ RSpec.describe Fast do
     end
 
     it '`!` isolated should be a find' do
-      expect(Fast.expression('!')).to be_a(Fast::Find) 
+      expect(Fast.expression('!')).to be_a(Fast::Find)
     end
 
     it '`!` negate expression after it' do
@@ -397,7 +397,7 @@ RSpec.describe Fast do
           Fast.replace(
             code['def name; person.name end'],
             '(def $_ (_) (send (send nil $_) \1))',
-          -> (node, captures) { 
+          -> (node, captures) {
               new_source = "delegate :#{captures[0]}, to: :#{captures[1]}"
               replace(node.location.expression, new_source) }
           )
@@ -426,7 +426,6 @@ RSpec.describe Fast do
 
       specify 'use `match_index` to filter an specific occurence' do
         expect(
-        
           Fast.replace(
             code['create(:a, :b, :c);create(:b, :c, :d)'],
             '(send nil :create)',
@@ -535,20 +534,28 @@ RSpec.describe Fast do
       tempfile.path
     end
 
-    subject { Fast::Experiment.new(spec, '(send nil :create)' ) }
+    let(:experiment) do
+      Fast.experiment("RSpec/ReplaceCreateWithBuildStubbed") do
+        lookup 'some_spec.rb'
+        search "(send nil create)"
+        edit {|node| replace(node.loc.selector, 'build_stubbed') }
+        policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+      end
+    end
+
+    subject { Fast::ExperimentFile.new(spec, experiment) }
 
     describe "#filename" do
       it { expect(subject.experimental_filename(1)).to include('experiment_1') }
     end
 
     describe "#replace" do
-      let(:replacement) { -> (node, _) { replace(node.loc.selector, 'build_stubbed') } }
       specify do
-        expect(subject.partial_replace(replacement, 1)).to eq(<<~RUBY.chomp)
+        expect(subject.partial_replace(1)).to eq(<<~RUBY.chomp)
           let(:user) { build_stubbed(:user) }
           let(:address) { create(:address) }
         RUBY
-        expect(subject.partial_replace(replacement, 2)).to eq(<<~RUBY.chomp)
+        expect(subject.partial_replace(2)).to eq(<<~RUBY.chomp)
           let(:user) { create(:user) }
           let(:address) { build_stubbed(:address) }
         RUBY
@@ -557,11 +564,11 @@ RSpec.describe Fast do
 
     describe "#suggest_combinations" do
       before do
-        subject.ok(1)
-        subject.fail(2)
-        subject.ok(3)
-        subject.ok(4)
-        subject.ok(5)
+        subject.ok_with(1)
+        subject.failed_with(2)
+        subject.ok_with(3)
+        subject.ok_with(4)
+        subject.ok_with(5)
       end
 
       specify do
@@ -570,26 +577,50 @@ RSpec.describe Fast do
           [1, 3], [1, 4], [1, 5], [3, 4], [3, 5], [4, 5]
         ])
 
-        subject.ok([1,3])
-        subject.fail([1,4])
+        subject.ok_with([1,3])
+        subject.failed_with([1,4])
 
         expect(subject.suggest_combinations).to eq([[4, 5], [1, 3, 4], [1, 3, 5]])
 
-        subject.fail([1,3,4])
+        subject.failed_with([1,3,4])
 
         expect(subject.suggest_combinations).to eq([[4, 5], [ 1, 3, 5]])
 
-        subject.fail([4,5])
+        subject.failed_with([4,5])
 
         expect(subject.suggest_combinations).to eq([[ 1, 3, 5]])
 
-        subject.ok([1,3,5])
+        subject.ok_with([1,3,5])
 
         expect(subject.suggest_combinations).to eq([[1, 3, 4, 5]])
 
-        subject.ok([1, 3, 4, 5])
+        subject.ok_with([1, 3, 4, 5])
 
         expect(subject.suggest_combinations).to be_empty
+      end
+    end
+  end
+
+  describe 'Fast.experiment' do
+    subject do
+      Fast.experiment("RSpec/ReplaceCreateWithBuildStubbed") do
+        lookup 'spec/fast_spec.rb'
+        search "(send nil create)"
+        edit {|node| replace(node.loc.selector, 'build_stubbed') }
+        policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+      end
+    end
+
+    it { is_expected.to be_a(Fast::Experiment) }
+    it { expect(subject.name).to eq("RSpec/ReplaceCreateWithBuildStubbed") }
+    it { expect(subject.expression).to eq("(send nil create)") }
+    it { expect(subject.files_or_folders).to eq("spec/fast_spec.rb") }
+    it { expect(subject.replacement).to be_a(Proc) }
+
+    specify do
+      expect do
+        expect(subject).to receive(:run_with).with("spec/fast_spec.rb")
+        subject.run
       end
     end
   end

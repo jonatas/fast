@@ -343,6 +343,26 @@ $ fast '(def match?)' lib/fast.rb
 - Use `-d` or `--debug` for enable debug mode.
 - Use `--ast` to output the AST instead of the original code
 
+## Experiments
+
+You can define experiments and build experimental files to improve some code in
+an automated way. Let's create a hook to check if a `before` or `after` block
+is useless in a specific spec:
+
+```ruby
+Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
+  lookup 'some_spec.rb'
+  search "(block (send nil {before after}))"
+  edit {|node| remove(node.loc.expression) }
+  policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+end
+```
+
+- In the `lookup` you can pass files and folders.
+- The `search` contains the expression you want to match
+- With `edit` block you can apply the code change
+- And the `policy` is executed to check if the current change is valuable
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.

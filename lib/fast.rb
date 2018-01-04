@@ -104,6 +104,10 @@ module Fast
     ExpressionParser.new(string).parse
   end
 
+  def self.experiment(name, &block)
+    Experiment.new(name, &block)
+  end
+
   def self.debug
     return yield if Find.instance_methods.include?(:debug)
     Find.class_eval do
@@ -382,16 +386,58 @@ module Fast
       end
     end
   end
-  
+
   class Experiment
-    attr_reader :ok_experiments, :fail_experiments
-    def initialize(file, search)
+    attr_reader :name, :replacement, :lookup, :policy, :expression, :files_or_folders, :ok_if
+
+    def initialize(name, &block)
+      @name = name
+      instance_exec(&block)
+    end
+
+    def run_with(file)
+      ExperimentFile.new(file, self).run
+    end
+
+    def search expression
+      @expression = expression
+    end
+
+    def edit &block
+      @replacement = block
+    end
+
+    def lookup files_or_folders
+      @files_or_folders = files_or_folders
+    end
+
+    def policy &block
+      @ok_if = block
+    end
+
+    def files
+      Fast.ruby_files_from(@files_or_folders)
+    end
+
+    def run
+      files.map(&method(:run_with))
+    end
+  end
+
+  class ExperimentFile
+    attr_reader :ok_experiments, :fail_experiments, :experiment
+    def initialize(file, experiment)
       @file = file
-      @ast = Fast.ast_from_file(file)
-      @search = search
+      @ast = Fast.ast_from_file(file) if file
+      @experiment = experiment
       @ok_experiments = []
       @fail_experiments = []
     end
+
+    def search
+      experiment.expression
+    end
+
     def experimental_filename(combination)
       parts = @file.split('/')
       dir = parts[0..-2]
@@ -399,25 +445,26 @@ module Fast
       File.join(*dir, filename)
     end
 
-    def ok(occurrence)
-      @ok_experiments << occurrence
-      if occurrence.is_a?(Array)
-        occurrence.each do |element|
+    def ok_with(combination)
+      @ok_experiments << combination
+      if combination.is_a?(Array)
+        combination.each do |element|
           @ok_experiments.delete(element)
         end
       end
     end
 
-    def fail(occurrence)
-      @fail_experiments << occurrence
+    def failed_with(combination)
+      @fail_experiments << combination
     end
 
     def search_cases
-      Fast.search(@ast, @search) || []
+      Fast.search(@ast, experiment.expression) || []
     end
 
-    def partial_replace(replacement, *indices)
-      new_content = Fast.replace_file @file, @search, -> (node,*captures) do
+    def partial_replace(*indices)
+      replacement = experiment.replacement
+      new_content = Fast.replace_file @file, experiment.expression, -> (node,*captures) do
         if indices.nil? || indices.empty? || indices.include?(match_index)
           if replacement.parameters.length == 1
             instance_exec node, &replacement
@@ -456,13 +503,38 @@ module Fast
         puts "mv #{experimental_filename(perfect_combination)} #{@file}"
         `mv #{experimental_filename(perfect_combination)} #{@file}`
       end
-
     end
 
-    def run(expression, replacement)
-      partial_replace(expression, replacement) do |experiment_file|
-        # run spec
-        # report ok or fail
+    def run
+      while (combinations = suggest_combinations).any?
+        if combinations.size > 30
+          puts "Ignoring #{@file} because it have #{combinations.size} possible combinations"
+          break
+        end
+        puts "#{@file} - Possible combinations: #{combinations.inspect}"
+        while combination = combinations.shift
+          run_partial_replacement_with(combination)
+        end
+      end
+      done!
+    end
+
+    def run_partial_replacement_with(combination)
+      puts "#{@file} applying partial replacement with: #{combination}"
+      content = partial_replace(*combination)
+      experimental_file = experimental_filename(combination)
+      puts `diff #{experimental_file} #{@file}`
+      if experimental_file == IO.read(@file)
+        fail 'Returned the same file thinking:'
+      end
+      File.open(experimental_file, 'w+') { |f| f.puts content }
+
+      if experiment.ok_if.call(experimental_file)
+        ok(combination)
+        puts "✅ #{combination} #{experimental_file}"
+      else
+        failed_with(combination)
+        puts "🔴 #{combination} #{experimental_file}"
       end
     end
   end
