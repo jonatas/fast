@@ -1,4 +1,3 @@
-require 'bundler/setup'
 require 'parser'
 require 'parser/current'
 
