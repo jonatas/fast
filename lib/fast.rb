@@ -530,7 +530,7 @@ module Fast
       File.open(experimental_file, 'w+') { |f| f.puts content }
 
       if experiment.ok_if.call(experimental_file)
-        ok(combination)
+        ok_with(combination)
         puts "✅ #{combination} #{experimental_file}"
       else
         failed_with(combination)
