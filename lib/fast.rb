@@ -1,5 +1,19 @@
-require 'parser'
-require 'parser/current'
+
+# suppress output to avoid parser gem warnings'
+def suppress_output
+  original_stdout, original_stderr = $stdout.clone, $stderr.clone
+  $stderr.reopen File.new('/dev/null', 'w')
+  $stdout.reopen File.new('/dev/null', 'w')
+  yield
+ensure
+  $stdout.reopen original_stdout
+  $stderr.reopen original_stderr
+end
+
+suppress_output do
+  require 'parser'
+  require 'parser/current'
+end
 
 module Fast
   VERSION = "0.1.0"
