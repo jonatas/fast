@@ -199,6 +199,11 @@ RSpec.describe Fast do
       it 'matches with the correct operator' do
         expect(Fast).to be_match(code['2 - 5'], '(send ({int float} _) {+-} (int _))')
       end
+
+      it 'matches multiple symbols' do
+        expect(Fast).to be_match(code['b'], '(send {nil ...} b)')
+        expect(Fast).to be_match(code['a.b'], '(send {nil ...} b)')
+      end
     end
 
     describe '`[]`' do
@@ -286,6 +291,11 @@ RSpec.describe Fast do
         expect(Fast.match?(ast, '(def $reverse_string ... ...)')).to eq([:reverse_string])
         expect(Fast.match?(ast, '(def reverse_string (args (arg $_)) ...)')).to eq([:string])
         expect(Fast.match?(ast, '(def reverse_string (args (arg _)) $...)')).to eq([s(:send, s(:lvar, :string), :reverse)])
+      end
+
+      it 'capture symbol in multiple conditions' do
+        expect(Fast.match?(code['b'], '(send {nil ...} $_)')).to eq([:b])
+        expect(Fast.match?(code['a.b'], '(send {nil ...} $_)')).to eq([:b])
       end
     end
 
