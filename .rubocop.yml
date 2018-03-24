@@ -1,0 +1,33 @@
+# This is the configuration used to check the rubocop source code.
+
+require:
+  - rubocop-rspec
+
+AllCops:
+  Exclude:
+    - 'tmp/**/*'
+    - 'examples/*'
+  TargetRubyVersion: 2.3
+
+Metrics/LineLength:
+  Enabled: false
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/MethodLength:
+  CountComments: false  # count full line comments?
+  Max: 12
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: 'indented'
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/ExampleLength:
+  Max: 20

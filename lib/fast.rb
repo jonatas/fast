@@ -18,10 +18,11 @@ suppress_output do
   require 'parser/current'
 end
 
+# Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
   VERSION = '0.1.0'
   LITERAL = {
-    '...' => ->(node) { node&.children.any? },
+    '...' => ->(node) { node&.children&.any? },
     '_'   => ->(node) { !node.nil? },
     'nil' => nil
   }.freeze
@@ -52,113 +53,106 @@ module Fast
     \\\d                  # find using captured expression
   /x
 
-  def self.match?(ast, search)
-    Matcher.new(ast, search).match?
-  end
-
-  def self.replace(ast, search, replacement)
-    buffer = Parser::Source::Buffer.new('replacement')
-    buffer.source = ast.loc.expression.source
-    to_replace = search(ast, search)
-    types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
-    rewriter = Rewriter.new
-    rewriter.buffer = buffer
-    rewriter.search = search
-    rewriter.replacement = replacement
-    rewriter.affect_types(*types)
-    rewriter.rewrite(buffer, ast)
-  end
-
-  def self.replace_file(file, search, replacement)
-    ast = ast_from_file(file)
-    replace(ast, search, replacement)
-  end
-
-  def self.search_file(pattern, file)
-    node = ast_from_file(file)
-    search node, pattern
-  end
-
-  def self.search(node, pattern)
-    if (match = Fast.match?(node, pattern))
-      yield node, match if block_given?
-      match != true ? [node, match] : [node]
-    else
-      if node&.children.any?
-        node.children
-            .grep(Parser::AST::Node)
-            .flat_map { |e| search(e, pattern) }.compact.uniq.flatten
-      end
+  class << self
+    def match?(ast, search)
+      Matcher.new(ast, search).match?
     end
-  end
 
-  def self.capture(node, pattern)
-    res =
+    def replace(ast, search, replacement)
+      buffer = Parser::Source::Buffer.new('replacement')
+      buffer.source = ast.loc.expression.source
+      to_replace = search(ast, search)
+      types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
+      rewriter = Rewriter.new
+      rewriter.buffer = buffer
+      rewriter.search = search
+      rewriter.replacement = replacement
+      rewriter.affect_types(*types)
+      rewriter.rewrite(buffer, ast)
+    end
+
+    def replace_file(file, search, replacement)
+      ast = ast_from_file(file)
+      replace(ast, search, replacement)
+    end
+
+    def search_file(pattern, file)
+      node = ast_from_file(file)
+      search node, pattern
+    end
+
+    def search(node, pattern)
       if (match = Fast.match?(node, pattern))
-        match == true ? node : match
-      else
-        if node&.children.any?
+        yield node, match if block_given?
+        match != true ? [node, match] : [node]
+      elsif Fast.match?(node, '...')
+        node.children
+          .grep(Parser::AST::Node)
+          .flat_map { |e| search(e, pattern) }
+          .compact.uniq.flatten
+      end
+    end
+
+    def capture(node, pattern)
+      res =
+        if (match = Fast.match?(node, pattern))
+          match == true ? node : match
+        elsif Fast.match?(node, '...')
           node.children
-              .grep(Parser::AST::Node)
-              .flat_map { |child| capture(child, pattern) }.compact.flatten
+            .grep(Parser::AST::Node)
+            .flat_map { |child| capture(child, pattern) }.compact.flatten
         end
-      end
-    res&.size == 1 ? res[0] : res
-  end
-
-  def self.ast_from_file(file)
-    Parser::CurrentRuby.parse(IO.read(file))
-  end
-
-  def self.buffer_for(file)
-    buffer = Parser::Source::Buffer.new(file.to_s)
-    buffer.source = IO.read(file)
-    buffer
-  end
-
-  def self.expression(string)
-    ExpressionParser.new(string).parse
-  end
-
-  def self.experiment(name, &block)
-    Experiment.new(name, &block)
-  end
-
-  def self.debug
-    return yield if Find.instance_methods.include?(:debug)
-    Find.class_eval do
-      alias_method :original_match_recursive, :match_recursive
-      def match_recursive(a, b)
-        match = original_match_recursive(a, b)
-        debug(a, b, match)
-        match
-      end
-
-      def debug(a, b, match)
-        puts "#{b} == #{a} # => #{match}"
-      end
+      res&.size == 1 ? res[0] : res
     end
 
-    result = yield
-
-    Find.class_eval do
-      alias_method :match_recursive, :original_match_recursive
-      remove_method :debug
+    def ast_from_file(file)
+      Parser::CurrentRuby.parse(IO.read(file))
     end
-    result
+
+    def buffer_for(file)
+      buffer = Parser::Source::Buffer.new(file.to_s)
+      buffer.source = IO.read(file)
+      buffer
+    end
+
+    def expression(string)
+      ExpressionParser.new(string).parse
+    end
+
+    def experiment(name, &block)
+      Experiment.new(name, &block)
+    end
+
+    attr_accessor :debugging
+
+    def debug
+      return yield if debugging
+      self.debugging = true
+      result = nil
+      Find.class_eval do
+        alias_method :original_match_recursive, :match_recursive
+        alias_method :match_recursive, :debug_match_recursive
+        result = yield
+        alias_method :match_recursive, :original_match_recursive # rubocop:disable Lint/DuplicateMethods
+      end
+      self.debugging = false
+      result
+    end
+
+    def ruby_files_from(*files)
+      directories = files.select(&File.method(:directory?))
+
+      if directories.any?
+        files -= directories
+        files |= directories.flat_map { |dir| Dir["#{dir}/**/*.rb"] }
+        files.uniq!
+      end
+      files
+    end
   end
 
-  def self.ruby_files_from(*files)
-    directories = files.select(&File.method(:directory?))
-
-    if directories.any?
-      files -= directories
-      files |= directories.flat_map { |dir| Dir["#{dir}/**/*.rb"] }
-      files.uniq!
-    end
-    files
-  end
-
+  # Rewriter encapsulates `#match_index` allowing to rewrite only specific matching occurrences
+  # into the file. It empowers the `Fast.experiment`  and offers some useful insights for running experiments.
   class Rewriter < Parser::Rewriter
     attr_reader :match_index
     attr_accessor :buffer, :search, :replacement
@@ -171,10 +165,10 @@ module Fast
       Fast.match?(node, search)
     end
 
-    def affect_types(*types)
+    def affect_types(*types) # rubocop:disable Metrics/MethodLength
       types.map do |type|
         self.class.send :define_method, "on_#{type}" do |node|
-          if captures = match?(node)
+          if captures = match?(node) # rubocop:disable Lint/AssignmentInCondition
             @match_index += 1
             if replacement.parameters.length == 1
               instance_exec node, &replacement
@@ -188,6 +182,13 @@ module Fast
     end
   end
 
+  # ExpressionParser empowers the AST search in Ruby.
+  # You can check a few classes inheriting `Fast::Find` and adding extra behavior.
+  # Parens encapsulates node search: `(node_type children...)` .
+  # Exclamation Mark to negate: `!(int _)` is equilvalent to a `not integer` node.
+  # Curly Braces allows [Any]: `({int float} _)`  or `{(int _) (float _)}`.
+  # Square Braquets allows [All]: [(int _) !(int 0)] # all integer less zero.
+  # Dollar sign can be used to capture values: `(${int float} _)` will capture the node type.
   class ExpressionParser
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
@@ -197,6 +198,8 @@ module Fast
       @tokens.shift
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
+    # rubocop:disable Metrics/AbcSize
     def parse
       case (token = next_token)
       when '(' then parse_until_peek(')')
@@ -210,6 +213,8 @@ module Fast
       else Find.new(token)
       end
     end
+    # rubocop:enable Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/AbcSize
 
     def parse_until_peek(token)
       list = []
@@ -219,7 +224,10 @@ module Fast
     end
   end
 
-  class Find < Struct.new(:token)
+  # Find is the top level class that respond to #match?(node) interface.
+  # It matches recurively and check deeply depends of the token type.
+  class Find
+    attr_accessor :token
     def initialize(token)
       self.token = token
     end
@@ -229,45 +237,65 @@ module Fast
     end
 
     def match_recursive(node, expression)
-      if expression.respond_to?(:call)
-        expression.call(node)
-      elsif expression.is_a?(Find)
-        expression.match?(node)
-      elsif expression.is_a?(Symbol)
-        type = node.respond_to?(:type) ? node.type : node
-        type == expression
-      elsif expression.respond_to?(:shift)
+      case expression
+      when Proc then expression.call(node)
+      when Find then expression.match?(node)
+      when Symbol then compare_symbol_or_head(node, expression)
+      when Enumerable
         expression.each_with_index.all? do |exp, i|
-          match_recursive(i == 0 ? node : node.children[i - 1], exp)
+          match_recursive(i.zero? ? node : node.children[i - 1], exp)
         end
       else
         node == expression
       end
     end
 
+    def compare_symbol_or_head(node, expression)
+      type = node.respond_to?(:type) ? node.type : node
+      type == expression
+    end
+
+    def debug_match_recursive(node, expression)
+      match = original_match_recursive(node, expression)
+      debug(node, expression, match)
+      match
+    end
+
+    def debug(node, expression, match)
+      puts "#{expression} == #{node} # => #{match}"
+    end
+
     def to_s
       "f[#{[*token].join(', ')}]"
+    end
+
+    def ==(other)
+      return false if other.nil? || !other.respond_to?(:token)
+      token == other.token
     end
 
     private
 
     def valuate(token)
       if token.is_a?(String)
-        if LITERAL.key?(token)
-          valuate(LITERAL[token])
-        elsif token =~ /\d+\.\d*/
-          token.to_f
-        elsif token =~ /\d+/
-          token.to_i
-        else
-          token.to_sym
-        end
+        return valuate(LITERAL[token]) if LITERAL.key?(token)
+        typecast_value(token)
       else
         token
       end
     end
+
+    def typecast_value(token)
+      case token
+      when /\d+\.\d*/ then token.to_f
+      when /\d+/ then token.to_i
+      else token.to_sym
+      end
+    end
   end
 
+  # Allow use previous captures while searching in the AST.
+  # Use `\\1` to point the match to the first captured element
   class FindWithCapture < Find
     attr_writer :previous_captures
 
@@ -286,6 +314,12 @@ module Fast
     end
   end
 
+  # Capture some expression while searching for it:
+  # Example: `(${int float} _)` will capture the node type
+  # Example: `$({int float} _)` will capture the node
+  # Example: `({int float} $_)` will capture the value
+  # Example: `(${int float} $_)` will capture both node type and value
+  # You can capture multiple levels
   class Capture < Find
     attr_reader :captures
     def initialize(token)
@@ -302,6 +336,11 @@ module Fast
     end
   end
 
+  # Sometimes you want to check some children but get the parent element,
+  # for such cases,  parent can be useful.
+  # Example: You're searching for `int` usages in your code.
+  # But you don't want to check the integer itself, but who is using it:
+  # `^^(int _)` will give you the variable being assigned or the expression being used.
   class Parent < Find
     alias match_node match?
     def match?(node)
@@ -313,6 +352,8 @@ module Fast
     end
   end
 
+  # Matches any of the internal expressions. Works like a **OR** condition.
+  # `{int float}` means int or float.
   class Any < Find
     def match?(node)
       token.any? { |expression| Fast.match?(node, expression) }
@@ -323,6 +364,7 @@ module Fast
     end
   end
 
+  # Intersect expressions. Works like a **AND** operator.
   class All < Find
     def match?(node)
       token.all? { |expression| expression.match?(node) }
@@ -333,29 +375,36 @@ module Fast
     end
   end
 
+  # Negates the current expression
+  # `!int` is equilvalent to "not int"
   class Not < Find
     def match?(node)
       !super
     end
   end
 
+  # True if the node does not exist
+  # When exists, it should match.
   class Maybe < Find
     def match?(node)
       node.nil? || super
     end
   end
 
+  # Joins the AST and the search expression to create a complete match
   class Matcher
     def initialize(ast, fast)
       @ast = ast
       @fast = if fast.is_a?(String)
                 Fast.expression(fast)
               else
-                fast.map(&Find.method(:new))
+                [*fast].map(&Find.method(:new))
               end
       @captures = []
     end
 
+    # rubocop:disable Metrics/CyclomaticComplexity
+    # rubocop:disable Metrics/AbcSize
     def match?(ast = @ast, fast = @fast)
       head, *tail = fast
       return false unless head.match?(ast)
@@ -363,48 +412,46 @@ module Fast
         return ast == @ast ? find_captures : true # root node
       end
       child = ast.children
-      tail.each_with_index.each do |token, i|
-        matched =
-          if token.is_a?(Array)
-            match?(child[i], token)
-          elsif token.is_a?(Fast::FindWithCapture)
-            token.previous_captures = find_captures
-            token.match?(child[i])
-          else
-            token.match?(child[i])
-          end
-        return false unless matched
-      end
-
-      find_captures
+      tail.each_with_index.all? do |token, i|
+        token.previous_captures = find_captures if token.is_a?(Fast::FindWithCapture)
+        token.is_a?(Array) ? match?(child[i], token) : token.match?(child[i])
+      end && find_captures
     end
+    # rubocop:enable Metrics/CyclomaticComplexity
+    # rubocop:enable Metrics/AbcSize
 
-    def has_captures?(fast = @fast)
+    def captures?(fast = @fast)
       case fast
-      when Capture
-        true
-      when Array
-        fast.any?(&method(:has_captures?))
-      when Find
-        has_captures?(fast.token)
+      when Capture then true
+      when Array then fast.any?(&method(:captures?))
+      when Find then captures?(fast.token)
       end
     end
 
     def find_captures(fast = @fast)
-      return true if fast == @fast && !has_captures?(fast)
+      return true if fast == @fast && !captures?(fast)
       case fast
-      when Capture
-        fast.captures
-      when Array
-        fast.flat_map(&method(:find_captures)).compact
-      when Find
-        find_captures(fast.token)
+      when Capture then fast.captures
+      when Array then fast.flat_map(&method(:find_captures)).compact
+      when Find then find_captures(fast.token)
       end
     end
   end
 
+  # You can define experiments and build experimental files to improve some code in
+  # an automated way. Let's create a hook to check if a `before` or `after` block
+  # is useless in a specific spec:
+  #
+  # ```ruby
+  # Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
+  #   lookup 'some_spec.rb'
+  #   search "(block (send nil {before after}))"
+  #   edit {|node| remove(node.loc.expression) }
+  #   policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+  # end
+  # ```
   class Experiment
-    attr_reader :name, :replacement, :lookup, :policy, :expression, :files_or_folders, :ok_if
+    attr_reader :name, :replacement, :expression, :files_or_folders, :ok_if
 
     def initialize(name, &block)
       @name = name
@@ -440,6 +487,9 @@ module Fast
     end
   end
 
+  # Encapsulate the join of an Experiment with an specific file.
+  # This is important to coordinate and regulate multiple experiments in the same file.
+  # It can track successfull experiments and failures and suggest new combinations to keep replacing the file.
   class ExperimentFile
     attr_reader :ok_experiments, :fail_experiments, :experiment
     def initialize(file, experiment)
@@ -463,10 +513,9 @@ module Fast
 
     def ok_with(combination)
       @ok_experiments << combination
-      if combination.is_a?(Array)
-        combination.each do |element|
-          @ok_experiments.delete(element)
-        end
+      return unless combination.is_a?(Array)
+      combination.each do |element|
+        @ok_experiments.delete(element)
       end
     end
 
@@ -478,9 +527,11 @@ module Fast
       Fast.search(@ast, experiment.expression) || []
     end
 
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def partial_replace(*indices)
       replacement = experiment.replacement
-      new_content = Fast.replace_file @file, experiment.expression, ->(node, *captures) do
+      new_content = Fast.replace_file @file, experiment.expression, ->(node, *captures) do # rubocop:disable Style/Lambda
         if indices.nil? || indices.empty? || indices.include?(match_index)
           if replacement.parameters.length == 1
             instance_exec node, &replacement
@@ -489,11 +540,12 @@ module Fast
           end
         end
       end
-      if new_content
-        write_experiment_file(indices, new_content)
-        new_content
-      end
+      return unless new_content
+      write_experiment_file(indices, new_content)
+      new_content
     end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def write_experiment_file(index, new_content)
       filename = experimental_filename(index)
@@ -503,7 +555,7 @@ module Fast
 
     def suggest_combinations
       if @ok_experiments.empty? && @fail_experiments.empty?
-        search_cases.size.times.map(&:next)
+        Array.new(search_cases.size).map(&:next)
       else
         @ok_experiments
           .combination(2)
@@ -515,10 +567,9 @@ module Fast
     def done!
       count_executed_combinations = @fail_experiments.size + @ok_experiments.size
       puts "Done with #{@file} after #{count_executed_combinations}"
-      if perfect_combination = @ok_experiments.last
-        puts "mv #{experimental_filename(perfect_combination)} #{@file}"
-        `mv #{experimental_filename(perfect_combination)} #{@file}`
-      end
+      return unless perfect_combination = @ok_experiments.last # rubocop:disable Lint/AssignmentInCondition
+      puts "mv #{experimental_filename(perfect_combination)} #{@file}"
+      `mv #{experimental_filename(perfect_combination)} #{@file}`
     end
 
     def run
@@ -528,13 +579,15 @@ module Fast
           break
         end
         puts "#{@file} - Possible combinations: #{combinations.inspect}"
-        while combination = combinations.shift
+        while combination = combinations.shift # rubocop:disable Lint/AssignmentInCondition
           run_partial_replacement_with(combination)
         end
       end
       done!
     end
 
+    # rubocop:disable Metrics/MethodLength
+    # rubocop:disable Metrics/AbcSize
     def run_partial_replacement_with(combination)
       puts "#{@file} applying partial replacement with: #{combination}"
       content = partial_replace(*combination)
@@ -553,5 +606,7 @@ module Fast
         puts "🔴 #{combination} #{experimental_file}"
       end
     end
+    # rubocop:enable Metrics/MethodLength
+    # rubocop:enable Metrics/AbcSize
   end
 end

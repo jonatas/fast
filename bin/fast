@@ -17,9 +17,7 @@ def line_for(result)
 end
 
 def code(result, show_ast = false)
-  if result.is_a?(Parser::AST::Node) && !show_ast
-    result = result.loc.expression.source
-  end
+  result = result.loc.expression.source if result.is_a?(Parser::AST::Node) && !show_ast
   CodeRay.scan(result, :ruby).term
 end
 
