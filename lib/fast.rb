@@ -1,7 +1,10 @@
 
+# frozen_string_literal: true
+
 # suppress output to avoid parser gem warnings'
 def suppress_output
-  original_stdout, original_stderr = $stdout.clone, $stderr.clone
+  original_stdout = $stdout.clone
+  original_stderr = $stderr.clone
   $stderr.reopen File.new('/dev/null', 'w')
   $stdout.reopen File.new('/dev/null', 'w')
   yield
@@ -16,12 +19,12 @@ suppress_output do
 end
 
 module Fast
-  VERSION = "0.1.0"
+  VERSION = '0.1.0'
   LITERAL = {
-    '...' => -> (node) { node && node.children.any? },
-    '_'   => -> (node) { !node.nil? },
+    '...' => ->(node) { node&.children.any? },
+    '_'   => ->(node) { !node.nil? },
     'nil' => nil
-  }
+  }.freeze
 
   TOKENIZER = %r/
     [\+\-\/\*\\!]         # operators or negation
@@ -71,33 +74,33 @@ module Fast
     replace(ast, search, replacement)
   end
 
-  def self.search_file pattern, file
+  def self.search_file(pattern, file)
     node = ast_from_file(file)
     search node, pattern
   end
 
-  def self.search node, pattern
+  def self.search(node, pattern)
     if (match = Fast.match?(node, pattern))
       yield node, match if block_given?
       match != true ? [node, match] : [node]
     else
-      if node && node.children.any?
+      if node&.children.any?
         node.children
-          .grep(Parser::AST::Node)
-          .flat_map{|e| search(e, pattern) }.compact.uniq.flatten
+            .grep(Parser::AST::Node)
+            .flat_map { |e| search(e, pattern) }.compact.uniq.flatten
       end
     end
   end
 
-  def self.capture node, pattern
+  def self.capture(node, pattern)
     res =
       if (match = Fast.match?(node, pattern))
         match == true ? node : match
       else
-        if node && node.children.any?
+        if node&.children.any?
           node.children
-            .grep(Parser::AST::Node)
-            .flat_map{|child| capture(child, pattern) }.compact.flatten
+              .grep(Parser::AST::Node)
+              .flat_map { |child| capture(child, pattern) }.compact.flatten
         end
       end
     res&.size == 1 ? res[0] : res
@@ -124,14 +127,14 @@ module Fast
   def self.debug
     return yield if Find.instance_methods.include?(:debug)
     Find.class_eval do
-      alias original_match_recursive match_recursive
-      def match_recursive a, b
+      alias_method :original_match_recursive, :match_recursive
+      def match_recursive(a, b)
         match = original_match_recursive(a, b)
         debug(a, b, match)
         match
-
       end
-      def debug a, b, match
+
+      def debug(a, b, match)
         puts "#{b} == #{a} # => #{match}"
       end
     end
@@ -139,7 +142,7 @@ module Fast
     result = yield
 
     Find.class_eval do
-      alias match_recursive original_match_recursive
+      alias_method :match_recursive, :original_match_recursive
       remove_method :debug
     end
     result
@@ -150,7 +153,7 @@ module Fast
 
     if directories.any?
       files -= directories
-      files |= directories.flat_map{|dir|Dir["#{dir}/**/*.rb"]}
+      files |= directories.flat_map { |dir| Dir["#{dir}/**/*.rb"] }
       files.uniq!
     end
     files
@@ -159,13 +162,15 @@ module Fast
   class Rewriter < Parser::Rewriter
     attr_reader :match_index
     attr_accessor :buffer, :search, :replacement
-    def initialize *args
+    def initialize(*args)
       super
       @match_index = 0
     end
-    def match? node
+
+    def match?(node)
       Fast.match?(node, search)
     end
+
     def affect_types(*types)
       types.map do |type|
         self.class.send :define_method, "on_#{type}" do |node|
@@ -233,7 +238,7 @@ module Fast
         type == expression
       elsif expression.respond_to?(:shift)
         expression.each_with_index.all? do |exp, i|
-          match_recursive(i == 0 ? node : node.children[i-1], exp)
+          match_recursive(i == 0 ? node : node.children[i - 1], exp)
         end
       else
         node == expression
@@ -248,7 +253,7 @@ module Fast
 
     def valuate(token)
       if token.is_a?(String)
-        if LITERAL.has_key?(token)
+        if LITERAL.key?(token)
           valuate(LITERAL[token])
         elsif token =~ /\d+\.\d*/
           token.to_f
@@ -263,7 +268,7 @@ module Fast
     end
   end
 
-  class FindWithCapture <  Find
+  class FindWithCapture < Find
     attr_writer :previous_captures
 
     def initialize(token)
@@ -273,7 +278,7 @@ module Fast
     end
 
     def match?(node)
-      node == @previous_captures[@capture_index-1]
+      node == @previous_captures[@capture_index - 1]
     end
 
     def to_s
@@ -281,17 +286,15 @@ module Fast
     end
   end
 
-  class Capture <  Find
+  class Capture < Find
     attr_reader :captures
     def initialize(token)
       super
       @captures = []
     end
 
-    def match? node
-      if super
-        @captures << node
-      end
+    def match?(node)
+      @captures << node if super
     end
 
     def to_s
@@ -299,9 +302,9 @@ module Fast
     end
   end
 
-  class Parent <  Find
+  class Parent < Find
     alias match_node match?
-    def match? node
+    def match?(node)
       node.children.grep(Parser::AST::Node).any?(&method(:match_node))
     end
 
@@ -312,7 +315,7 @@ module Fast
 
   class Any < Find
     def match?(node)
-      token.any?{|expression| Fast.match?(node, expression) }
+      token.any? { |expression| Fast.match?(node, expression) }
     end
 
     def to_s
@@ -322,7 +325,7 @@ module Fast
 
   class All < Find
     def match?(node)
-      token.all?{|expression|expression.match?(node) }
+      token.all? { |expression| expression.match?(node) }
     end
 
     def to_s
@@ -345,16 +348,16 @@ module Fast
   class Matcher
     def initialize(ast, fast)
       @ast = ast
-      if fast.is_a?(String)
-        @fast = Fast.expression(fast)
-      else
-        @fast = fast.map(&Find.method(:new))
-      end
+      @fast = if fast.is_a?(String)
+                Fast.expression(fast)
+              else
+                fast.map(&Find.method(:new))
+              end
       @captures = []
     end
 
-    def match?(ast=@ast, fast=@fast)
-      head,*tail = fast
+    def match?(ast = @ast, fast = @fast)
+      head, *tail = fast
       return false unless head.match?(ast)
       if tail.empty?
         return ast == @ast ? find_captures : true # root node
@@ -376,7 +379,7 @@ module Fast
       find_captures
     end
 
-    def has_captures?(fast=@fast)
+    def has_captures?(fast = @fast)
       case fast
       when Capture
         true
@@ -387,7 +390,7 @@ module Fast
       end
     end
 
-    def find_captures(fast=@fast)
+    def find_captures(fast = @fast)
       return true if fast == @fast && !has_captures?(fast)
       case fast
       when Capture
@@ -412,19 +415,19 @@ module Fast
       ExperimentFile.new(file, self).run
     end
 
-    def search expression
+    def search(expression)
       @expression = expression
     end
 
-    def edit &block
+    def edit(&block)
       @replacement = block
     end
 
-    def lookup files_or_folders
+    def lookup(files_or_folders)
       @files_or_folders = files_or_folders
     end
 
-    def policy &block
+    def policy(&block)
       @ok_if = block
     end
 
@@ -477,7 +480,7 @@ module Fast
 
     def partial_replace(*indices)
       replacement = experiment.replacement
-      new_content = Fast.replace_file @file, experiment.expression, -> (node,*captures) do
+      new_content = Fast.replace_file @file, experiment.expression, ->(node, *captures) do
         if indices.nil? || indices.empty? || indices.include?(match_index)
           if replacement.parameters.length == 1
             instance_exec node, &replacement
@@ -494,7 +497,7 @@ module Fast
 
     def write_experiment_file(index, new_content)
       filename = experimental_filename(index)
-      File.open(filename, 'w+') {|f|f.puts new_content}
+      File.open(filename, 'w+') { |f| f.puts new_content }
       filename
     end
 
@@ -504,7 +507,7 @@ module Fast
       else
         @ok_experiments
           .combination(2)
-          .map{|e|e.flatten.uniq.sort}
+          .map { |e| e.flatten.uniq.sort }
           .uniq - @fail_experiments - @ok_experiments
       end
     end
@@ -538,7 +541,7 @@ module Fast
       experimental_file = experimental_filename(combination)
       puts `diff #{experimental_file} #{@file}`
       if experimental_file == IO.read(@file)
-        fail 'Returned the same file thinking:'
+        raise 'Returned the same file thinking:'
       end
       File.open(experimental_file, 'w+') { |f| f.puts content }
 

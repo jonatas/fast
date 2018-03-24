@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require "bundler/setup"
-require "fast"
+require 'bundler/setup'
+require 'fast'
 
 def s(type, *children)
   Parser::AST::Node.new(type, children)
@@ -15,6 +16,5 @@ def reload!
   load 'lib/fast.rb'
 end
 
-require "pry"
+require 'pry'
 Pry.start
-

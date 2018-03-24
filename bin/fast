@@ -1,23 +1,22 @@
 #!/usr/bin/env ruby
-#
-$LOAD_PATH.unshift(File.expand_path('../../lib', __FILE__))
+# frozen_string_literal: true
 
-require "fast"
-require "coderay"
+$LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
+
+require 'fast'
+require 'coderay'
 
 arguments = ARGV
 pattern = arguments.shift
-show_ast = arguments.delete("--ast")
-debug = arguments.delete("--debug") || arguments.delete("-d")
+show_ast = arguments.delete('--ast')
+debug = arguments.delete('--debug') || arguments.delete('-d')
 files = Fast.ruby_files_from(*arguments || '.')
 
 def line_for(result)
-  if result.is_a?(Parser::AST::Node)
-    result.loc.expression.line
-  end
+  result.loc.expression.line if result.is_a?(Parser::AST::Node)
 end
 
-def code(result, show_ast=false)
+def code(result, show_ast = false)
   if result.is_a?(Parser::AST::Node) && !show_ast
     result = result.loc.expression.source
   end
@@ -26,9 +25,7 @@ end
 
 pattern = Fast.expression(pattern)
 
-if debug
-  puts "Expression: #{pattern.map(&:to_s)}"
-end
+puts "Expression: #{pattern.map(&:to_s)}" if debug
 
 files.each do |file|
   results =
@@ -38,7 +35,7 @@ files.each do |file|
       begin
         Fast.search_file(pattern, file)
       rescue Parser::SyntaxError
-        puts "Ops! An error occurred trying to search in #{pattern.inspect} in #{file}", $!, $@
+        puts "Ops! An error occurred trying to search in #{pattern.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
       end
     end
 

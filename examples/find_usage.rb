@@ -9,7 +9,7 @@
 # Or be explicit about directory or folder:
 #
 # ruby examples/find_usage.rb defs lib/
-$LOAD_PATH.unshift(File.expand_path('../lib', __FILE__))
+$LOAD_PATH.unshift(File.expand_path('lib', __dir__))
 
 require 'fast'
 require 'coderay'

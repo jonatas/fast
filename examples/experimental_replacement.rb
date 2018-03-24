@@ -1,4 +1,6 @@
-$: << File.expand_path('../../lib', __FILE__)
+# frozen_string_literal: true
+
+$LOAD_PATH << File.expand_path('../lib', __dir__)
 require 'fast'
 
 # It's a simple script that you can try to replace
@@ -30,15 +32,15 @@ def experiment(file, name, search, replacement)
       puts "🔴  #{file}"
     end
   end
-rescue
+rescue StandardError
   # Avoid stop because weird errors like encoding issues
-  puts "🔴🔴 🔴   #{file}: #{$!}"
+  puts "🔴🔴 🔴   #{file}: #{$ERROR_INFO}"
 end
 
 ARGV.each do |file|
   [
-    #Thread.new { experiment(file, 'build_stubbed', '(send nil create)', ->(node) { replace(node.location.selector, 'build_stubbed') }) },
+    # Thread.new { experiment(file, 'build_stubbed', '(send nil create)', ->(node) { replace(node.location.selector, 'build_stubbed') }) },
     experiment(file, 'seed', '(send nil create)', ->(node) { replace(node.location.selector, 'seed') })
 
-  ] #.each(&:join)
+  ] # .each(&:join)
 end
