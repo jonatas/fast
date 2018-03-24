@@ -16,6 +16,10 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
 
+Lint/InterpolationCheck:
+  Exclude:
+    - 'spec/**/*'
+
 Metrics/MethodLength:
   CountComments: false  # count full line comments?
   Max: 12
