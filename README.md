@@ -21,6 +21,7 @@ The current version cover the following elements:
 - `^` is to get the **parent node** of an expression
 - `?` is for **maybe**
 - `\1` to use the first **previous captured** element
+- `""` surround the value with double quotes to match literal strings
 
 The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
 

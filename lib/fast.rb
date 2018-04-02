@@ -32,6 +32,8 @@ module Fast
     |
     \d+\.\d*              # decimals and floats
     |
+    "[^"]+"               # strings
+    |
     _                     # something not nil: match
     |
     \.{3}                 # a node with children: ...
@@ -205,6 +207,7 @@ module Fast
       when '(' then parse_until_peek(')')
       when '{' then Any.new(parse_until_peek('}'))
       when '[' then All.new(parse_until_peek(']'))
+      when /^"/ then FindString.new(token[1..-2])
       when '$' then Capture.new(parse)
       when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
@@ -221,6 +224,12 @@ module Fast
       list << parse until @tokens.empty? || @tokens.first == token
       next_token
       list
+    end
+    def append_token_until_peek(token)
+      list = []
+      list << next_token until @tokens.empty? || @tokens.first == token
+      next_token
+      list.join
     end
   end
 
@@ -291,6 +300,17 @@ module Fast
       when /\d+/ then token.to_i
       else token.to_sym
       end
+    end
+  end
+
+  # Find literal strings using double quotes
+  class FindString < Find
+    def initialize(token)
+      @token = token
+    end
+
+    def match?(node)
+      node == token
     end
   end
 

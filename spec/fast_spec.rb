@@ -27,6 +27,10 @@ RSpec.describe Fast do
       expect(described_class.expression('$...')).to be_a(Fast::Capture)
     end
 
+    it 'parses quoted values as strings' do
+      expect(described_class.expression('"string"')).to be_a(Fast::FindString)
+    end
+
     it 'parses {} as Any' do
       expect(described_class.expression('{}')).to be_a(Fast::Any)
     end
@@ -161,6 +165,7 @@ RSpec.describe Fast do
     context 'with `Fast.expressions`' do
       it { expect(described_class).to be_match(s(:int, 1), '(...)') }
       it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
+      it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
     end
 
     context 'when mixing procs inside expressions' do
