@@ -155,7 +155,7 @@ module Fast
 
   # Rewriter encapsulates `#match_index` allowing to rewrite only specific matching occurrences
   # into the file. It empowers the `Fast.experiment`  and offers some useful insights for running experiments.
-  class Rewriter < Parser::Rewriter
+  class Rewriter < Parser::TreeRewriter
     attr_reader :match_index
     attr_accessor :buffer, :search, :replacement
     def initialize(*args)
