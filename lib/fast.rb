@@ -225,6 +225,7 @@ module Fast
       next_token
       list
     end
+
     def append_token_until_peek(token)
       list = []
       list << next_token until @tokens.empty? || @tokens.first == token

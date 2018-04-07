@@ -3,6 +3,12 @@ language: ruby
 rvm:
   - 2.3.3
 before_install: gem install bundler -v 1.13.7
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 script:
   - bundle exec rubocop
   - bundle exec rspec
