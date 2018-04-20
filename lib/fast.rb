@@ -576,7 +576,7 @@ module Fast
 
     def suggest_combinations
       if @ok_experiments.empty? && @fail_experiments.empty?
-        Array.new(search_cases.size).map(&:next)
+        (1..search_cases.size).to_a
       else
         @ok_experiments
           .combination(2)
