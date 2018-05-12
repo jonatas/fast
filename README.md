@@ -331,7 +331,6 @@ all internal `.rb` files
 Fast.ruby_files_from(['lib']) # => ["lib/fast.rb"]
 ```
 
-
 ## `fast` in the command line
 
 It will also inject a executable named `fast` and you can use it to search and
@@ -346,23 +345,43 @@ $ fast '(def match?)' lib/fast.rb
 
 ## Experiments
 
-You can define experiments and build experimental files to improve some code in
-an automated way. Let's create a hook to check if a `before` or `after` block
-is useless in a specific spec:
+You can define experiments and build experimental research to improve some code in
+an automated way.
+
+Let's create an experiment to try to remove `before` or `after` blocks
+and run specs. If the spec pass without need the hook, the hook is useless.
 
 ```ruby
 Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
-  lookup 'some_spec.rb'
+  lookup 'spec'
   search "(block (send nil {before after}))"
   edit {|node| remove(node.loc.expression) }
   policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
 end
 ```
 
-- In the `lookup` you can pass files and folders.
+- In the `lookup` you can pass files or folders.
 - The `search` contains the expression you want to match
 - With `edit` block you can apply the code change
 - And the `policy` is executed to check if the current change is valuable
+
+If the file contains multiple `before` or `after` blocks, each removal will
+occur independently and the successfull removals will be combined as a
+secondary change. The process repeates until find all possible combinations.
+
+See more examples in [experiments](experiments) folder.
+
+To run multiple experiments, use `fast-experiment` runner:
+
+```
+fast-experiment <experiment-names> <files-or-folders>
+```
+
+You can limit experiments or file escope:
+
+```
+fast-experiment RSpec/RemoveUselessBeforeAfterHook spec/models/**/*_spec.rb
+```
 
 ## Development
 

@@ -641,5 +641,7 @@ RSpec.describe Fast do
       allow(experiment).to receive(:run_with).with('spec/fast_spec.rb') # rubocop:disable RSpec/SubjectStub
       experiment.run
     end
+
+    it { is_expected.to eq(Fast.experiments['RSpec/ReplaceCreateWithBuildStubbed']) }
   end
 end

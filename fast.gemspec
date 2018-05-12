@@ -15,8 +15,8 @@ Gem::Specification.new do |spec|
     f.match(%r{^(test|spec|features)/})
   end
   spec.bindir        = 'bin'
-  spec.executables   = ['fast']
-  spec.require_paths = ['lib']
+  spec.executables   = ['fast', 'fast-experiment']
+  spec.require_paths = ['lib', 'experiments']
 
   spec.add_development_dependency 'bundler', '~> 1.14'
   spec.add_development_dependency 'rake', '~> 10.0'

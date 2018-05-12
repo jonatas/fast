@@ -122,9 +122,11 @@ module Fast
     end
 
     def experiment(name, &block)
-      Experiment.new(name, &block)
+      @experiments ||= {}
+      @experiments[name] = Experiment.new(name, &block)
     end
 
+    attr_reader :experiments
     attr_accessor :debugging
 
     def debug
@@ -472,6 +474,7 @@ module Fast
   # end
   # ```
   class Experiment
+    attr_accessor :files
     attr_reader :name, :replacement, :expression, :files_or_folders, :ok_if
 
     def initialize(name, &block)
@@ -500,7 +503,7 @@ module Fast
     end
 
     def files
-      Fast.ruby_files_from(@files_or_folders)
+      @files ||= Fast.ruby_files_from(@files_or_folders)
     end
 
     def run
