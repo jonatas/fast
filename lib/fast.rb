@@ -107,8 +107,12 @@ module Fast
       res&.size == 1 ? res[0] : res
     end
 
+    def ast(content)
+      Parser::CurrentRuby.parse(content)
+    end
+
     def ast_from_file(file)
-      Parser::CurrentRuby.parse(IO.read(file))
+      ast(IO.read(file))
     end
 
     def buffer_for(file)
