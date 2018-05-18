@@ -115,6 +115,24 @@ module Fast
       ast(IO.read(file))
     end
 
+    def highlight(node, show_sexp: false)
+      output =
+        if node.respond_to?(:loc) && !show_sexp
+          node.loc.expression.source
+        else
+          node
+        end
+      CodeRay.scan(output, :ruby).term
+    end
+
+    def report(result, show_sexp:, file:)
+      if file
+        line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
+        puts Fast.highlight("# #{file}:#{line}")
+      end
+      puts Fast.highlight(result, show_sexp: show_sexp)
+    end
+
     def buffer_for(file)
       buffer = Parser::Source::Buffer.new(file.to_s)
       buffer.source = IO.read(file)

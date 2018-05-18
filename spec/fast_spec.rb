@@ -642,6 +642,6 @@ RSpec.describe Fast do
       experiment.run
     end
 
-    it { is_expected.to eq(Fast.experiments['RSpec/ReplaceCreateWithBuildStubbed']) }
+    it { is_expected.to eq(described_class.experiments['RSpec/ReplaceCreateWithBuildStubbed']) }
   end
 end
