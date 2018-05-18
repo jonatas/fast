@@ -9,7 +9,7 @@ def s(type, *children)
 end
 
 def code(string)
-  Parser::CurrentRuby.parse(string)
+  Fast.ast(string)
 end
 
 def reload!
