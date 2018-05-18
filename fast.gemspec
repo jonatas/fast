@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name          = 'ffast'
-  spec.version       = '0.0.1'
+  spec.version       = '0.0.2'
   spec.required_ruby_version = '>= 2.3'
   spec.authors       = ['Jônatas Davi Paganini']
   spec.email         = ['jonatas.paganini@toptal.com']
@@ -16,12 +16,12 @@ Gem::Specification.new do |spec|
   end
   spec.bindir        = 'bin'
   spec.executables   = ['fast', 'fast-experiment']
-  spec.require_paths = ['lib', 'experiments']
+  spec.require_paths = %w[lib experiments]
 
   spec.add_development_dependency 'bundler', '~> 1.14'
   spec.add_development_dependency 'rake', '~> 10.0'
   spec.add_development_dependency 'rspec', '~> 3.0'
-  spec.add_dependency 'coderay', '~> 1.1.1'
+  spec.add_dependency 'coderay'
   spec.add_dependency 'parser'
   spec.add_development_dependency 'pry'
   spec.add_development_dependency 'rubocop'
