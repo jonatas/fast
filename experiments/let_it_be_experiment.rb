@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # For specs using `let!(:something) { create ... }` it tries to use `let_it_be` instead
 Fast.experiment('RSpec/LetItBe') do
   lookup 'spec'

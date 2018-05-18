@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
 require 'fast'
@@ -11,17 +12,17 @@ experiment_files = Fast.ruby_files_from(File.expand_path('../experiments', __dir
 experiment_files.each(&method(:require))
 experiments = []
 
-if arguments.any? 
-  while arguments.any? && !(File.exists?(arguments.first) || Dir.exists?(arguments.first))
+if arguments.any?
+  while arguments.any? && !(File.exist?(arguments.first) || Dir.exist?(arguments.first))
     experiments << arguments.shift
   end
-  experiments.map!{|name| Fast.experiments[name]}
+  experiments.map! { |name| Fast.experiments[name] }
 else
   experiments = Fast.experiments.values
 end
 
 if arguments.any?
-  ruby_files = arguments.all?{|e|File.exists?(e) && e.end_with?('.rb')}
+  ruby_files = arguments.all? { |e| File.exist?(e) && e.end_with?('.rb') }
   experiments.each do |experiment|
     if ruby_files
       experiment.files = arguments
