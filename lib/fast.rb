@@ -496,7 +496,7 @@ module Fast
   # end
   # ```
   class Experiment
-    attr_accessor :files
+    attr_writer :files
     attr_reader :name, :replacement, :expression, :files_or_folders, :ok_if
 
     def initialize(name, &block)

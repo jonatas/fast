@@ -35,7 +35,7 @@ files.each do |file|
     next if result.nil? || result == []
     if pry
       require 'pry'
-      binding.pry
+      binding.pry # rubocop:disable Lint/Debugger
     else
       Fast.report(node, file: file, show_sexp: show_sexp)
     end
