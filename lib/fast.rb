@@ -114,7 +114,8 @@ module Fast
     end
 
     def ast_from_file(file)
-      ast(IO.read(file))
+      @cache ||= {}
+      @cache[file] ||= ast(IO.read(file))
     end
 
     def highlight(node, show_sexp: false)
@@ -127,7 +128,7 @@ module Fast
       CodeRay.scan(output, :ruby).term
     end
 
-    def report(result, show_sexp:, file:)
+    def report(result, show_sexp: nil, file: nil)
       if file
         line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
         puts Fast.highlight("# #{file}:#{line}")
@@ -176,6 +177,24 @@ module Fast
         files.uniq!
       end
       files
+    end
+
+    def similarity(node, level: 0)
+      case node
+      when Parser::AST::Node
+        children = if node.children.any?
+                     " #{node.children.map { |e| Fast.similarity(e, level: level) }.join(' ')}"
+                   end
+        "(#{node.type}#{children})"
+      when nil, 'nil'
+        'nil'
+      when Symbol, String, Integer
+        ['_', node.to_s][level]
+      when Array, Hash
+        '...'
+      else
+        node
+      end
     end
   end
 
