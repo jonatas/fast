@@ -30,6 +30,8 @@ module Fast
   TOKENIZER = %r/
     [\+\-\/\*\\!]         # operators or negation
     |
+    ===?                  # == or ===
+    |
     \d+\.\d*              # decimals and floats
     |
     "[^"]+"               # strings
