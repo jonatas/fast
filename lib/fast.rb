@@ -1,4 +1,3 @@
-
 # frozen_string_literal: true
 
 # suppress output to avoid parser gem warnings'
