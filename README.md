@@ -342,6 +342,11 @@ $ fast '(def match?)' lib/fast.rb
 
 - Use `-d` or `--debug` for enable debug mode.
 - Use `--ast` to output the AST instead of the original code
+- Use `--pry` to jump debugging the first result with pry
+
+```
+$ fast '(def match?)' lib/fast.rb --pry
+```
 
 ## Experiments
 
