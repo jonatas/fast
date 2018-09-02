@@ -645,16 +645,10 @@ RSpec.describe Fast do
     it { is_expected.to eq(described_class.experiments['RSpec/ReplaceCreateWithBuildStubbed']) }
   end
 
-  describe 'Fast.similarity' do
-    it { expect(described_class.similarity(code['1'])).to eq('(int _)') }
-    it { expect(described_class.similarity(code['nil'])).to eq('(nil)') }
-    it { expect(described_class.similarity(code['a = 1'])).to eq('(lvasgn _ (int _))') }
-    it { expect(described_class.similarity(code['def name; person.name end'])).to eq('(def _ (args) (send (send nil _) _))') }
-
-    context 'with level 1' do
-      it { expect(described_class.similarity(code['1'], level: 1)).to eq('(int 1)') }
-      it { expect(described_class.similarity(code['a'], level: 1)).to eq('(send nil a)') }
-      it { expect(described_class.similarity(code['a = 1'], level: 1)).to eq('(lvasgn a (int 1))') }
-    end
+  describe 'Fast.expression_from' do
+    it { expect(described_class.expression_from(code['1'])).to eq('(int _)') }
+    it { expect(described_class.expression_from(code['nil'])).to eq('(nil)') }
+    it { expect(described_class.expression_from(code['a = 1'])).to eq('(lvasgn _ (int _))') }
+    it { expect(described_class.expression_from(code['def name; person.name end'])).to eq('(def _ (args) (send (send nil _) _))') }
   end
 end

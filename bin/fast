@@ -7,25 +7,47 @@ require 'fast'
 require 'coderay'
 
 arguments = ARGV
-pattern = arguments.shift
 show_sexp = arguments.delete('--ast')
 pry = arguments.delete('--pry')
+from_code = arguments.delete('--code') || arguments.delete('-c')
+similar = arguments.delete('--similar') || arguments.delete('-s')
 debug = arguments.delete('--debug') || arguments.delete('-d')
-files = Fast.ruby_files_from(*arguments || '.')
 
-pattern = Fast.expression(pattern)
+pattern = arguments.shift
 
-puts "Expression: #{pattern.map(&:to_s)}" if debug
+if similar || from_code
+  ast = Fast.ast(pattern)
+  if similar
+    puts "Looking for code similar to #{pattern}" if debug
+    pattern = Fast.expression_from(ast)
+  elsif from_code
+    pattern = ast.to_sexp
+    if debug
+      puts "The generated expression from AST was:", pattern
+    end
+  end
+end
+arguments << '.' if arguments.empty?
+
+files = Fast.ruby_files_from(*arguments)
+
+expression = Fast.expression(pattern)
+
+puts "Expression: #{expression.map(&:to_s).join(' ')}" if debug
 
 files.each do |file|
   results =
     if debug
-      Fast.debug { Fast.search_file(pattern, file) }
+      Fast.debug { Fast.search_file(expression, file) }
     else
       begin
-        Fast.search_file(pattern, file)
+        Fast.search_file(expression, file)
       rescue Parser::SyntaxError
-        puts "Ops! An error occurred trying to search in #{pattern.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
+        if debug
+          puts "Ops! An error occurred trying to search in #{expression.inspect} in #{file}",
+            $ERROR_INFO,
+            $ERROR_POSITION
+        end
       end
     end
 

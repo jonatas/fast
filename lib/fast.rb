@@ -178,17 +178,21 @@ module Fast
       files
     end
 
-    def similarity(node, level: 0)
+    def expression_from(node)
       case node
       when Parser::AST::Node
-        children = if node.children.any?
-                     " #{node.children.map { |e| Fast.similarity(e, level: level) }.join(' ')}"
-                   end
-        "(#{node.type}#{children})"
+        if node.children.any?
+          children_expression = node.children
+            .map(&Fast.method(:expression_from))
+            .join(' ')
+          "(#{node.type} #{children_expression})"
+        else
+          "(#{node.type})"
+        end
       when nil, 'nil'
         'nil'
       when Symbol, String, Integer
-        ['_', node.to_s][level]
+        '_'
       when Array, Hash
         '...'
       else

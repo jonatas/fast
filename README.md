@@ -343,9 +343,36 @@ $ fast '(def match?)' lib/fast.rb
 - Use `-d` or `--debug` for enable debug mode.
 - Use `--ast` to output the AST instead of the original code
 - Use `--pry` to jump debugging the first result with pry
+- Use `-c` to search from code example
+- Use `-s` to search similar code
 
 ```
-$ fast '(def match?)' lib/fast.rb --pry
+$ fast '(block (send nil it))' spec --pry
+```
+And inside pry session,  you can use `result` as the first result or `results`
+to use all occurrences found.
+
+```ruby
+results.map{|e|e.children[0].children[2]}
+# => [s(:str, "parses ... as Find"),
+# s(:str, "parses $ as Capture"),
+# s(:str, "parses quoted values as strings"),
+# s(:str, "parses {} as Any"),
+# s(:str, "parses [] as All"), ...]
+```
+
+Getting all `it` blocks without description:
+
+    $ fast '(block (send nil it (nil)) (args ) (!str)) ) )' spec
+
+```ruby
+# spec/fast_spec.rb:166
+it { expect(described_class).to be_match(s(:int, 1), '(...)') }
+# spec/fast_spec.rb:167
+it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
+# spec/fast_spec.rb:168
+it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
+# ... more results
 ```
 
 ## Experiments
