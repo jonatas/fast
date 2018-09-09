@@ -7,6 +7,8 @@ Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 Ruby allow us to do the same thing in a few ways then it's hard to check
 how the code is written.
 
+Check the official documentation: https://jonatas.github.io/fast.
+
 ## Syntax for find in AST
 
 The current version cover the following elements:
@@ -230,7 +232,7 @@ name:
 Fast.match?(ast,'(def $_ ... (send (send nil _) \1))') # => [:name]
 ```
 
-### Fast.search
+## Fast.search
 
 Search allows you to go deeply in the AST, collecting nodes that matches with
 the expression. It also returns captures if they exist.
@@ -245,14 +247,14 @@ If you use captures, it returns the node and the captures respectively:
 Fast.search(code('a = 1'), '(int $_)') # => [s(:int, 1), 1]
 ```
 
-### Fast.capture
+## Fast.capture
 
 To pick just the captures and ignore the nodes, use `Fast.capture`:
 
 ```ruby
 Fast.capture(code('a = 1'), '(int $_)') # => 1
 ```
-### Fast.replace
+## Fast.replace
 
 And if I want to refactor a code and use `delegate <attribute>, to: <object>`, try with replace:
 
@@ -303,7 +305,7 @@ Fast.replace_file('sample.rb', '({ lvasgn lvar } message )',
 
 To manipulate ruby files, some times you'll need some extra tasks.
 
-### Fast.ast_from_File(file)
+## Fast.ast_from_File(file)
 
 This method parses the code and load into a AST representation.
 
@@ -311,7 +313,7 @@ This method parses the code and load into a AST representation.
 Fast.ast_from_file('sample.rb')
 ```
 
-### Fast.search_file
+## Fast.search_file
 
 You can use `search_file` and pass the path for search for expressions inside
 files.
@@ -322,7 +324,7 @@ Fast.search_file('file.rb', expression)
 
 It's simple combination of `Fast.ast_from_file` with `Fast.search`.
 
-### Fast.ruby_files_from(arguments)
+## Fast.ruby_files_from(arguments)
 
 You'll be probably looking for multiple ruby files, then this method fetches
 all internal `.rb` files 
@@ -438,3 +440,5 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/jonata
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
 
+
+See more on the [official documentation](https://jonatas.github.io/fast).
