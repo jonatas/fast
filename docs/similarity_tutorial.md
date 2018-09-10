@@ -117,7 +117,12 @@ The similarities found are the following:
 And now we can test the expression using the command line tool through the files
 and observe the similarity:
 
+```
 ⋊> ~ fast "(class (const nil _) (const nil _) nil)" /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/parallel-1.12.1/lib/parallel.rb /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/method_source-0.9.0/lib/method_source.rb /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/rdoc.rb /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/irb.rb /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/tsort.rb
+```
+
+Output:
+
 ```ruby
 # /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/parallel-1.12.1/lib/parallel.rb:8
 class DeadWorker < StandardError
@@ -152,5 +157,18 @@ def similarities.show pattern
     end
   end
 end
+```
+
+And calling the method exploring some "if" similarities, it prints the following
+results:
+
+```ruby
+similarities.show "(if (send (const nil _) _ (lvar _)) nil (return (false)))"
+# /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/resolv.rb:1248
+return false unless Name === other
+# /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/fileutils.rb:138
+return false unless File.exist?(new)
+# /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/matrix.rb:1862
+return false unless Vector === other
 ```
  
