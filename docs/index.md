@@ -11,23 +11,23 @@ the same code.
 You can define a string like:
 
 
-```
+```ruby
 %||
 ```
 
 or
 
-```
+```ruby
 ''
 ```
 
 or
 
-```
+```ruby
 ""
 ```
 
-and they will have the same AST representation.
+but they will have the same AST representation.
 
 ## AST representation
 
@@ -63,14 +63,6 @@ ruby-parse -e 1.1
 Building a regex that will match decimals and integer looks like something easy
 and with fast you use a node pattern that reminds the syntax of regular
 expressions.
-
-Let's explore the tool: 
-
-$    echo 1 >> sample.rb
-
-```
-
-```
 
 ## Syntax for find in AST
 
