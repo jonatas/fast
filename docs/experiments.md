@@ -118,3 +118,5 @@ experiment.run
 Or drop the code into `experiments` folder and use the `fast-experiment` command
 line tool.
 
+    $ fast-experiment RSpec/RemoveUselessBeforeAfterHook spec
+ 
