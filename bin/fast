@@ -53,6 +53,7 @@ files.each do |file|
 
   results.each do |result|
     next if result.nil? || result == []
+
     if pry
       require 'pry'
       binding.pry # rubocop:disable Lint/Debugger

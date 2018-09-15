@@ -155,6 +155,7 @@ module Fast
 
     def debug
       return yield if debugging
+
       self.debugging = true
       result = nil
       Find.class_eval do
@@ -321,6 +322,7 @@ module Fast
 
     def ==(other)
       return false if other.nil? || !other.respond_to?(:token)
+
       token == other.token
     end
 
@@ -329,6 +331,7 @@ module Fast
     def valuate(token)
       if token.is_a?(String)
         return valuate(LITERAL[token]) if LITERAL.key?(token)
+
         typecast_value(token)
       else
         token
@@ -363,6 +366,7 @@ module Fast
     def initialize(token)
       token = token.token if token.respond_to?(:token)
       raise 'You must use captures!' unless token
+
       @capture_index = token.to_i
     end
 
@@ -472,6 +476,7 @@ module Fast
       if tail.empty?
         return ast == @ast ? find_captures : true # root node
       end
+
       child = ast.children
       tail.each_with_index.all? do |token, i|
         token.previous_captures = find_captures if token.is_a?(Fast::FindWithCapture)
@@ -491,6 +496,7 @@ module Fast
 
     def find_captures(fast = @fast)
       return true if fast == @fast && !captures?(fast)
+
       case fast
       when Capture then fast.captures
       when Array then fast.flat_map(&method(:find_captures)).compact
@@ -576,6 +582,7 @@ module Fast
     def ok_with(combination)
       @ok_experiments << combination
       return unless combination.is_a?(Array)
+
       combination.each do |element|
         @ok_experiments.delete(element)
       end
@@ -603,6 +610,7 @@ module Fast
         end
       end
       return unless new_content
+
       write_experiment_file(indices, new_content)
       new_content
     end
@@ -630,6 +638,7 @@ module Fast
       count_executed_combinations = @fail_experiments.size + @ok_experiments.size
       puts "Done with #{@file} after #{count_executed_combinations}"
       return unless perfect_combination = @ok_experiments.last # rubocop:disable Lint/AssignmentInCondition
+
       puts "mv #{experimental_filename(perfect_combination)} #{@file}"
       `mv #{experimental_filename(perfect_combination)} #{@file}`
     end
@@ -658,6 +667,7 @@ module Fast
       if experimental_file == IO.read(@file)
         raise 'Returned the same file thinking:'
       end
+
       File.open(experimental_file, 'w+') { |f| f.puts content }
 
       if experiment.ok_if.call(experimental_file)
