@@ -1,10 +1,12 @@
 # Experiments
 
 Experiments allow us to play with AST and do some code transformation, execute
-some code and continue combining multiple transformations.
+some code and continue combining successful transformations.
 
 The major idea is try a new approach without any promise and if it works
 continue transforming the code.
+
+## Replace `FactoryBot#create` with `build_stubbed`.
 
 Let's look into the following spec example:
 
@@ -17,7 +19,7 @@ end
 ```
 
 Let's say we're amazed with `FactoryBot#build_stubbed` and want to build a small
-bot to make the changes for me in my entire code base. Skip some database
+bot to make the changes in a entire code base. Skip some database
 touches while testing huge test suites are always a good idea.
 
 First we can hunt for the cases we want to find:
@@ -42,7 +44,6 @@ Running it in a big codebase will probably find a few examples of blocks.
 The next step is build a replacement of each independent occurrence to use
 `build_stubbed` instead of create and combine the successful ones, run again and
 combine again, until try all kind of successful replacements combined.
-
 
 Considering we have the following code in `sample_spec.rb`:
 
@@ -96,6 +97,9 @@ describe "my spec" do
 end
 ```
 
+And now, we can define an experiment that removes the entire code block and run
+the experimental specs.
+
 ```ruby
 experiment = Fast.experiment('RSpec/RemoveUselessBeforeAfterHook') do
   lookup 'spec'
@@ -105,5 +109,12 @@ experiment = Fast.experiment('RSpec/RemoveUselessBeforeAfterHook') do
 end
 ```
 
+To run the experiment you can simply say:
 
+```ruby
+experiment.run
+```
+
+Or drop the code into `experiments` folder and use the `fast-experiment` command
+line tool.
 
