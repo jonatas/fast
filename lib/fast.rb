@@ -181,22 +181,14 @@ module Fast
     def expression_from(node)
       case node
       when Parser::AST::Node
-        if node.children.any?
-          children_expression = node.children
-            .map(&Fast.method(:expression_from))
-            .join(' ')
-          "(#{node.type} #{children_expression})"
-        else
-          "(#{node.type})"
-        end
+        children_expression = node.children.map(&Fast.method(:expression_from)).join(' ')
+        "(#{node.type}#{' ' + children_expression if node.children.any?})"
       when nil, 'nil'
         'nil'
       when Symbol, String, Integer
         '_'
       when Array, Hash
         '...'
-      else
-        node
       end
     end
   end

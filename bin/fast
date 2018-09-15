@@ -22,9 +22,7 @@ if similar || from_code
     pattern = Fast.expression_from(ast)
   elsif from_code
     pattern = ast.to_sexp
-    if debug
-      puts "The generated expression from AST was:", pattern
-    end
+    puts 'The generated expression from AST was:', pattern if debug
   end
 end
 arguments << '.' if arguments.empty?
@@ -45,8 +43,8 @@ files.each do |file|
       rescue Parser::SyntaxError
         if debug
           puts "Ops! An error occurred trying to search in #{expression.inspect} in #{file}",
-            $ERROR_INFO,
-            $ERROR_POSITION
+               $ERROR_INFO,
+               $ERROR_POSITION
         end
       end
     end
