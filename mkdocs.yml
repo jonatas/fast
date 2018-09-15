@@ -1,0 +1,19 @@
+site_name: Fast website
+repo_url: https://github.com/jonatas/fast
+edit_uri: edit/master/docs/
+google_analytics: ['UA-125089529-1', 'auto']
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: pink
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+pages:
+  - Home: index.md
+  - Code Similarity: similarity_tutorial.md
+  - Experiments: experiments.md
