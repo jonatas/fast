@@ -5,20 +5,6 @@ The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubo
 You can find a great tutorial about RuboCop node pattern in the
 [official documentation](https://rubocop.readthedocs.io/en/latest/node_pattern/).
 
-The basic elemements are:
-
-- `()` to represent a **node** search
-- `{}` is for **any** matches like **union** conditions with **or** operator
-- `[]` is for **all** matches like **intersect** conditions with **and** operator
-- `$` is for **capture** current expression
-- `_` is **something** not nil
-- `nil` matches exactly **nil**
-- `...` is a **node** with children
-- `^` is to get the **parent node** of an expression
-- `?` is for **maybe**
-- `\1` to use the first **previous captured** element
-- `""` surround the value with double quotes to match literal strings
-
 ## Code example
 
 Let's consider the following `example.rb` code example:
