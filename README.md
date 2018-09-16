@@ -29,18 +29,6 @@ The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubo
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'ffast'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
     $ gem install ffast
 
 ## How it works

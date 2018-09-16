@@ -14,6 +14,7 @@ markdown_extensions:
   - toc:
       permalink: true
 nav:
-  - Home: index.md
+  - Introduction: index.md
+  - Syntax: syntax.md
   - Experiments: experiments.md
   - Code Similarity: similarity_tutorial.md
