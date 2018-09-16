@@ -539,20 +539,6 @@
 <p>The syntax is inspired on <a href="https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb">RuboCop Node Pattern</a>.</p>
 <p>You can find a great tutorial about RuboCop node pattern in the
 <a href="https://rubocop.readthedocs.io/en/latest/node_pattern/">official documentation</a>.</p>
-<p>The basic elemements are:</p>
-<ul>
-<li><code>()</code> to represent a <strong>node</strong> search</li>
-<li><code>{}</code> is for <strong>any</strong> matches like <strong>union</strong> conditions with <strong>or</strong> operator</li>
-<li><code>[]</code> is for <strong>all</strong> matches like <strong>intersect</strong> conditions with <strong>and</strong> operator</li>
-<li><code>$</code> is for <strong>capture</strong> current expression</li>
-<li><code>_</code> is <strong>something</strong> not nil</li>
-<li><code>nil</code> matches exactly <strong>nil</strong></li>
-<li><code>...</code> is a <strong>node</strong> with children</li>
-<li><code>^</code> is to get the <strong>parent node</strong> of an expression</li>
-<li><code>?</code> is for <strong>maybe</strong></li>
-<li><code>\1</code> to use the first <strong>previous captured</strong> element</li>
-<li><code>""</code> surround the value with double quotes to match literal strings</li>
-</ul>
 <h2 id="code-example">Code example<a class="headerlink" href="#code-example" title="Permanent link">&para;</a></h2>
 <p>Let's consider the following <code>example.rb</code> code example:</p>
 <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Example</span>
