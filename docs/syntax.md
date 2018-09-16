@@ -19,6 +19,8 @@ The basic elemements are:
 - `\1` to use the first **previous captured** element
 - `""` surround the value with double quotes to match literal strings
 
+## Code example
+
 Let's consider the following `example.rb` code example:
 
 ```ruby
@@ -26,6 +28,9 @@ class Example
   ANSWER = 42
   def magic
     rand(ANSWER)
+  end
+  def duplicate(value)
+    value * 2
   end
 end
 ```
@@ -190,7 +195,7 @@ ANSWER = 42
   end
 ```
 
-## join conditions with `[]`
+## `[]` join conditions
 
 Let's hunt for integer nodes that the parent is also a method:
 
@@ -244,8 +249,145 @@ If we use `(def _ _)` instead it will match both methods because `(args)`
 does not have children but is not nil.
 
 ## `$` is for **capture** current expression
+
+Now, let's say we want to extract some method name from current classes.
+
+In such case we don't want to have the node definition but only return the node
+name.
+
+```ruby
+# example.rb:2
+def magic
+    rand(ANSWER)
+  end
+# example.rb:
+magic
+# example.rb:9
+def duplicate(value)
+    value * 2
+  end
+# example.rb:
+duplicate
+```
+One extra method name was printed because of `$` is capturing the element.
+
+## fast `--pry`
+
+Let's use the `--pry` for inspecting the results.
+
+    $ fast '(def $_)' example.rb --pry
+
+It will open pry with access to `result` as the first result and
+`results` with all matching results.
+
+```
+From: /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/ffast-0.0.2/bin/fast @ line 60 :
+
+    55:
+    56:   results.each do |result|
+    57:     next if result.nil? || result == []
+    58:     if pry
+    59:       require 'pry'
+ => 60:       binding.pry # rubocop:disable Lint/Debugger
+    61:     else
+    62:       Fast.report(result, file: file, show_sexp: show_sexp)
+    63:     end
+    64:   end
+    65: end
+```
+
+Inspecting the results you can see that they are mixing AST nodes and the
+captures.
+
+```ruby
+[1] pry(main)> results
+=> [s(:def, :magic,
+  s(:args),
+  s(:send, nil, :rand,
+    s(:const, nil, :ANSWER))),
+ :magic,
+ s(:def, :duplicate,
+  s(:args,
+    s(:arg, :value)),
+  s(:send,
+    s(:lvar, :value), :*,
+    s(:int, 2))),
+ :duplicate]
+```
+
+We can filter the captures to make it easy to analyze.
+
+```ruby
+[2] pry(main)> results.grep(Symbol)
+=> [:magic, :duplicate]
+```
+
 ## `nil` matches exactly **nil**
+
+Nil is used in the code as a node type but parser gem also represents empty
+spaces in expressions with nil.
+
+Example, a method call from Kernel is a `send` from `nil` calling the method
+while I can also send a method call from a class.
+
+```
+$ ruby-parse -e 'method'
+(send nil :method)
+```
+
+And a method from a object will have the nested target not nil.
+
+```
+$ ruby-parse -e 'object.method'
+(send
+  (send nil :object) :method)
+```
+
+Let's build a serch for any calls from `nil`:
+
+    $ fast '(_ nil _)' example.rb                                                                                                                                     18:23:40
+
+```ruby
+# example.rb:3
+Example
+# example.rb:4
+ANSWER = 42
+# example.rb:6
+rand(ANSWER)
+```
+
+Double check the expressions that have matched printing the AST:
+
+    $ fast '(_ nil _)' example.rb --ast                                                                                                                               18:27:00
+
+```ruby
+# example.rb:3
+(const nil :Example)
+# example.rb:4
+(casgn nil :ANSWER
+  (int 42))
+# example.rb:6
+(send nil :rand
+  (const nil :ANSWER))
+```
+
 ## `{}` is for **any** matches like **union** conditions with **or** operator
+
+Let's say we to add check all occurrencies of the constant `ANSWER`.
+
+We'll need to get both `casgn` and `const` node types. For such cases we can
+surround the expressions with `{}` and it will return if the node matches with
+any of the internal expressions.
+
+    $ fast '({casgn const} nil ANSWER)' example.rb
+
+```
+# example.rb:4
+ANSWER = 42
+# example.rb:6
+ANSWER
+```
+
 ## `?` is for **maybe**
 ## `\1` to use the first **previous captured** element
 ## `""` surround the value with double quotes to match literal strings
