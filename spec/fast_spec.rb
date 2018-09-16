@@ -423,6 +423,10 @@ RSpec.describe Fast do
       end
     end
 
+    after do
+      File.delete('sample.rb')
+    end
+
     it 'capture things flatten and unique nodes' do
       result = described_class.search_file('$def', 'sample.rb')
       method_names = result.map(&:children).map(&:first)
@@ -494,10 +498,6 @@ RSpec.describe Fast do
         ).lines.map(&:chomp).map(&:strip))
           .to include(%|puts [AUTHOR, "wants to say", welcome_message].join(' ')|)
       end
-    end
-
-    after do
-      File.delete('sample.rb')
     end
   end
 
