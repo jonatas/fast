@@ -16,5 +16,6 @@ markdown_extensions:
 nav:
   - Introduction: index.md
   - Syntax: syntax.md
+  - Command Line: command_line.md
   - Experiments: experiments.md
   - Code Similarity: similarity_tutorial.md
