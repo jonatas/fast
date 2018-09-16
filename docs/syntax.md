@@ -64,7 +64,7 @@ Fast works with a single word that will be the node type.
 
 A simple search of `def` nodes can be done and will also print the code.
 
-    $ fast def example.rb                                                                                                                                               20:34:21
+    $ fast def example.rb
 
 ```ruby
 # example.rb:3
@@ -75,7 +75,7 @@ A simple search of `def` nodes can be done and will also print the code.
 
 or check the `casgn` that will show constant assignments:
 
-    $ fast casgn example.rb                                                                                                                                             20:40:21
+    $ fast casgn example.rb
 
 ```ruby
 # example.rb:2
@@ -87,9 +87,7 @@ ANSWER = 42
 To specify details about a node, the `(` means navigate deeply into a node and
 go deep into the expression.
 
-```
-fast '(casgn' example.rb
-```
+    $ fast '(casgn' example.rb
 
 ```ruby
 # example.rb:2
@@ -100,9 +98,7 @@ Fast matcher never checks the end of the expression and close parens are not
 necessary. We keep them for the sake of specify more node details but the
 expression works with incomplete parens.
 
-```
-fast '(casgn)' example.rb
-```
+    $ fast '(casgn)' example.rb
 
 ```ruby
 # example.rb:2
@@ -130,7 +126,7 @@ ANSWER = 42
 For checking AST details while doing some search, you can use `--ast` in the
 command line for printing the AST instead of the code:
 
-    $ fast '((casgn ' example.rb --ast                                                                                                                                  20:54:12
+    $ fast '((casgn ' example.rb --ast
 
 ```ruby
 # example.rb:2
@@ -143,7 +139,7 @@ command line for printing the AST instead of the code:
 Let's enhance our current expression and specify that we're looking for constant
 assignments of integers ignoring values and constant names replacing with `_`.
 
-    $ fast '(casgn nil _ (int _))' example.rb                                                    21:10:26
+    $ fast '(casgn nil _ (int _))' example.rb
 
 ```ruby
 # example.rb:2
@@ -171,7 +167,7 @@ the expression in their context. We need to check their `parent`.
 By default, Parser::AST::Node  does not have access to parent and for accessing
 it you can say `^` for reaching the parent.
 
-   $ fast '^int' example.rb                                                                                                                                           21:23:57
+    $ fast '^int' example.rb
 
 ```ruby
 # example.rb:2
@@ -182,7 +178,7 @@ value * 2
 
 And using it multiple times will make the node match from levels up:
 
-    $ fast '^^int' example.rb                                                                                                                                          21:24:10
+    $ fast '^^int' example.rb
 
 ```ruby
 # example.rb:2
@@ -236,7 +232,7 @@ Looking the method representation we have:
 
 And if we want to delimit only methods with arguments:
 
-    $ fast '(def _ ...)' example.rb                                                                                                                                    22:22:37
+    $ fast '(def _ ...)' example.rb
 
 ```ruby
 # example.rb:6
@@ -345,7 +341,7 @@ $ ruby-parse -e 'object.method'
 
 Let's build a serch for any calls from `nil`:
 
-    $ fast '(_ nil _)' example.rb                                                                                                                                     18:23:40
+    $ fast '(_ nil _)' example.rb
 
 ```ruby
 # example.rb:3
@@ -358,7 +354,7 @@ rand(ANSWER)
 
 Double check the expressions that have matched printing the AST:
 
-    $ fast '(_ nil _)' example.rb --ast                                                                                                                               18:27:00
+    $ fast '(_ nil _)' example.rb --ast
 
 ```ruby
 # example.rb:3
