@@ -594,7 +594,7 @@
 operators.</p>
 <p>Fast works with a single word that will be the node type.</p>
 <p>A simple search of <code>def</code> nodes can be done and will also print the code.</p>
-<div class="codehilite"><pre><span></span>$ fast def example.rb                                                                                                                                               20:34:21
+<div class="codehilite"><pre><span></span>$ fast def example.rb
 </pre></div>
 
 
@@ -606,7 +606,7 @@ operators.</p>
 
 
 <p>or check the <code>casgn</code> that will show constant assignments:</p>
-<div class="codehilite"><pre><span></span>$ fast casgn example.rb                                                                                                                                             20:40:21
+<div class="codehilite"><pre><span></span>$ fast casgn example.rb
 </pre></div>
 
 
@@ -618,7 +618,7 @@ operators.</p>
 <h2 id="to-represent-a-node-search"><code>()</code> to represent a <strong>node</strong> search<a class="headerlink" href="#to-represent-a-node-search" title="Permanent link">&para;</a></h2>
 <p>To specify details about a node, the <code>(</code> means navigate deeply into a node and
 go deep into the expression.</p>
-<div class="codehilite"><pre><span></span>fast &#39;(casgn&#39; example.rb
+<div class="codehilite"><pre><span></span>$ fast &#39;(casgn&#39; example.rb
 </pre></div>
 
 
@@ -630,7 +630,7 @@ go deep into the expression.</p>
 <p>Fast matcher never checks the end of the expression and close parens are not
 necessary. We keep them for the sake of specify more node details but the
 expression works with incomplete parens.</p>
-<div class="codehilite"><pre><span></span>fast &#39;(casgn)&#39; example.rb
+<div class="codehilite"><pre><span></span>$ fast &#39;(casgn)&#39; example.rb
 </pre></div>
 
 
@@ -661,7 +661,7 @@ expression works with incomplete parens.</p>
 
 <p>For checking AST details while doing some search, you can use <code>--ast</code> in the
 command line for printing the AST instead of the code:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;((casgn &#39; example.rb --ast                                                                                                                                  20:54:12
+<div class="codehilite"><pre><span></span>$ fast &#39;((casgn &#39; example.rb --ast
 </pre></div>
 
 
@@ -674,7 +674,7 @@ command line for printing the AST instead of the code:</p>
 <h2 id="_-is-something-not-nil"><code>_</code> is <strong>something</strong> not nil<a class="headerlink" href="#_-is-something-not-nil" title="Permanent link">&para;</a></h2>
 <p>Let's enhance our current expression and specify that we're looking for constant
 assignments of integers ignoring values and constant names replacing with <code>_</code>.</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(casgn nil _ (int _))&#39; example.rb                                                    21:10:26
+<div class="codehilite"><pre><span></span>$ fast &#39;(casgn nil _ (int _))&#39; example.rb
 </pre></div>
 
 
@@ -702,7 +702,10 @@ the expression in their context. We need to check their <code>parent</code>.</p>
 <h2 id="is-to-get-the-parent-node-of-an-expression"><code>^</code> is to get the <strong>parent node</strong> of an expression<a class="headerlink" href="#is-to-get-the-parent-node-of-an-expression" title="Permanent link">&para;</a></h2>
 <p>By default, Parser::AST::Node  does not have access to parent and for accessing
 it you can say <code>^</code> for reaching the parent.</p>
-<p>$ fast '^int' example.rb                                                                                                                                           21:23:57</p>
+<div class="codehilite"><pre><span></span>$ fast &#39;^int&#39; example.rb
+</pre></div>
+
+
 <div class="codehilite"><pre><span></span><span class="c1"># example.rb:2</span>
 <span class="no">ANSWER</span> <span class="o">=</span> <span class="mi">42</span>
 <span class="c1"># example.rb:7</span>
@@ -711,7 +714,7 @@ it you can say <code>^</code> for reaching the parent.</p>
 
 
 <p>And using it multiple times will make the node match from levels up:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;^^int&#39; example.rb                                                                                                                                          21:24:10
+<div class="codehilite"><pre><span></span>$ fast &#39;^^int&#39; example.rb
 </pre></div>
 
 
@@ -758,7 +761,7 @@ type <code>def</code>.</p>
 
 
 <p>And if we want to delimit only methods with arguments:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(def _ ...)&#39; example.rb                                                                                                                                    22:22:37
+<div class="codehilite"><pre><span></span>$ fast &#39;(def _ ...)&#39; example.rb
 </pre></div>
 
 
@@ -857,7 +860,7 @@ while I can also send a method call from a class.</p>
 
 
 <p>Let's build a serch for any calls from <code>nil</code>:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(_ nil _)&#39; example.rb                                                                                                                                     18:23:40
+<div class="codehilite"><pre><span></span>$ fast &#39;(_ nil _)&#39; example.rb
 </pre></div>
 
 
@@ -871,7 +874,7 @@ while I can also send a method call from a class.</p>
 
 
 <p>Double check the expressions that have matched printing the AST:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(_ nil _)&#39; example.rb --ast                                                                                                                               18:27:00
+<div class="codehilite"><pre><span></span>$ fast &#39;(_ nil _)&#39; example.rb --ast
 </pre></div>
 
 
