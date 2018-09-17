@@ -145,3 +145,9 @@ You can limit experiments or file escope:
 fast-experiment RSpec/RemoveUselessBeforeAfterHook spec/models/**/*_spec.rb
 ```
 
+Or a single file:
+
+```
+fast-experiment RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
+```
+

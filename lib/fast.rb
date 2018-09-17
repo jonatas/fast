@@ -645,7 +645,7 @@ module Fast
 
     def run
       while (combinations = suggest_combinations).any?
-        if combinations.size > 30
+        if combinations.size > 50
           puts "Ignoring #{@file} because it have #{combinations.size} possible combinations"
           break
         end
