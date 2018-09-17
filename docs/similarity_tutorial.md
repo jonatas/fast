@@ -2,6 +2,8 @@
 
 This is a small tutorial to explore code similarity.
 
+Check the code example [here](https://github.com/jonatas/fast/blob/master/examples/similarity_research.rb).
+
 The major idea is register all expression styles and see if we can find some
 similarity between the structures.
 
