@@ -19,7 +19,7 @@ end
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
-  VERSION = '0.1.0'
+  VERSION = '0.3.0'
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
     '_'   => ->(node) { !node.nil? },

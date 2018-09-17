@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name          = 'ffast'
-  spec.version       = '0.0.2'
+  spec.version       = '0.0.3'
   spec.required_ruby_version = '>= 2.3'
   spec.authors       = ['Jônatas Davi Paganini']
   spec.email         = ['jonatas.paganini@toptal.com']
