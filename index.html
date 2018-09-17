@@ -344,20 +344,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#command-line" title="Command line" class="md-nav__link">
-    Command line
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fastexperiment" title="Fast.experiment" class="md-nav__link">
-    Fast.experiment
-  </a>
-  
-</li>
-      
       
       
       
@@ -377,6 +363,18 @@
   <li class="md-nav__item">
     <a href="syntax/" title="Syntax" class="md-nav__link">
       Syntax
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="command_line/" title="Command Line" class="md-nav__link">
+      Command Line
     </a>
   </li>
 
@@ -502,20 +500,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#command-line" title="Command line" class="md-nav__link">
-    Command line
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#fastexperiment" title="Fast.experiment" class="md-nav__link">
-    Fast.experiment
-  </a>
-  
-</li>
-      
       
       
       
@@ -541,22 +525,8 @@
 how the code is written.</p>
 <p>Using the AST will be easier than try to cover the multiple ways we can write
 the same code.</p>
-<p>You can define a string like:</p>
-<div class="codehilite"><pre><span></span><span class="sx">%||</span>
-</pre></div>
-
-
-<p>or</p>
-<div class="codehilite"><pre><span></span><span class="s1">&#39;&#39;</span>
-</pre></div>
-
-
-<p>or</p>
-<div class="codehilite"><pre><span></span><span class="s2">&quot;&quot;</span>
-</pre></div>
-
-
-<p>but they will have the same AST representation.</p>
+<p>You can define a string like <code>%||</code> or <code>''</code> or <code>""</code> but they will have the same
+AST representation.</p>
 <h2 id="ast-representation">AST representation<a class="headerlink" href="#ast-representation" title="Permanent link">&para;</a></h2>
 <p>Each detail of the ruby syntax have a equivalent identifier and some
 content. The content can be another expression or a final value.</p>
@@ -598,7 +568,7 @@ expressions.</p>
 <li><code>\1</code> to use the first <strong>previous captured</strong> element</li>
 <li><code>""</code> surround the value with double quotes to match literal strings</li>
 </ul>
-<p>The syntax is inspired on <a href="https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb">RuboCop Node Pattern</a>.</p>
+<p>Jump to <a href="syntax/">Syntax</a>.</p>
 <h2 id="fastmatch">Fast.match?<a class="headerlink" href="#fastmatch" title="Permanent link">&para;</a></h2>
 <p><code>match?</code> is the most granular function that tries to compare a node with an
 expression. It returns true or false and some node captures case it find
@@ -838,84 +808,6 @@ files.</p>
 <p>You'll be probably looking for multiple ruby files, then this method fetches
 all internal <code>.rb</code> files </p>
 <div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">ruby_files_from</span><span class="p">(</span><span class="o">[</span><span class="s1">&#39;lib&#39;</span><span class="o">]</span><span class="p">)</span> <span class="c1"># =&gt; [&quot;lib/fast.rb&quot;]</span>
-</pre></div>
-
-
-<h2 id="command-line">Command line<a class="headerlink" href="#command-line" title="Permanent link">&para;</a></h2>
-<p>It will also inject a executable named <code>fast</code> and you can use it to search and
-find code using the concept:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(def match?)&#39; lib/fast.rb
-</pre></div>
-
-
-<ul>
-<li>Use <code>-d</code> or <code>--debug</code> for enable debug mode.</li>
-<li>Use <code>--ast</code> to output the AST instead of the original code</li>
-<li>Use <code>--pry</code> to jump debugging the first result with pry</li>
-<li>Use <code>-c</code> to search from code example</li>
-<li>Use <code>-s</code> to search similar code</li>
-</ul>
-<div class="codehilite"><pre><span></span>$ fast &#39;(block (send nil it))&#39; spec --pry
-</pre></div>
-
-
-<p>And inside pry session,  you can use <code>result</code> as the first result or <code>results</code>
-to use all occurrences found.</p>
-<div class="codehilite"><pre><span></span><span class="n">results</span><span class="o">.</span><span class="n">map</span><span class="p">{</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="n">e</span><span class="o">.</span><span class="n">children</span><span class="o">[</span><span class="mi">0</span><span class="o">].</span><span class="n">children</span><span class="o">[</span><span class="mi">2</span><span class="o">]</span><span class="p">}</span>
-<span class="c1"># =&gt; [s(:str, &quot;parses ... as Find&quot;),</span>
-<span class="c1"># s(:str, &quot;parses $ as Capture&quot;),</span>
-<span class="c1"># s(:str, &quot;parses quoted values as strings&quot;),</span>
-<span class="c1"># s(:str, &quot;parses {} as Any&quot;),</span>
-<span class="c1"># s(:str, &quot;parses [] as All&quot;), ...]</span>
-</pre></div>
-
-
-<p>Getting all <code>it</code> blocks without description:</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(block (send nil it (nil)) (args ) (!str)) ) )&#39; spec
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1"># spec/fast_spec.rb:166</span>
-<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="n">s</span><span class="p">(</span><span class="ss">:int</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;(...)&#39;</span><span class="p">)</span> <span class="p">}</span>
-<span class="c1"># spec/fast_spec.rb:167</span>
-<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="n">s</span><span class="p">(</span><span class="ss">:int</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;(_ _)&#39;</span><span class="p">)</span> <span class="p">}</span>
-<span class="c1"># spec/fast_spec.rb:168</span>
-<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="n">code</span><span class="o">[</span><span class="s1">&#39;&quot;string&quot;&#39;</span><span class="o">]</span><span class="p">,</span> <span class="s1">&#39;(str &quot;string&quot;)&#39;</span><span class="p">)</span> <span class="p">}</span>
-<span class="c1"># ... more results</span>
-</pre></div>
-
-
-<h2 id="fastexperiment">Fast.experiment<a class="headerlink" href="#fastexperiment" title="Permanent link">&para;</a></h2>
-<p>You can define experiments and build experimental research to improve some code in
-an automated way.</p>
-<p>Let's create an experiment to try to remove <code>before</code> or <code>after</code> blocks
-and run specs. If the spec pass without need the hook, the hook is useless.</p>
-<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">experiment</span><span class="p">(</span><span class="s2">&quot;RSpec/RemoveUselessBeforeAfterHook&quot;</span><span class="p">)</span> <span class="k">do</span>
-  <span class="n">lookup</span> <span class="s1">&#39;spec&#39;</span>
-  <span class="n">search</span> <span class="s2">&quot;(block (send nil {before after}))&quot;</span>
-  <span class="n">edit</span> <span class="p">{</span><span class="o">|</span><span class="n">node</span><span class="o">|</span> <span class="n">remove</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span> <span class="p">}</span>
-  <span class="n">policy</span> <span class="p">{</span><span class="o">|</span><span class="n">new_file</span><span class="o">|</span> <span class="nb">system</span><span class="p">(</span><span class="s2">&quot;bin/spring rspec --fail-fast </span><span class="si">#{</span><span class="n">new_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="p">}</span>
-<span class="k">end</span>
-</pre></div>
-
-
-<ul>
-<li>In the <code>lookup</code> you can pass files or folders.</li>
-<li>The <code>search</code> contains the expression you want to match</li>
-<li>With <code>edit</code> block you can apply the code change</li>
-<li>And the <code>policy</code> is executed to check if the current change is valuable</li>
-</ul>
-<p>If the file contains multiple <code>before</code> or <code>after</code> blocks, each removal will
-occur independently and the successfull removals will be combined as a
-secondary change. The process repeates until find all possible combinations.</p>
-<p>See more examples in <a href="experiments">experiments</a> folder.</p>
-<p>To run multiple experiments, use <code>fast-experiment</code> runner:</p>
-<div class="codehilite"><pre><span></span>fast-experiment &lt;experiment-names&gt; &lt;files-or-folders&gt;
-</pre></div>
-
-
-<p>You can limit experiments or file escope:</p>
-<div class="codehilite"><pre><span></span>fast-experiment RSpec/RemoveUselessBeforeAfterHook spec/models/**/*_spec.rb
 </pre></div>
                 
                   
