@@ -336,6 +336,7 @@
                 
                 <h1 id="research-for-code-similarity">Research for code similarity<a class="headerlink" href="#research-for-code-similarity" title="Permanent link">&para;</a></h1>
 <p>This is a small tutorial to explore code similarity.</p>
+<p>Check the code example <a href="https://github.com/jonatas/fast/blob/master/examples/similarity_research.rb">here</a>.</p>
 <p>The major idea is register all expression styles and see if we can find some
 similarity between the structures.</p>
 <p>First we need to create a function that can analyze AST nodes and extract a
@@ -418,7 +419,7 @@ the idea will work.</p>
 files required by bundler.</p>
 <div class="codehilite"><pre><span></span><span class="n">similarities</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="no">Gem</span><span class="o">.</span><span class="n">find_files</span><span class="p">(</span><span class="s1">&#39;*.rb&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">file</span><span class="o">|</span>
-  <span class="no">Fast</span><span class="o">.</span><span class="n">search_file</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="k">do</span> <span class="o">|</span><span class="n">n</span><span class="o">|</span>
+  <span class="no">Fast</span><span class="o">.</span><span class="n">search_file</span><span class="p">(</span><span class="s1">&#39;{block send if while case def defs class module}&#39;</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="k">do</span> <span class="o">|</span><span class="n">n</span><span class="o">|</span>
     <span class="n">key</span> <span class="o">=</span> <span class="no">Fast</span><span class="o">.</span><span class="n">expression_from</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
     <span class="n">similarities</span><span class="o">[</span><span class="n">key</span><span class="o">]</span> <span class="o">||=</span> <span class="no">Set</span><span class="o">.</span><span class="n">new</span>
     <span class="n">similarities</span><span class="o">[</span><span class="n">key</span><span class="o">]</span> <span class="o">&lt;&lt;</span> <span class="n">file</span>
