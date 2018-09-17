@@ -253,8 +253,6 @@ duplicate
 ```
 One extra method name was printed because of `$` is capturing the element.
 
-## fast `--pry`
-
 Let's use the `--pry` for inspecting the results.
 
     $ fast '(def $_)' example.rb --pry
@@ -369,8 +367,4 @@ ANSWER = 42
 # example.rb:6
 ANSWER
 ```
-
-## `?` is for **maybe**
-## `\1` to use the first **previous captured** element
-## `""` surround the value with double quotes to match literal strings
 

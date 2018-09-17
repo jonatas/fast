@@ -8,26 +8,8 @@ how the code is written.
 Using the AST will be easier than try to cover the multiple ways we can write
 the same code.
 
-You can define a string like:
-
-
-```ruby
-%||
-```
-
-or
-
-```ruby
-''
-```
-
-or
-
-```ruby
-""
-```
-
-but they will have the same AST representation.
+You can define a string like `%||` or `''` or `""` but they will have the same
+AST representation.
 
 ## AST representation
 
@@ -80,7 +62,7 @@ The current version cover the following elements:
 - `\1` to use the first **previous captured** element
 - `""` surround the value with double quotes to match literal strings
 
-The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
+Jump to [Syntax](syntax.md).
 
 ## Fast.match?
 
