@@ -120,3 +120,28 @@ line tool.
 
     $ fast-experiment RSpec/RemoveUselessBeforeAfterHook spec
  
+## DSL
+
+- In the `lookup` you can pass files or folders.
+- The `search` contains the expression you want to match
+- With `edit` block you can apply the code change
+- And the `policy` is executed to check if the current change is valuable
+
+If the file contains multiple `before` or `after` blocks, each removal will
+occur independently and the successfull removals will be combined as a
+secondary change. The process repeates until find all possible combinations.
+
+See more examples in [experiments](experiments) folder.
+
+To run multiple experiments, use `fast-experiment` runner:
+
+```
+fast-experiment <experiment-names> <files-or-folders>
+```
+
+You can limit experiments or file escope:
+
+```
+fast-experiment RSpec/RemoveUselessBeforeAfterHook spec/models/**/*_spec.rb
+```
+
