@@ -94,7 +94,7 @@ files required by bundler.
 ```ruby
 similarities = {}
 Gem.find_files('*.rb').each do |file|
-  Fast.search_file('',file).map do |n|
+  Fast.search_file('{block send if while case def defs class module}', file).map do |n|
     key = Fast.expression_from(n)
     similarities[key] ||= Set.new
     similarities[key] << file
