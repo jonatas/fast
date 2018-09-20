@@ -302,7 +302,14 @@ module Fast
     end
 
     def compare_symbol_or_head(node, expression)
-      type = node.respond_to?(:type) ? node.type : node
+      type =
+        case node
+        when Parser::AST::Node
+          node.type
+        when String
+          node.to_sym
+        else node
+        end
       type == expression
     end
 
