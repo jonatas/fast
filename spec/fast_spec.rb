@@ -534,11 +534,11 @@ RSpec.describe Fast do
 
   describe '.ruby_files_from' do
     it 'captures ruby files from directory' do
-      expect(described_class.ruby_files_from('lib')).to match_array(['lib/fast.rb'])
+      expect(described_class.ruby_files_from('lib')).to include('lib/fast.rb')
     end
 
     it 'captures spec files from specs directory' do
-      expect(described_class.ruby_files_from('spec')).to match_array(['spec/spec_helper.rb', 'spec/fast_spec.rb'])
+      expect(described_class.ruby_files_from('spec')).to include('spec/spec_helper.rb', 'spec/fast_spec.rb')
     end
   end
 
@@ -593,7 +593,7 @@ RSpec.describe Fast do
         experiment_file.ok_with(5)
       end
 
-      specify do # rubocop:disable RSpec/MultipleExpectations
+      specify do
         expect(experiment_file.ok_experiments).to eq([1, 3, 4, 5])
         expect(experiment_file.suggest_combinations).to match_array([[1, 3], [1, 4], [1, 5], [3, 4], [3, 5], [4, 5]])
 

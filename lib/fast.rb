@@ -186,7 +186,7 @@ module Fast
         "(#{node.type}#{' ' + children_expression if node.children.any?})"
       when nil, 'nil'
         'nil'
-      when Symbol, String, Integer
+      when Symbol, String, Numeric
         '_'
       when Array, Hash
         '...'

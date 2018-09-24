@@ -15,6 +15,7 @@ Metrics/LineLength:
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
+    - 'fast.gemspec'
 
 Lint/InterpolationCheck:
   Exclude:
@@ -35,3 +36,6 @@ RSpec/NestedGroups:
 
 RSpec/ExampleLength:
   Max: 20
+
+RSpec/MultipleExpectations:
+  Enabled: false
