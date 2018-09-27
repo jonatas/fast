@@ -7,6 +7,21 @@ RSpec.describe Fast::Cli do
   describe '.initialize' do
     subject(:cli) { described_class.new args }
 
+    context 'with expression and file' do
+      let(:args) { %w[def lib/fast.rb] }
+
+      its(:pattern) { is_expected.to eq('def') }
+
+      its(:files) { is_expected.to eq(['lib/fast.rb']) }
+    end
+
+    context 'with expression and file' do
+      let(:args) { %w[match? lib/fast.rb -c] }
+
+      its(:pattern) { is_expected.to eq('(send nil :match?)') }
+      its(:files) { is_expected.to eq(['lib/fast.rb']) }
+    end
+
     context 'with --pry' do
       let(:args) { %w[--pry] }
 

@@ -13,9 +13,7 @@ module Fast
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/AbcSize
     def initialize(args)
-      @args = args
-      @pattern, *@files = @args
-      OptionParser.new do |opts|
+      opt = OptionParser.new do |opts|
         opts.banner = 'Usage: fast expression <files> [options]'
         opts.on('-d', '--debug', 'Debug fast engine') do
           @debug = true
@@ -44,7 +42,13 @@ module Fast
         opts.on_tail('-h', '--help', 'Show help. More at https://jonatas.github.io/fast') do
           @help = true
         end
-      end.parse! @args
+
+        @pattern, @files = args.reject { |arg| arg.start_with? '-' }
+      end
+      opt.parse! args
+
+      @files = [*@files]
+      @files.reject! { |arg| arg.start_with?('-') }
     end
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
@@ -65,7 +69,7 @@ module Fast
       else
         begin
           Fast.search_file(expression, file)
-        rescue Parser::SyntaxError
+        rescue StandardError
           debug "Ops! An error occurred trying to search in #{expression.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
           []
         end
@@ -75,7 +79,7 @@ module Fast
     def search
       files.each do |file|
         results = search_file(file)
-        next unless results || results.empty?
+        next if results.nil? || results.empty?
 
         results.each do |result|
           if @pry
