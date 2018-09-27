@@ -181,7 +181,7 @@ ANSWER = 42
 
 Let's hunt for integer nodes that the parent is also a method:
 
-   $ fast '[ ^^int def ]' example.rb
+    $ fast '[ ^^int def ]' example.rb
 
 The match will filter only nodes that matches all internal expressions.
 
@@ -199,7 +199,7 @@ type `def`.
 
 Looking the method representation we have:
 
-   $ fast def example.rb --ast
+    $ fast def example.rb --ast
 
 ```ruby
 # example.rb:3
