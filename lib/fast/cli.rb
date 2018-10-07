@@ -13,7 +13,7 @@ module Fast
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/AbcSize
     def initialize(args)
-      opt = OptionParser.new do |opts|
+      @opt = OptionParser.new do |opts|
         opts.banner = 'Usage: fast expression <files> [options]'
         opts.on('-d', '--debug', 'Debug fast engine') do
           @debug = true
@@ -28,9 +28,11 @@ module Fast
         end
 
         opts.on('-c', '--code', 'Create a pattern from code example') do
-          @from_code = true
-          @pattern = Fast.ast(@pattern).to_sexp
-          debug 'Expression from AST:', @pattern
+          if @pattern
+            @from_code = true
+            @pattern = Fast.ast(@pattern).to_sexp
+            debug 'Expression from AST:', @pattern
+          end
         end
 
         opts.on('-s', '--similar', 'Search for similar code.') do
@@ -39,24 +41,38 @@ module Fast
           debug "Looking for code similar to #{@pattern}"
         end
 
+        opts.on_tail("--version", "Show version") do
+          puts Fast::Version
+          exit
+        end
+
         opts.on_tail('-h', '--help', 'Show help. More at https://jonatas.github.io/fast') do
           @help = true
         end
 
         @pattern, @files = args.reject { |arg| arg.start_with? '-' }
       end
-      opt.parse! args
+      @opt.parse! args
 
       @files = [*@files]
       @files.reject! { |arg| arg.start_with?('-') }
+
     end
+
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
 
     def self.run!(argv)
       argv = argv.dup
-      argv = argv.empty? ? ['--help'] : argv
-      new(argv).search
+      new(argv).run!
+    end
+
+    def run!
+      if @help or @files.empty? and @pattern.nil?
+        puts @opt.help
+      else
+        search
+      end
     end
 
     def expression

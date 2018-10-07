@@ -19,7 +19,7 @@ end
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
-  VERSION = '0.0.3'
+  Version = '0.0.3'
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
     '_'   => ->(node) { !node.nil? },
@@ -228,7 +228,7 @@ module Fast
   # ExpressionParser empowers the AST search in Ruby.
   # You can check a few classes inheriting `Fast::Find` and adding extra behavior.
   # Parens encapsulates node search: `(node_type children...)` .
-  # Exclamation Mark to negate: `!(int _)` is equilvalent to a `not integer` node.
+  # Exclamation Mark to negate: `!(int _)` is equivalent to a `not integer` node.
   # Curly Braces allows [Any]: `({int float} _)`  or `{(int _) (float _)}`.
   # Square Braquets allows [All]: [(int _) !(int 0)] # all integer less zero.
   # Dollar sign can be used to capture values: `(${int float} _)` will capture the node type.
