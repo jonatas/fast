@@ -51,6 +51,10 @@ RSpec.describe Fast do
       expect(described_class.expression('\\1')).to be_a(Fast::FindWithCapture)
     end
 
+    it 'binds %1 as first argument' do
+      expect(described_class.expression('%1')).to be_a(Fast::FindFromArgument)
+    end
+
     it '`!` isolated should be a find' do
       expect(described_class.expression('!')).to be_a(Fast::Find)
     end
@@ -315,7 +319,7 @@ RSpec.describe Fast do
       end
     end
 
-    describe `\\<capture-index> to match with previous captured symbols` do
+    describe '\\<capture-index> to match with previous captured symbols' do
       it 'allow capture method name and reuse in children calls' do
         ast = code['def name; person.name end']
         expect(described_class.match?(ast, '(def $_ (_) (send (send nil _) \1))')).to eq([:name])
@@ -338,6 +342,18 @@ RSpec.describe Fast do
       it 'captures parent of parent and also ignore non node children' do
         ast = code['b = a = 1']
         expect(described_class.match?(ast, '$^^(int _)')).to eq([ast])
+      end
+    end
+
+    describe '%<argument-index> to bind an external argument into the expression' do
+      it 'binds extra arguments into the expression' do
+        expect(described_class).to be_match(code['a = 1'], '(lvasgn %1 (int _))', :a)
+        expect(described_class).to be_match(code['"test"'], '(str %1)', 'test')
+        expect(described_class).to be_match(code['"test"'], '(%1 %2)', :str, 'test')
+        expect(described_class).to be_match(code[':symbol'], '(%1 %2)', :sym, :symbol)
+        expect(described_class).to be_match(code[':symbol'], '{%1 %2}', :sym, :str)
+        expect(described_class).not_to be_match(code['a = 1'], '(lvasgn %1 (int _))', :b)
+        expect(described_class).not_to be_match(code['1'], '{%1 %2}', :sym, :str)
       end
     end
   end

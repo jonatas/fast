@@ -23,6 +23,7 @@ The current version cover the following elements:
 - `^` is to get the **parent node** of an expression
 - `?` is for **maybe**
 - `\1` to use the first **previous captured** element
+- `%1` to bind the first extra argument
 - `""` surround the value with double quotes to match literal strings
 
 The syntax is inspired on [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
@@ -191,6 +192,17 @@ It will output each comparison to stdout:
 ```
 int == (int 1) # => true
 1 == 1 # => true
+```
+## Bind arguments to expressions
+
+Sometimes we need to define useful functions and bind arguments that will be
+based on dynamic decisions or other external input.
+For such cases you can bind the arguments with `%` and the index start from `1`.
+
+Example:
+
+```ruby
+Fast.match?(code['a = 1'], '(lvasgn %1 (int _))', :a) # true
 ```
 
 ## Use previous captures in search

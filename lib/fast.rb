@@ -19,7 +19,6 @@ end
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
-  Version = '0.0.3'
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
     '_'   => ->(node) { !node.nil? },
@@ -54,11 +53,13 @@ module Fast
     \$                    # capture
     |
     \\\d                  # find using captured expression
+    |
+    %\d                   # find using binded argument
   /x
 
   class << self
-    def match?(ast, search)
-      Matcher.new(ast, search).match?
+    def match?(ast, search, *args)
+      Matcher.new(ast, search, *args).match?
     end
 
     def replace(ast, search, replacement)
@@ -243,6 +244,7 @@ module Fast
 
     # rubocop:disable Metrics/CyclomaticComplexity
     # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
     def parse
       case (token = next_token)
       when '(' then parse_until_peek(')')
@@ -254,11 +256,13 @@ module Fast
       when '?' then Maybe.new(parse)
       when '^' then Parent.new(parse)
       when '\\' then FindWithCapture.new(parse)
+      when /^%\d/ then FindFromArgument.new(token[1..-1])
       else Find.new(token)
       end
     end
     # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
 
     def parse_until_peek(token)
       list = []
@@ -302,15 +306,14 @@ module Fast
     end
 
     def compare_symbol_or_head(node, expression)
-      type =
-        case node
-        when Parser::AST::Node
-          node.type
-        when String
-          node.to_sym
-        else node
-        end
-      type == expression
+      case node
+      when Parser::AST::Node
+        node.type == expression.to_sym
+      when String
+        node == expression.to_s
+      else
+        node == expression
+      end
     end
 
     def debug_match_recursive(node, expression)
@@ -383,6 +386,30 @@ module Fast
 
     def to_s
       "fc[\\#{@capture_index}]"
+    end
+  end
+
+  # Use `%1` in the expression and the Matcher#prepare_arguments will
+  # interpolate the argument in the expression.
+  class FindFromArgument < Find
+    attr_writer :arguments
+
+    def initialize(token)
+      token = token.token if token.respond_to?(:token)
+      raise 'You must define index' unless token
+
+      @capture_argument = token.to_i - 1
+      raise 'Arguments start in one' if @capture_argument.negative?
+    end
+
+    def match?(node)
+      raise 'You must define arguments to match' unless @arguments
+
+      compare_symbol_or_head node, @arguments[@capture_argument]
+    end
+
+    def to_s
+      "find_with_arg[\\#{@capture_argument}]"
     end
   end
 
@@ -465,7 +492,7 @@ module Fast
 
   # Joins the AST and the search expression to create a complete match
   class Matcher
-    def initialize(ast, fast)
+    def initialize(ast, fast, *args)
       @ast = ast
       @fast = if fast.is_a?(String)
                 Fast.expression(fast)
@@ -473,9 +500,22 @@ module Fast
                 [*fast].map(&Find.method(:new))
               end
       @captures = []
+      prepare_arguments(@fast, args) if args.any?
     end
 
-    # rubocop:disable Metrics/CyclomaticComplexity
+    def prepare_arguments(expression, arguments)
+      case expression
+      when Array
+        expression.each do |item|
+          prepare_arguments(item, arguments)
+        end
+      when Fast::FindFromArgument
+        expression.arguments = arguments
+      when Fast::Find
+        prepare_arguments expression.token, arguments
+      end
+    end
+
     # rubocop:disable Metrics/AbcSize
     def match?(ast = @ast, fast = @fast)
       head, *tail = fast
@@ -486,12 +526,19 @@ module Fast
 
       child = ast.children
       tail.each_with_index.all? do |token, i|
-        token.previous_captures = find_captures if token.is_a?(Fast::FindWithCapture)
+        prepare_token(token)
         token.is_a?(Array) ? match?(child[i], token) : token.match?(child[i])
       end && find_captures
     end
-    # rubocop:enable Metrics/CyclomaticComplexity
+
     # rubocop:enable Metrics/AbcSize
+
+    def prepare_token(token)
+      case token
+      when Fast::FindWithCapture
+        token.previous_captures = find_captures
+      end
+    end
 
     def captures?(fast = @fast)
       case fast

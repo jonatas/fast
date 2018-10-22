@@ -54,26 +54,20 @@ RSpec.describe Fast::Cli do
       its(:pattern) { is_expected.to eq('(float 1.1)') }
     end
 
-    context 'with --version' do
-      let(:args) { %w[--version] }
-
-      its(:run!) do
-        is_expected.to output(Fast::Version)
-      end
-    end
-
-    shared_examples_for :show_help do
+    shared_examples_for 'show help' do
       it { expect { cli.run! }.to output(/Usage: /).to_stdout }
     end
 
     context 'with --help' do
       let(:args) { %w[--h] }
-      it_behaves_like :show_help
+
+      it_behaves_like 'show help'
     end
 
     context 'without arguments' do
       let(:args) { %w[--h] }
-      it_behaves_like :show_help
+
+      it_behaves_like 'show help'
     end
   end
 end

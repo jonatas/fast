@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+lib = File.expand_path('lib', __dir__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require 'fast/version'
+
 Gem::Specification.new do |spec|
   spec.name          = 'ffast'
-  spec.version       = '0.0.3'
+  spec.version       = Fast::VERSION
   spec.required_ruby_version = '>= 2.3'
   spec.authors       = ['Jônatas Davi Paganini']
   spec.email         = ['jonatasdp@gmail.com']

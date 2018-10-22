@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fast'
+require 'fast/version'
 require 'coderay'
 require 'optparse'
 require 'ostruct'
@@ -13,7 +14,7 @@ module Fast
     # rubocop:disable Metrics/MethodLength
     # rubocop:disable Metrics/AbcSize
     def initialize(args)
-      @opt = OptionParser.new do |opts|
+      @opt = OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
         opts.banner = 'Usage: fast expression <files> [options]'
         opts.on('-d', '--debug', 'Debug fast engine') do
           @debug = true
@@ -41,8 +42,8 @@ module Fast
           debug "Looking for code similar to #{@pattern}"
         end
 
-        opts.on_tail("--version", "Show version") do
-          puts Fast::Version
+        opts.on_tail('--version', 'Show version') do
+          puts Fast::VERSION
           exit
         end
 
@@ -56,7 +57,6 @@ module Fast
 
       @files = [*@files]
       @files.reject! { |arg| arg.start_with?('-') }
-
     end
 
     # rubocop:enable Metrics/MethodLength
@@ -68,7 +68,7 @@ module Fast
     end
 
     def run!
-      if @help or @files.empty? and @pattern.nil?
+      if @help || @files.empty? && @pattern.nil?
         puts @opt.help
       else
         search
