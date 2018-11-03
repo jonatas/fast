@@ -319,7 +319,7 @@ You can use `search_file` and pass the path for search for expressions inside
 files.
 
 ```ruby
-Fast.search_file('file.rb', expression)
+Fast.search_file(expression, 'file.rb')
 ```
 
 It's simple combination of `Fast.ast_from_file` with `Fast.search`.
@@ -330,7 +330,7 @@ You'll be probably looking for multiple ruby files, then this method fetches
 all internal `.rb` files 
 
 ```ruby
-Fast.ruby_files_from(['lib']) # => ["lib/fast.rb"]
+Fast.ruby_files_from('lib') # => ["lib/fast.rb"]
 ```
 
 ## `fast` in the command line
