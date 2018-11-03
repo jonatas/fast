@@ -319,7 +319,7 @@ You can use `search_file` and pass the path for search for expressions inside
 files.
 
 ```ruby
-Fast.search_file('file.rb', expression)
+Fast.search_file(expression, 'file.rb')
 ```
 
 It's simple combination of `Fast.ast_from_file` with `Fast.search`.
