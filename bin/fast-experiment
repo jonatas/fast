@@ -13,9 +13,7 @@ experiment_files.each(&method(:require))
 experiments = []
 
 if arguments.any?
-  while arguments.any? && !(File.exist?(arguments.first) || Dir.exist?(arguments.first))
-    experiments << arguments.shift
-  end
+  experiments << arguments.shift while arguments.any? && !(File.exist?(arguments.first) || Dir.exist?(arguments.first))
   experiments.map! { |name| Fast.experiments[name] }
 else
   experiments = Fast.experiments.values

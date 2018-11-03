@@ -21,7 +21,7 @@ end
 module Fast
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
-    '_'   => ->(node) { !node.nil? },
+    '_' => ->(node) { !node.nil? },
     'nil' => nil
   }.freeze
 
@@ -55,7 +55,7 @@ module Fast
     \\\d                  # find using captured expression
     |
     %\d                   # find using binded argument
-  /x
+  /x.freeze
 
   class << self
     def match?(ast, search, *args)
@@ -718,9 +718,7 @@ module Fast
       content = partial_replace(*combination)
       experimental_file = experimental_filename(combination)
       puts `diff #{experimental_file} #{@file}`
-      if experimental_file == IO.read(@file)
-        raise 'Returned the same file thinking:'
-      end
+      raise 'Returned the same file thinking:' if experimental_file == IO.read(@file)
 
       File.open(experimental_file, 'w+') { |f| f.puts content }
 
