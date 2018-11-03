@@ -330,7 +330,7 @@ You'll be probably looking for multiple ruby files, then this method fetches
 all internal `.rb` files 
 
 ```ruby
-Fast.ruby_files_from(['lib']) # => ["lib/fast.rb"]
+Fast.ruby_files_from('lib') # => ["lib/fast.rb"]
 ```
 
 ## `fast` in the command line
