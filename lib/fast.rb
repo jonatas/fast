@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'fileutils'
+
 # suppress output to avoid parser gem warnings'
 def suppress_output
   original_stdout = $stdout.clone
@@ -577,6 +579,7 @@ module Fast
 
     def initialize(name, &block)
       @name = name
+      puts "\nStarting experiment: #{name}"
       instance_exec(&block)
     end
 
@@ -609,17 +612,63 @@ module Fast
     end
   end
 
+  # Suggest possible combinations of occurrences to replace.
+  class ExperimentCombinations
+    attr_reader :combinations
+
+    def initialize(round:, occurrences_count:, ok_experiments:, fail_experiments:)
+      @round = round
+      @ok_experiments = ok_experiments
+      @fail_experiments = fail_experiments
+      @occurrences_count = occurrences_count
+    end
+
+    def generate_combinations
+      case @round
+      when 1
+        individual_replacements
+      when 2
+        all_ok_replacements_combined
+      else
+        ok_replacements_pair_combinations
+      end
+    end
+
+    # Replace a single occurrence at each iteration and identify which
+    # individual replacements work.
+    def individual_replacements
+      (1..@occurrences_count).to_a
+    end
+
+    # After identifying all individual replacements that work, try combining all
+    # of them.
+    def all_ok_replacements_combined
+      [@ok_experiments.uniq.sort]
+    end
+
+    # Combining all successful individual replacements has failed. Lets divide
+    # and conquer.
+    def ok_replacements_pair_combinations
+      @ok_experiments
+        .combination(2)
+        .map { |e| e.flatten.uniq.sort }
+        .uniq - @fail_experiments - @ok_experiments
+    end
+  end
+
   # Encapsulate the join of an Experiment with an specific file.
   # This is important to coordinate and regulate multiple experiments in the same file.
   # It can track successfull experiments and failures and suggest new combinations to keep replacing the file.
   class ExperimentFile
     attr_reader :ok_experiments, :fail_experiments, :experiment
+
     def initialize(file, experiment)
       @file = file
       @ast = Fast.ast_from_file(file) if file
       @experiment = experiment
       @ok_experiments = []
       @fail_experiments = []
+      @round = 0
     end
 
     def search
@@ -677,33 +726,34 @@ module Fast
       filename
     end
 
-    def suggest_combinations
-      if @ok_experiments.empty? && @fail_experiments.empty?
-        (1..search_cases.size).to_a
-      else
-        @ok_experiments
-          .combination(2)
-          .map { |e| e.flatten.uniq.sort }
-          .uniq - @fail_experiments - @ok_experiments
-      end
-    end
-
     def done!
       count_executed_combinations = @fail_experiments.size + @ok_experiments.size
-      puts "Done with #{@file} after #{count_executed_combinations}"
+      puts "Done with #{@file} after #{count_executed_combinations} combinations"
       return unless perfect_combination = @ok_experiments.last # rubocop:disable Lint/AssignmentInCondition
 
+      puts 'The following changes were applied to the file:'
+      `diff #{experimental_filename(perfect_combination)} #{@file}`
       puts "mv #{experimental_filename(perfect_combination)} #{@file}"
       `mv #{experimental_filename(perfect_combination)} #{@file}`
     end
 
+    def build_combinations
+      @round += 1
+      ExperimentCombinations.new(
+        round: @round,
+        occurrences_count: search_cases.size,
+        ok_experiments: @ok_experiments,
+        fail_experiments: @fail_experiments
+      ).generate_combinations
+    end
+
     def run
-      while (combinations = suggest_combinations).any?
-        if combinations.size > 50
-          puts "Ignoring #{@file} because it have #{combinations.size} possible combinations"
+      while (combinations = build_combinations).any?
+        if combinations.size > 1000
+          puts "Ignoring #{@file} because it has #{combinations.size} possible combinations"
           break
         end
-        puts "#{@file} - Possible combinations: #{combinations.inspect}"
+        puts "#{@file} - Round #{@round} - Possible combinations: #{combinations.inspect}"
         while combination = combinations.shift # rubocop:disable Lint/AssignmentInCondition
           run_partial_replacement_with(combination)
         end
@@ -711,26 +761,23 @@ module Fast
       done!
     end
 
-    # rubocop:disable Metrics/MethodLength
-    # rubocop:disable Metrics/AbcSize
-    def run_partial_replacement_with(combination)
-      puts "#{@file} applying partial replacement with: #{combination}"
+    def run_partial_replacement_with(combination) # rubocop:disable Metrics/AbcSize
       content = partial_replace(*combination)
       experimental_file = experimental_filename(combination)
-      puts `diff #{experimental_file} #{@file}`
-      raise 'Returned the same file thinking:' if experimental_file == IO.read(@file)
 
       File.open(experimental_file, 'w+') { |f| f.puts content }
 
-      if experiment.ok_if.call(experimental_file)
+      raise 'No changes were made to the file.' if FileUtils.compare_file(@file, experimental_file)
+
+      result = experiment.ok_if.call(experimental_file)
+
+      if result.success
         ok_with(combination)
-        puts "✅ #{combination} #{experimental_file}"
+        puts "✅ #{experimental_file} - Combination: #{combination} - Time: #{result.execution_time}s"
       else
         failed_with(combination)
-        puts "🔴 #{combination} #{experimental_file}"
+        puts "🔴 #{experimental_file} - Combination: #{combination}"
       end
     end
-    # rubocop:enable Metrics/MethodLength
-    # rubocop:enable Metrics/AbcSize
   end
 end

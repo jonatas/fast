@@ -566,6 +566,9 @@ RSpec.describe Fast do
       tempfile.write <<~RUBY
         let(:user) { create(:user) }
         let(:address) { create(:address) }
+        let(:phone_number) { create(:phone_number) }
+        let(:country) { create(:country) }
+        let(:language) { create(:language) }
       RUBY
       tempfile.close
       tempfile.path
@@ -589,6 +592,9 @@ RSpec.describe Fast do
         expect(experiment_file.partial_replace(1)).to eq(<<~RUBY.chomp)
           let(:user) { build_stubbed(:user) }
           let(:address) { create(:address) }
+          let(:phone_number) { create(:phone_number) }
+          let(:country) { create(:country) }
+          let(:language) { create(:language) }
         RUBY
       end
 
@@ -596,43 +602,47 @@ RSpec.describe Fast do
         expect(experiment_file.partial_replace(2)).to eq(<<~RUBY.chomp)
           let(:user) { create(:user) }
           let(:address) { build_stubbed(:address) }
+          let(:phone_number) { create(:phone_number) }
+          let(:country) { create(:country) }
+          let(:language) { create(:language) }
         RUBY
       end
     end
 
-    describe '#suggest_combinations' do
-      before do
+    describe '#build_combinations' do
+      specify do
+        # Replace each occurence individually.
+        expect(experiment_file.build_combinations).to match_array([1, 2, 3, 4, 5])
+
         experiment_file.ok_with(1)
         experiment_file.failed_with(2)
         experiment_file.ok_with(3)
         experiment_file.ok_with(4)
         experiment_file.ok_with(5)
-      end
 
-      specify do
-        expect(experiment_file.ok_experiments).to eq([1, 3, 4, 5])
-        expect(experiment_file.suggest_combinations).to match_array([[1, 3], [1, 4], [1, 5], [3, 4], [3, 5], [4, 5]])
+        # Try a combination of all OK individual replacements.
+        expect(experiment_file.build_combinations).to match_array([[1, 3, 4, 5]])
+        experiment_file.failed_with([1, 3, 4, 5])
+
+        # If the above failed, divide and conquer.
+        expect(experiment_file.build_combinations).to match_array([[1, 3], [1, 4], [1, 5], [3, 4], [3, 5], [4, 5]])
 
         experiment_file.ok_with([1, 3])
         experiment_file.failed_with([1, 4])
 
-        expect(experiment_file.suggest_combinations).to eq([[4, 5], [1, 3, 4], [1, 3, 5]])
+        expect(experiment_file.build_combinations).to eq([[4, 5], [1, 3, 4], [1, 3, 5]])
 
         experiment_file.failed_with([1, 3, 4])
 
-        expect(experiment_file.suggest_combinations).to eq([[4, 5], [1, 3, 5]])
+        expect(experiment_file.build_combinations).to eq([[4, 5], [1, 3, 5]])
 
         experiment_file.failed_with([4, 5])
 
-        expect(experiment_file.suggest_combinations).to eq([[1, 3, 5]])
+        expect(experiment_file.build_combinations).to eq([[1, 3, 5]])
 
         experiment_file.ok_with([1, 3, 5])
 
-        expect(experiment_file.suggest_combinations).to eq([[1, 3, 4, 5]])
-
-        experiment_file.ok_with([1, 3, 4, 5])
-
-        expect(experiment_file.suggest_combinations).to be_empty
+        expect(experiment_file.build_combinations).to be_empty
       end
     end
   end
