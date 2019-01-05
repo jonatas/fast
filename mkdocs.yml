@@ -17,5 +17,6 @@ nav:
   - Introduction: index.md
   - Syntax: syntax.md
   - Command Line: command_line.md
+  - Pry Integration: pry-integration.md
   - Experiments: experiments.md
   - Code Similarity: similarity_tutorial.md
