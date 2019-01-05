@@ -87,6 +87,11 @@ module Fast
       search node, pattern
     end
 
+    def capture_file(pattern, file)
+      node = ast_from_file(file)
+      capture node, pattern
+    end
+
     def search(node, pattern)
       if (match = Fast.match?(node, pattern))
         yield node, match if block_given?
@@ -95,7 +100,7 @@ module Fast
         node.children
           .grep(Parser::AST::Node)
           .flat_map { |e| search(e, pattern) }
-          .compact.uniq.flatten
+          .compact.flatten
       end
     end
 

@@ -444,33 +444,8 @@ RSpec.describe Fast do
     end
 
     it 'capture things flatten and unique nodes' do
-      result = described_class.search_file('$def', 'sample.rb')
-      method_names = result.map(&:children).map(&:first)
+      method_names = described_class.search_file('(def $_)', 'sample.rb').grep(Symbol)
       expect(method_names).to eq(%i[initialize welcome])
-    end
-
-    it 'capture dynamic strings into nodes' do
-      res = described_class.search_file('$(dstr _)', 'sample.rb')
-      strings = res.map { |node| node.loc.expression.source }
-      expect(strings).to eq(['"Olá #{@name}"', '"Hola #{@name}"', '"Hello #{@name}"'])
-    end
-
-    it 'captures puts arguments' do
-      res = described_class.search_file('(send nil :puts $...)', 'sample.rb')
-      strings = res.select { |n| n.type == :dstr }.map { |node| node.loc.expression.source }
-      expect(strings).to eq(['"Olá #{@name}"', '"Hola #{@name}"', '"Hello #{@name}"'])
-    end
-
-    it 'captures instance variables' do
-      result = described_class.search_file('$(ivar _)', 'sample.rb')
-      instance_variable_names = result.map(&:children).map(&:first)
-      expect(instance_variable_names).to eq(%i[@lang @name])
-    end
-
-    it 'captures local variable nodes' do
-      result = described_class.search_file('$(lvar _)', 'sample.rb')
-      local_variable_names = result.map(&:children).map(&:first)
-      expect(local_variable_names).to eq(%i[name language welcome_message message])
     end
 
     it 'captures const symbol' do
@@ -481,6 +456,30 @@ RSpec.describe Fast do
     it 'captures const assignment values' do
       _, capture = described_class.search_file('(casgn nil _ (str $_))', 'sample.rb')
       expect(capture).to eq('Jônatas Davi Paganini')
+    end
+
+    describe '.capture_file' do
+      it 'captures puts arguments' do
+        res = described_class.capture_file('(send nil puts $(dstr ))', 'sample.rb')
+        strings = res.map { |node| node.loc.expression.source }
+        expect(strings).to eq(['"Olá #{@name}"', '"Hola #{@name}"', '"Hello #{@name}"'])
+      end
+
+      it 'capture dynamic strings into nodes' do
+        res = described_class.capture_file('$(dstr _)', 'sample.rb')
+        strings = res.map { |node| node.loc.expression.source }
+        expect(strings).to eq(['"Olá #{@name}"', '"Hola #{@name}"', '"Hello #{@name}"'])
+      end
+
+      it 'captures instance variables' do
+        ivars = described_class.capture_file('(ivasgn $_)', 'sample.rb')
+        expect(ivars).to eq(%i[@name @lang])
+      end
+
+      it 'captures local variable nodes' do
+        lvars = described_class.capture_file('(lvar $_)', 'sample.rb').uniq
+        expect(lvars).to eq(%i[name language welcome_message message])
+      end
     end
 
     describe 'replace file' do
