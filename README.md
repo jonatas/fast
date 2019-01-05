@@ -324,6 +324,17 @@ Fast.search_file(expression, 'file.rb')
 
 It's simple combination of `Fast.ast_from_file` with `Fast.search`.
 
+
+## Fast.capture_file
+
+You can also use `Fast.capture_file` that is similar but return only the
+captures:
+
+```ruby
+ Fast.capture_file('(class (const nil $_))', 'lib/fast.rb')
+ # => [:Rewriter, :ExpressionParser, :Find, :FindString, ...]
+```
+
 ## Fast.ruby_files_from(arguments)
 
 You'll be probably looking for multiple ruby files, then this method fetches
@@ -423,7 +434,7 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 
 On the console we have a few functions like `s` and `code` to make it easy ;)
 
-$ bin/console
+    $ bin/console
 
 ```ruby
 code("a = 1") # => s(:lvasgn, s(:int, 1))
