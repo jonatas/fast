@@ -294,7 +294,7 @@ Fast.match?(ast,'(def $_ ... (send (send nil _) \1))')
 
 ## Fast.search
 
-Search allows you to go search the entire AST, collecting nodes that matcha given
+Search allows you to go search the entire AST, collecting nodes that matches given
 expression. Any matching node is then returned:
 
 ```ruby
