@@ -368,3 +368,38 @@ ANSWER = 42
 ANSWER
 ```
 
+## Calling Custom Methods
+
+Custom methods can let you into ruby doman for more complicated rules. Let's say
+we're looking for duplicated methods in the same class. We need to collect
+method names and guarantee they are unique.
+
+```ruby
+def duplicated(method_name)
+  @methods ||= []
+  already_exists = @methods.include?(method_name)
+  @methods << method_name
+  already_exists
+end
+
+puts Fast.search_file( '(def #duplicated)', 'example.rb')
+```
+The same principle can be used in the node level or for debugging purposes.
+
+```ruby
+require 'pry'
+def debug(node)
+  binding.pry
+end
+
+puts Fast.search_file('#debug', 'example.rb')
+```
+If you want to get only `def` nodes you can also intersect expressions with `[]`:
+```ruby
+puts Fast.search_file('[ def #debug ]', 'example.rb')
+```
+Or if you want to debug a very specific expression you can use `()` to specify
+more details of the node
+```ruby
+puts Fast.search_file('[ (def a) #debug ]', 'example.rb')
+```

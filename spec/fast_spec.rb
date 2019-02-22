@@ -11,6 +11,7 @@ RSpec.describe Fast do
   let(:all) { ->(arg) { Fast::All.new(arg) } }
   let(:maybe) { ->(arg) { Fast::Maybe.new(arg) } }
   let(:parent) { ->(arg) { Fast::Parent.new(arg) } }
+  let(:method_call) { ->(arg) { Fast::MethodCall.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
   let(:code) { ->(string) { Parser::CurrentRuby.parse(string) } }
 
@@ -25,6 +26,10 @@ RSpec.describe Fast do
 
     it 'parses $ as Capture' do
       expect(described_class.expression('$...')).to be_a(Fast::Capture)
+    end
+
+    it 'parses #custom_method as method call' do
+      expect(described_class.expression('#method')).to be_a(Fast::MethodCall)
     end
 
     it 'parses quoted values as strings' do
@@ -135,6 +140,27 @@ RSpec.describe Fast do
 
       it 'captures internal nodes' do
         expect(described_class.expression('(send $(send nil a) b)')).to eq([f['send'], c[[f['send'], f['nil'], f['a']]], f['b']])
+      end
+    end
+
+    describe '#custom_method' do
+      before do
+        Kernel.class_eval do
+          def custom_method(node)
+            (node.type == :int) && (node.children == [1])
+          end
+        end
+      end
+
+      after do
+        Kernel.class_eval do
+          undef :custom_method
+        end
+      end
+
+      it 'allow interpolate custom methods' do
+        expect(described_class).to be_match(s(:int, 1), '#custom_method')
+        expect(described_class).not_to be_match(s(:int, 2), '#custom_method')
       end
     end
   end

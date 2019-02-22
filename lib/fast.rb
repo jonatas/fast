@@ -54,6 +54,8 @@ module Fast
     |
     \$                    # capture
     |
+    \#\w[\d\w_]+[\\!\?]?  # custom method call
+    |
     \\\d                  # find using captured expression
     |
     %\d                   # find using binded argument
@@ -258,6 +260,7 @@ module Fast
       when '{' then Any.new(parse_until_peek('}'))
       when '[' then All.new(parse_until_peek(']'))
       when /^"/ then FindString.new(token[1..-2])
+      when /^#\w/ then MethodCall.new(token[1..-1])
       when '$' then Capture.new(parse)
       when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
@@ -372,6 +375,17 @@ module Fast
 
     def match?(node)
       node == token
+    end
+  end
+
+  # Find using custom methods
+  class MethodCall < Find
+    def initialize(method_name)
+      @method_name = method_name
+    end
+
+    def match?(node)
+      Kernel.send(@method_name, node)
     end
   end
 

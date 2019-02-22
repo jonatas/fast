@@ -18,6 +18,8 @@ The current version of Fast covers the following token elements:
 - `{}` - looks for **any** element to match, like a **Set** inclusion or `any?` in Ruby
 - `[]` - looks for **all** elements to match, like `all?` in Ruby.
 - `$` - will **capture** the contents of the current expression like a `Regex` group
+- `#<method-name>` - will call `<method-name>` with `node` as param allowing you
+    to build custom rules.
 - `_` - represents any non-nil value, or **something** being present
 - `nil` -  matches exactly **nil**
 - `...` - matches a **node** with children
@@ -156,6 +158,37 @@ Fast.match?(ast, '(lvasgn $_ $...)')
 
 > Keep in mind that `_` means something not nil and `...` means a node with
 > children.
+
+### Calling Custom Methods
+
+You can also define custom methods to set more complicated rules. Let's say
+we're looking for duplicated methods in the same class. We need to collect
+method names and guarantee they are unique.
+
+```ruby
+def duplicated(method_name)
+  @methods ||= []
+  already_exists = @methods.include?(method_name)
+  @methods << method_name
+  already_exists
+end
+
+puts Fast.search_file( '(def #duplicated)', 'example.rb')
+```
+The same principle can be used in the node level or for debugging purposes.
+
+```ruby
+require 'pry'
+def debug(node)
+  binding.pry
+end
+
+puts Fast.search_file('#debug', 'example.rb')
+```
+If you want to get only `def` nodes you can also intersect expressions with `[]`:
+```ruby
+puts Fast.search_file('[ def #debug ]', 'example.rb')
+```
 
 ### Methods
 
