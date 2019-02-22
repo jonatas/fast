@@ -21,7 +21,7 @@ end
 
 And use it in the console:
 
-`pry
-fast '(def match?)' lib/fast.rb`
+```pry
+fast '(def match?)' lib/fast.rb
 ```
 
