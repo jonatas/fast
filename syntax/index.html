@@ -342,6 +342,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#calling-custom-methods" title="Calling Custom Methods" class="md-nav__link">
+    Calling Custom Methods
+  </a>
+  
+</li>
+      
       
       
       
@@ -385,6 +392,18 @@
   <li class="md-nav__item">
     <a href="../similarity_tutorial/" title="Code Similarity" class="md-nav__link">
       Code Similarity
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../pry-integration/" title="Pry Integration" class="md-nav__link">
+      Pry Integration
     </a>
   </li>
 
@@ -468,6 +487,13 @@
         <li class="md-nav__item">
   <a href="#is-for-any-matches-like-union-conditions-with-or-operator" title="{} is for any matches like union conditions with or operator" class="md-nav__link">
     {} is for any matches like union conditions with or operator
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calling-custom-methods" title="Calling Custom Methods" class="md-nav__link">
+    Calling Custom Methods
   </a>
   
 </li>
@@ -673,7 +699,10 @@ it you can say <code>^</code> for reaching the parent.</p>
 
 <h2 id="join-conditions"><code>[]</code> join conditions<a class="headerlink" href="#join-conditions" title="Permanent link">&para;</a></h2>
 <p>Let's hunt for integer nodes that the parent is also a method:</p>
-<p>$ fast '[ ^^int def ]' example.rb</p>
+<div class="codehilite"><pre><span></span>$ fast &#39;[ ^^int def ]&#39; example.rb
+</pre></div>
+
+
 <p>The match will filter only nodes that matches all internal expressions.</p>
 <div class="codehilite"><pre><span></span><span class="c1"># example.rb:6</span>
 <span class="k">def</span> <span class="nf">duplicate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
@@ -686,7 +715,10 @@ it you can say <code>^</code> for reaching the parent.</p>
 type <code>def</code>.</p>
 <h2 id="is-a-node-with-children"><code>...</code> is a <strong>node</strong> with children<a class="headerlink" href="#is-a-node-with-children" title="Permanent link">&para;</a></h2>
 <p>Looking the method representation we have:</p>
-<p>$ fast def example.rb --ast</p>
+<div class="codehilite"><pre><span></span>$ fast def example.rb --ast
+</pre></div>
+
+
 <div class="codehilite"><pre><span></span><span class="c1"># example.rb:3</span>
 <span class="p">(</span><span class="k">def</span> <span class="ss">:magic</span>
   <span class="p">(</span><span class="n">args</span><span class="p">)</span>
@@ -843,6 +875,42 @@ any of the internal expressions.</p>
 ANSWER = 42
 # example.rb:6
 ANSWER
+</pre></div>
+
+
+<h2 id="calling-custom-methods">Calling Custom Methods<a class="headerlink" href="#calling-custom-methods" title="Permanent link">&para;</a></h2>
+<p>Custom methods can let you into ruby doman for more complicated rules. Let's say
+we're looking for duplicated methods in the same class. We need to collect
+method names and guarantee they are unique.</p>
+<div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">duplicated</span><span class="p">(</span><span class="n">method_name</span><span class="p">)</span>
+  <span class="vi">@methods</span> <span class="o">||=</span> <span class="o">[]</span>
+  <span class="n">already_exists</span> <span class="o">=</span> <span class="vi">@methods</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="n">method_name</span><span class="p">)</span>
+  <span class="vi">@methods</span> <span class="o">&lt;&lt;</span> <span class="n">method_name</span>
+  <span class="n">already_exists</span>
+<span class="k">end</span>
+
+<span class="nb">puts</span> <span class="no">Fast</span><span class="o">.</span><span class="n">search_file</span><span class="p">(</span> <span class="s1">&#39;(def #duplicated)&#39;</span><span class="p">,</span> <span class="s1">&#39;example.rb&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>The same principle can be used in the node level or for debugging purposes.</p>
+<div class="codehilite"><pre><span></span><span class="nb">require</span> <span class="s1">&#39;pry&#39;</span>
+<span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+  <span class="nb">binding</span><span class="o">.</span><span class="n">pry</span>
+<span class="k">end</span>
+
+<span class="nb">puts</span> <span class="no">Fast</span><span class="o">.</span><span class="n">search_file</span><span class="p">(</span><span class="s1">&#39;#debug&#39;</span><span class="p">,</span> <span class="s1">&#39;example.rb&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>If you want to get only <code>def</code> nodes you can also intersect expressions with <code>[]</code>:</p>
+<div class="codehilite"><pre><span></span><span class="nb">puts</span> <span class="no">Fast</span><span class="o">.</span><span class="n">search_file</span><span class="p">(</span><span class="s1">&#39;[ def #debug ]&#39;</span><span class="p">,</span> <span class="s1">&#39;example.rb&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>Or if you want to debug a very specific expression you can use <code>()</code> to specify
+more details of the node</p>
+<div class="codehilite"><pre><span></span><span class="nb">puts</span> <span class="no">Fast</span><span class="o">.</span><span class="n">search_file</span><span class="p">(</span><span class="s1">&#39;[ (def a) #debug ]&#39;</span><span class="p">,</span> <span class="s1">&#39;example.rb&#39;</span><span class="p">)</span>
 </pre></div>
                 
                   
