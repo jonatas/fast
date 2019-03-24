@@ -403,3 +403,10 @@ more details of the node
 ```ruby
 puts Fast.search_file('[ (def a) #debug ]', 'example.rb')
 ```
+## Calling Instance Methods
+
+You can also call instance methods using `.<method-name>`.
+
+Example `nil` is the same of calling `nil?` and you can also use `(int .odd?)`
+to pick only odd integers. The `int` fragment can also be `int_type?`.
+

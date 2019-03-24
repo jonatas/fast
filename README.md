@@ -18,8 +18,6 @@ The current version of Fast covers the following token elements:
 - `{}` - looks for **any** element to match, like a **Set** inclusion or `any?` in Ruby
 - `[]` - looks for **all** elements to match, like `all?` in Ruby.
 - `$` - will **capture** the contents of the current expression like a `Regex` group
-- `#<method-name>` - will call `<method-name>` with `node` as param allowing you
-    to build custom rules.
 - `_` - represents any non-nil value, or **something** being present
 - `nil` -  matches exactly **nil**
 - `...` - matches a **node** with children
@@ -28,6 +26,9 @@ The current version of Fast covers the following token elements:
 - `\1` - represents a substitution for any of the **previously captured** elements
 - `%1` - to bind the first extra argument in an expression
 - `""` - will match a literal string with double quotes
+- `#<method-name>` - will call `<method-name>` with `node` as param allowing you
+    to build custom rules.
+- `.<method-name>` - will call `<method-name>` from the `node`
 
 The syntax is inspired by the [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
 

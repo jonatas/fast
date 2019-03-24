@@ -11,12 +11,11 @@ RSpec.describe Fast do
   let(:all) { ->(arg) { Fast::All.new(arg) } }
   let(:maybe) { ->(arg) { Fast::Maybe.new(arg) } }
   let(:parent) { ->(arg) { Fast::Parent.new(arg) } }
-  let(:method_call) { ->(arg) { Fast::MethodCall.new(arg) } }
   let(:defined_proc) { described_class::LITERAL }
-  let(:code) { ->(string) { Parser::CurrentRuby.parse(string) } }
+  let(:code) { ->(string) { described_class.ast(string) } }
 
   def s(type, *children)
-    Parser::AST::Node.new(type, children)
+    Astrolabe::Node.new(type, children)
   end
 
   describe '.expression' do
@@ -30,6 +29,10 @@ RSpec.describe Fast do
 
     it 'parses #custom_method as method call' do
       expect(described_class.expression('#method')).to be_a(Fast::MethodCall)
+    end
+
+    it 'parses `.method?` into instance method calls' do
+      expect(described_class.expression('.odd?')).to be_a(Fast::InstanceMethodCall)
     end
 
     it 'parses quoted values as strings' do
@@ -195,7 +198,16 @@ RSpec.describe Fast do
     context 'with `Fast.expressions`' do
       it { expect(described_class).to be_match(s(:int, 1), '(...)') }
       it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
+      it { expect(described_class).to be_match(s(:int, 1), '(int .odd?)') }
+      it { expect(described_class).to be_match(nil, '.nil?') }
+      it { expect(described_class).not_to be_match(s(:int, 1), '(int .even?)') }
       it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
+
+      context 'with astrolable node methods' do
+        it { expect(described_class).to be_match(code['method'], '.send_type?') }
+        it { expect(described_class).to be_match(code['a.b'], '(.root? (!.root?))') }
+        it { expect(described_class).not_to be_match(code['a.b'], '(!.root? (.root?))') }
+      end
     end
 
     context 'when mixing procs inside expressions' do
@@ -410,7 +422,7 @@ RSpec.describe Fast do
 
     context 'when call !a.empty?` with `a.any?`' do
       let(:example) { code['!a.empty?'] }
-      let(:expression) { '(send (send (send nil $_ ) empty?) !)' }
+      let(:expression) { '(send (send (send nil $_ ) :empty?) !)' }
       let(:replacement) { ->(node, captures) { replace(node.location.expression, "#{captures[0]}.any?") } }
 
       it { is_expected.to eq('a.any?') }

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'astrolabe/builder'
 
 # suppress output to avoid parser gem warnings'
 def suppress_output
@@ -56,9 +57,11 @@ module Fast
     |
     \#\w[\d\w_]+[\\!\?]?  # custom method call
     |
+    \.\w[\d\w_]+\?       # instance method call
+    |
     \\\d                  # find using captured expression
     |
-    %\d                   # find using binded argument
+    %\d                   # bind extra arguments to the expression
   /x.freeze
 
   class << self
@@ -99,8 +102,7 @@ module Fast
         yield node, match if block_given?
         match != true ? [node, match] : [node]
       elsif Fast.match?(node, '...')
-        node.children
-          .grep(Parser::AST::Node)
+        node.each_child_node
           .flat_map { |e| search(e, pattern) }
           .compact.flatten
       end
@@ -110,21 +112,23 @@ module Fast
       res =
         if (match = Fast.match?(node, pattern))
           match == true ? node : match
-        elsif Fast.match?(node, '...')
-          node.children
-            .grep(Parser::AST::Node)
-            .flat_map { |child| capture(child, pattern) }.compact.flatten
+        elsif node.child_nodes.any?
+          node.each_child_node
+            .flat_map { |child| capture(child, pattern) }
+            .compact.flatten
         end
       res&.size == 1 ? res[0] : res
     end
 
-    def ast(content)
-      Parser::CurrentRuby.parse(content)
+    def ast(content, buffer_name: '(string)')
+      buffer = Parser::Source::Buffer.new(buffer_name)
+      buffer.source = content
+      Parser::CurrentRuby.new(Astrolabe::Builder.new).parse(buffer)
     end
 
     def ast_from_file(file)
       @cache ||= {}
-      @cache[file] ||= ast(IO.read(file))
+      @cache[file] ||= ast(IO.read(file), buffer_name: file)
     end
 
     def highlight(node, show_sexp: false)
@@ -143,12 +147,6 @@ module Fast
         puts Fast.highlight("# #{file}:#{line}")
       end
       puts Fast.highlight(result, show_sexp: show_sexp)
-    end
-
-    def buffer_for(file)
-      buffer = Parser::Source::Buffer.new(file.to_s)
-      buffer.source = IO.read(file)
-      buffer
     end
 
     def expression(string)
@@ -261,6 +259,7 @@ module Fast
       when '[' then All.new(parse_until_peek(']'))
       when /^"/ then FindString.new(token[1..-2])
       when /^#\w/ then MethodCall.new(token[1..-1])
+      when /^\.\w[\w\d_]+\?/ then InstanceMethodCall.new(token[1..-1])
       when '$' then Capture.new(parse)
       when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
@@ -279,13 +278,6 @@ module Fast
       list << parse until @tokens.empty? || @tokens.first == token
       next_token
       list
-    end
-
-    def append_token_until_peek(token)
-      list = []
-      list << next_token until @tokens.empty? || @tokens.first == token
-      next_token
-      list.join
     end
   end
 
@@ -389,6 +381,17 @@ module Fast
     end
   end
 
+  # Search using custom instance methods
+  class InstanceMethodCall < Find
+    def initialize(method_name)
+      @method_name = method_name
+    end
+
+    def match?(node)
+      node.send(@method_name)
+    end
+  end
+
   # Allow use previous captures while searching in the AST.
   # Use `\\1` to point the match to the first captured element
   class FindWithCapture < Find
@@ -464,7 +467,7 @@ module Fast
   class Parent < Find
     alias match_node match?
     def match?(node)
-      node.children.grep(Parser::AST::Node).any?(&method(:match_node))
+      node.each_child_node.any?(&method(:match_node))
     end
 
     def to_s
