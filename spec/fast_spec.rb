@@ -532,7 +532,7 @@ RSpec.describe Fast do
           end
         end
 
-        it 'replaces all occurrences' do
+        it 'replaces all occurrences' do # rubocop:disable RSpec/ExampleLength
           expect(rename_const).to eq(<<~RUBY.chomp)
             class SelfPromotion
               CREATOR = "Jônatas Davi Paganini"
@@ -564,7 +564,8 @@ RSpec.describe Fast do
               @assignment = node.children.last
               remove(node.location.expression)
             else
-              replace(node.location.expression, @assignment.location.expression.source)
+              replace(node.location.expression,
+                      @assignment.location.expression.source) # rubocop:disable RSpec/InstanceVariable
             end
           end
         end

@@ -2,10 +2,12 @@
 
 require 'fast'
 
+# Allow to replace code managing multiple replacements and combining replacements.
+# Useful for large codebase refactor and multiple replacements in the same file.
 module Fast
   class << self
     # Fast.experiment is a shortcut to define new experiments and allow them to
-    # work together in experiment combinantions.
+    # work together in experiment combinations.
     #
     # The following experiment look into `spec` folder and try to remove
     # `before` and `after` blocks on testing code. Sometimes they're not
@@ -27,18 +29,51 @@ module Fast
     attr_reader :experiments
   end
 
+  # Fast experiment allow the user to combine single replacements and make multiple
+  # changes at the same time. Defining a policy is possible to check if the
+  # experiment was successfull and keep changing the file using a specific
+  # search.
+  #
+  # The experiment have a combination algorithm that recursively check what
+  # combinations work with what combinations. It can delay years and because of
+  # that it tries a first replacement targeting all the cases in a single file.
+  #
   # You can define experiments and build experimental files to improve some code in
   # an automated way. Let's create a hook to check if a `before` or `after` block
   # is useless in a specific spec:
   #
-  # ```ruby
-  # Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
-  #   lookup 'some_spec.rb'
-  #   search "(block (send nil {before after}))"
-  #   edit {|node| remove(node.loc.expression) }
-  #   policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
-  # end
-  # ```
+  # @example
+  #  Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
+  #    lookup 'some_spec.rb'
+  #    search "(block (send nil {before after}))"
+  #    edit {|node| remove(node.loc.expression) }
+  #    policy {|new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+  #  end
+  #
+  # ## Example 2: use build_stubbed instead of create
+  #
+  # Let's say you want to try to automate some replacement of
+  # `FactoryBot.create` to use `FactoryBot.build_stubbed`.
+  #
+  # For specs let's consider the example we want to refactor:
+  #
+  # @code
+  #  let(:person) { create(:person, :with_email) }
+  #
+  # And the intent is refactor to use `build_stubbed` instead of `replace`:
+  #
+  # @code
+  #  let(:person) { build_stubbed(:person, :with_email) }
+  #
+  # Here is the experiment definition:
+  #
+  # @example
+  #  Fast.experiment('RSpec/ReplaceCreateWithBuildStubbed') do
+  #    lookup 'spec'
+  #    search '(block (send nil let (sym _)) (args) $(send nil create))'
+  #    edit { |_, (create)| replace(create.loc.selector, 'build_stubbed') }
+  #    policy { |new_file| system("bin/spring rspec --format progress --fail-fast #{new_file}") }
+  #  end
   class Experiment
     attr_writer :files
     attr_reader :name, :replacement, :expression, :files_or_folders, :ok_if
@@ -79,6 +114,8 @@ module Fast
   end
 
   # Suggest possible combinations of occurrences to replace.
+  #
+  # Check for {#generate_combinations} to understand the strategy of each round.
   class ExperimentCombinations
     attr_reader :combinations
 
