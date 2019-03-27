@@ -4,6 +4,7 @@
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
 require 'fast'
+require 'fast/experiment'
 require 'coderay'
 
 arguments = ARGV

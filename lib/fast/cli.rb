@@ -117,9 +117,7 @@ module Fast
     end
 
     def debug(*info)
-      return unless @debug
-
-      puts info
+      puts(info) if debug_mode?
     end
 
     def report(result, file)
