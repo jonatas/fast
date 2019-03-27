@@ -397,7 +397,7 @@ RSpec.describe Fast do
   end
 
   describe '.replace' do
-    subject { described_class.replace(example, expression, replacement) }
+    subject { described_class.replace(example, expression, &replacement) }
 
     context 'with a local variable rename' do
       let(:example) { code['a = 1'] }
@@ -455,19 +455,19 @@ RSpec.describe Fast do
       File.open('sample.rb', 'w+') do |file|
         file.puts <<~RUBY
           class SelfPromotion
-             AUTHOR = "Jônatas Davi Paganini"
-             def initialize(name, language='pt')
+            AUTHOR = "Jônatas Davi Paganini"
+            def initialize(name, language='pt')
               @name = name
               @lang = language if LANGUAGES.include?(language)
             end
-             def welcome
+            def welcome
               case @lang
               when 'pt' then puts "Olá \#{@name}"
               when 'es' then puts "Hola \#{@name}"
               else puts "Hello \#{@name}"
               end
             end
-             def self.thanks
+            def self.thanks
               welcome_message = new('friend', 'en')
               message = [AUTHOR, "wants to say", welcome_message]
               puts message.join(' ')
@@ -521,35 +521,76 @@ RSpec.describe Fast do
     end
 
     describe 'replace file' do
-      specify 'rename constant' do
-        expect(described_class.replace_file(
-          'sample.rb',
-          '({casgn const} nil AUTHOR )',
-          lambda { |node, _|
+      context 'with rename constant example' do
+        let(:rename_const) do
+          described_class.replace_file('sample.rb', '({casgn const} nil AUTHOR )') do |node|
             if node.type == :const
               replace(node.location.expression, 'CREATOR')
             else
               replace(node.location.name, 'CREATOR')
             end
-          }
-        ).lines.grep(/CREATOR/).size).to eq 2
+          end
+        end
+
+        it 'replaces all occurrences' do
+          expect(rename_const).to eq(<<~RUBY.chomp)
+            class SelfPromotion
+              CREATOR = "Jônatas Davi Paganini"
+              def initialize(name, language='pt')
+                @name = name
+                @lang = language if LANGUAGES.include?(language)
+              end
+              def welcome
+                case @lang
+                when 'pt' then puts "Olá \#{@name}"
+                when 'es' then puts "Hola \#{@name}"
+                else puts "Hello \#{@name}"
+                end
+              end
+              def self.thanks
+                welcome_message = new('friend', 'en')
+                message = [CREATOR, "wants to say", welcome_message]
+                puts message.join(' ')
+              end
+            end
+          RUBY
+        end
       end
 
-      specify 'inline local variable' do
-        assignment = nil
-        expect(described_class.replace_file(
-          'sample.rb',
-          '({lvar lvasgn } message )',
-          lambda { |node, _|
+      context 'when inline local variable example' do
+        let(:inline_var) do
+          described_class.replace_file('sample.rb', '({lvar lvasgn } message )') do |node, _|
             if node.type == :lvasgn
-              assignment = node.children.last
+              @assignment = node.children.last
               remove(node.location.expression)
             else
-              replace(node.location.expression, assignment.location.expression.source)
+              replace(node.location.expression, @assignment.location.expression.source)
             end
-          }
-        ).lines.map(&:chomp).map(&:strip))
-          .to include(%|puts [AUTHOR, "wants to say", welcome_message].join(' ')|)
+          end
+        end
+
+        it 'replaces all occurrences' do
+          expect(inline_var).to eq(<<~RUBY.chomp)
+            class SelfPromotion
+              AUTHOR = "Jônatas Davi Paganini"
+              def initialize(name, language='pt')
+                @name = name
+                @lang = language if LANGUAGES.include?(language)
+              end
+              def welcome
+                case @lang
+                when 'pt' then puts "Olá \#{@name}"
+                when 'es' then puts "Hola \#{@name}"
+                else puts "Hello \#{@name}"
+                end
+              end
+              def self.thanks
+                welcome_message = new('friend', 'en')\n\s\s\s\s
+                puts [AUTHOR, "wants to say", welcome_message].join(' ')
+              end
+            end
+          RUBY
+        end
       end
     end
   end

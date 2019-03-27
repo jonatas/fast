@@ -69,7 +69,7 @@ module Fast
       Matcher.new(ast, search, *args).match?
     end
 
-    def replace(ast, search, replacement)
+    def replace(ast, search, &replacement)
       buffer = Parser::Source::Buffer.new('replacement')
       buffer.source = ast.loc.expression.source
       to_replace = search(ast, search)
@@ -82,9 +82,9 @@ module Fast
       rewriter.rewrite(buffer, ast)
     end
 
-    def replace_file(file, search, replacement)
+    def replace_file(file, search, &replacement)
       ast = ast_from_file(file)
-      replace(ast, search, replacement)
+      replace(ast, search, &replacement)
     end
 
     def search_file(pattern, file)
@@ -532,6 +532,7 @@ module Fast
         prepare_arguments expression.token, arguments
       end
     end
+
     def match?(ast = @ast, fast = @fast)
       head, *tail = fast
       return false unless head.match?(ast)
@@ -545,8 +546,6 @@ module Fast
         token.is_a?(Array) ? match?(child[i], token) : token.match?(child[i])
       end && find_captures
     end
-
-    # rubocop:enable Metrics/AbcSize
 
     def prepare_token(token)
       case token

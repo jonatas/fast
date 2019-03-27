@@ -169,7 +169,7 @@ module Fast
     # rubocop:disable Metrics/MethodLength
     def partial_replace(*indices)
       replacement = experiment.replacement
-      new_content = Fast.replace_file @file, experiment.expression, ->(node, *captures) do # rubocop:disable Style/Lambda
+      new_content = Fast.replace_file @file, experiment.expression do |node, *captures|
         if indices.nil? || indices.empty? || indices.include?(match_index)
           if replacement.parameters.length == 1
             instance_exec node, &replacement
