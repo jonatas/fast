@@ -274,9 +274,9 @@ module Fast
 
       result = experiment.ok_if.call(experimental_file)
 
-      if result.success
+      if result
         ok_with(combination)
-        puts "✅ #{experimental_file} - Combination: #{combination} - Time: #{result.execution_time}s"
+        puts "✅ #{experimental_file} - Combination: #{combination}"
       else
         failed_with(combination)
         puts "🔴 #{experimental_file} - Combination: #{combination}"
