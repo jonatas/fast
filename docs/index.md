@@ -284,15 +284,13 @@ Fast.capture(code('a = 1'), '(int $_)') # => 1
 And if I want to refactor a code and use `delegate <attribute>, to: <object>`, try with replace:
 
 ```ruby
-Fast.replace ast,
-  '(def $_ ... (send (send nil $_) \1))',
-  -> (node, captures) {
+Fast.replace ast, '(def $_ ... (send (send nil $_) \1))' do |node, captures|
     attribute, object = captures
     replace(
       node.location.expression,
       "delegate :#{attribute}, to: :#{object}"
     )
-  }
+  end
 ```
 
 ## Fast.replace_file

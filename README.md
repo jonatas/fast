@@ -51,56 +51,40 @@ to represent code called `s-expressions`.
 
 For example, let's take an `Integer` in Ruby:
 
-```ruby
-1
-```
+    1
 
 It's corresponding s-expression would be:
 
-```ruby
-s(:int, 1)
-```
+    s(:int, 1)
 
 `s` in `Fast` and `Parser` are a shorthand for creating an `Parser::AST::Node`.
 Each of these nodes has a `#type` and `#children` contained in it:
 
-```ruby
-def s(type, *children)
-  Parser::AST::Node.new(type, children)
-end
-```
+    def s(type, *children)
+      Parser::AST::Node.new(type, children)
+    end
 
 ### Variable Assignments
 
 Now let's take a look at a local variable assignment:
 
-```ruby
-value = 42
-```
+    value = 42
 
 It's corresponding s-expression would be:
 
-```ruby
-ast = s(:lvasgn, :value, s(:int, 42))
-```
+    ast = s(:lvasgn, :value, s(:int, 42))
 
 If we wanted to find this particular assignment somewhere in our AST, we can use
 Fast to look for a local variable named `value` with a value `42`:
 
-```ruby
-Fast.match?(ast, '(lvasgn value (int 42))')
-# => true
-```
+    Fast.match?(ast, '(lvasgn value (int 42))') # => true
 
 ### Wildcard Token
 
 If we wanted to find a variable named `value` that was assigned any integer value
 we could replace `42` in our query with an underscore ( `_` ) as a shortcut:
 
-```ruby
-Fast.match?(ast, '(lvasgn value (int _))')
-# => true
-```
+    Fast.match?(ast, '(lvasgn value (int _))') # => true
 
 ### Set Inclusion Token
 
@@ -108,10 +92,7 @@ If we weren't sure the type of the value we're assigning, we can use our set
 inclusion token (`{}`) from earlier to tell Fast that we expect either a `Float`
 or an `Integer`:
 
-```ruby
-Fast.match?(ast, '(lvasgn value ({float int} _))')
-# => true
-```
+    Fast.match?(ast, '(lvasgn value ({float int} _))') # => true
 
 ### All Matching Token
 
@@ -120,42 +101,28 @@ all matching token (`[]`) to express multiple conditions that need to be true.
 In this case we don't want the value to be a `String`, `Hash`, or an `Array` by
 prefixing all of the types with `!`:
 
-```ruby
-Fast.match?(ast, '(lvasgn value ([!str !hash !array] _))') # true
-```
+    Fast.match?(ast, '(lvasgn value ([!str !hash !array] _))') # => true
 
 ### Node Child Token
 
 We can match any node with children by using the child token ( `...` ):
 
-```ruby
-Fast.match?(ast, '(lvasgn value ...)')
-# => true
-```
+    Fast.match?(ast, '(lvasgn value ...)') # => true
 
 We could even match any local variable assignment combining both `_` and `...`:
 
-```ruby
-Fast.match?(ast, '(lvasgn _ ...)')
-# => true
-```
+    Fast.match?(ast, '(lvasgn _ ...)') # => true
 
 ### Capturing the Value of an Expression
 
 You can use `$` to capture the contents of an expression for later use:
 
-```ruby
-Fast.match?(ast, '(lvasgn value $...)')
-# => [s(:int, 42)]
-```
+    Fast.match?(ast, '(lvasgn value $...)') # => [s(:int, 42)]
 
 Captures can be used in any position as many times as you want to capture whatever
 information you might need:
 
-```ruby
-Fast.match?(ast, '(lvasgn $_ $...)')
-# => [:value, s(:int, 42)]
-```
+    Fast.match?(ast, '(lvasgn $_ $...)') # => [:value, s(:int, 42)]
 
 > Keep in mind that `_` means something not nil and `...` means a node with
 > children.
@@ -166,49 +133,42 @@ You can also define custom methods to set more complicated rules. Let's say
 we're looking for duplicated methods in the same class. We need to collect
 method names and guarantee they are unique.
 
-```ruby
-def duplicated(method_name)
-  @methods ||= []
-  already_exists = @methods.include?(method_name)
-  @methods << method_name
-  already_exists
-end
+    def duplicated(method_name)
+      @methods ||= []
+      already_exists = @methods.include?(method_name)
+      @methods << method_name
+      already_exists
+    end
 
-puts Fast.search_file( '(def #duplicated)', 'example.rb')
-```
+    puts Fast.search_file( '(def #duplicated)', 'example.rb')
+
 The same principle can be used in the node level or for debugging purposes.
 
-```ruby
-require 'pry'
-def debug(node)
-  binding.pry
-end
+    require 'pry'
+    def debug(node)
+      binding.pry
+    end
 
-puts Fast.search_file('#debug', 'example.rb')
-```
+    puts Fast.search_file('#debug', 'example.rb')
+
 If you want to get only `def` nodes you can also intersect expressions with `[]`:
-```ruby
-puts Fast.search_file('[ def #debug ]', 'example.rb')
-```
+
+    puts Fast.search_file('[ def #debug ]', 'example.rb')
 
 ### Methods
 
 Let's take a look at a method declaration:
 
-```ruby
-def my_method
-  call_other_method
-end
-```
+  def my_method
+    call_other_method
+  end
 
 It's corresponding s-expression would be:
 
-```ruby
-ast =
-  s(:def, :my_method,
-    s(:args),
-    s(:send, nil, :call_other_method))
-```
+    ast =
+      s(:def, :my_method,
+        s(:args),
+        s(:send, nil, :call_other_method))
 
 Pay close attention to the node `(args)`. We can't use `...` to match it, as it
 has no children (or arguments in this case), but we _can_ match it with a wildcard
@@ -219,74 +179,55 @@ has no children (or arguments in this case), but we _can_ match it with a wildca
 Let's take a look at a few other examples. Sometimes you have a chain of calls on
 a single `Object`, like `a.b.c.d`. Its corresponding s-expression would be:
 
-```ruby
-ast =
-  s(:send,
-    s(:send,
+    ast =
       s(:send,
-        s(:send, nil, :a),
-        :b),
-      :c),
-    :d)
-```
+        s(:send,
+          s(:send,
+            s(:send, nil, :a),
+            :b),
+          :c),
+        :d)
 
 ### Alternate Syntax
 
 You can also search using nested arrays with **pure values**, or **shortcuts** or
 **procs**:
 
-```ruby
-Fast.match?(ast, [:send, [:send, '...'], :d])
-# => true
-
-Fast.match?(ast, [:send, [:send, '...'], :c])
-# => false
-
-Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d])
-# => true
-```
+    Fast.match?(ast, [:send, [:send, '...'], :d]) # => true
+    Fast.match?(ast, [:send, [:send, '...'], :c]) # => false
+    Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d]) # => true
 
 Shortcut tokens like child nodes `...` and wildcards `_` are just placeholders
 for procs. If you want, you can even use procs directly like so:
 
-```ruby
-Fast.match?(ast, [
-  :send, [
-    -> (node) { node.type == :send },
-    [:send, '...'],
-    :c
-  ],
-  :d
-])
-# => true
-```
+    Fast.match?(ast, [
+      :send, [
+        -> (node) { node.type == :send },
+        [:send, '...'],
+        :c
+      ],
+      :d
+    ]) # => true
 
 This also works with expressions:
 
-```ruby
-Fast.match?(
-  ast,
-  '(send (send (send (send nil $_) $_) $_) $_)'
-)
-# => [:a, :b, :c, :d]
-```
+    Fast.match?(
+      ast,
+      '(send (send (send (send nil $_) $_) $_) $_)'
+    ) # => [:a, :b, :c, :d]
 
 ### Debugging
 
 If you find that a particular expression isn't working, you can use `debug` to
 take a look at what Fast is doing:
 
-```ruby
-Fast.debug { Fast.match?(s(:int, 1), [:int, 1]) }
-```
+    Fast.debug { Fast.match?(s(:int, 1), [:int, 1]) }
 
 Each comparison made while searching will be logged to your console (STDOUT) as
 Fast goes through the AST:
 
-```
-int == (int 1) # => true
-1 == 1 # => true
-```
+    int == (int 1) # => true
+    1 == 1 # => true
 
 ## Bind arguments to expressions
 
@@ -294,152 +235,161 @@ We can also dynamically interpolate arguments into our queries using the
 interpolation token `%`. This works much like `sprintf` using indexes starting
 from `1`:
 
-```ruby
-Fast.match?(code('a = 1'), '(lvasgn %1 (int _))', :a)
-# => true
-```
+    Fast.match?(code('a = 1'), '(lvasgn %1 (int _))', :a) # => true
 
 ## Using previous captures in search
 
 Imagine you're looking for a method that is just delegating something to
 another method, like this `name` method:
 
-```ruby
-def name
-  person.name
-end
-```
+    def name
+      person.name
+    end
 
 This can be represented as the following AST:
 
-```
-(def :name
-  (args)
-  (send
-    (send nil :person) :name))
-```
+    (def :name
+      (args)
+      (send
+        (send nil :person) :name))
 
 We can create a query that searches for such a method:
 
-```ruby
-Fast.match?(ast,'(def $_ ... (send (send nil _) \1))')
-# => [:name]
-```
+    Fast.match?(ast,'(def $_ ... (send (send nil _) \1))') # => [:name]
 
 ## Fast.search
 
 Search allows you to go search the entire AST, collecting nodes that matches given
 expression. Any matching node is then returned:
 
-```ruby
-Fast.search(code('a = 1'), '(int _)')
-# => s(:int, 1)
-```
+    Fast.search(code('a = 1'), '(int _)') # => s(:int, 1)
 
 If you use captures along with a search, both the matching nodes and the
 captures will be returned:
 
-```ruby
-Fast.search(code('a = 1'), '(int $_)')
-# => [s(:int, 1), 1]
-```
+    Fast.search(code('a = 1'), '(int $_)') # => [s(:int, 1), 1]
 
 ## Fast.capture
 
 To only pick captures and ignore the nodes, use `Fast.capture`:
 
-```ruby
-Fast.capture(code('a = 1'), '(int $_)')
-# => 1
-```
+  Fast.capture(code('a = 1'), '(int $_)') # => 1
+
 ## Fast.replace
 
-<!--
-  Not sure how this section works, could you explain it in more detail?
+Let's consider the following example:
 
-  It looks to capture the name of a method, and then not sure from there. Can
-  you provide an example AST to use there?
+    def name
+      person.name
+    end
 
-  Delegate might be too dense of an example to use.
--->
+And, we want to replace code to use `delegate` in the expression:
 
-If we want to replace code, we can use a delegate expression:
+    delegate :name, to: :person
 
-```ruby
-query = '(def $_ ... (send (send nil $_) \1))'
+We already target this example using `\1` on 
+[Search and refer to previous capture](#using-previous-captures-in-search) and
+now it's time to know about how to rewrite content.
 
-Fast.replace ast, query, -> (node, captures) {
-  attribute, object = captures
+The [Fast.replace](Fast#replace-class_method) yields a #{Fast::Rewriter} context.
+The internal replace method accepts a range and every `node` have
+a `location` with metadata about ranges of the node expression.
 
-  replace(
-    node.location.expression,
-    "delegate :#{attribute}, to: :#{object}"
-  )
-}
-```
+    ast = Fast.ast("def name; person.name end")
+    # => s(:def, :name, s(:args), s(:send, s(:send, nil, :person), :name))
+
+Generally, we  use the `location.expression`:
+
+    ast.location.expression # => #<Parser::Source::Range (string) 0...25>
+
+But location also brings some metadata about specific fragments:
+
+    ast.location.instance_variables
+    # => [:@keyword, :@operator, :@name, :@end, :@expression, :@node]
+
+Range for the keyword that identifies the method definition:
+
+    ast.location.keyword # => #<Parser::Source::Range (string) 0...3>
+
+You can always pick the source of a source range:
+
+    ast.location.keyword.source # => "def"
+
+Or only the method name:
+
+    ast.location.name # => #<Parser::Source::Range (string) 4...8>
+    ast.location.name.source # => "name"
+
+In the context of the rewriter, the objective is removing the method and inserting the new
+delegate content. Then, the scope is `node.location.expression`:
+
+    Fast.replace ast, '(def $_ ... (send (send nil $_) \1))' do |node, captures|
+      attribute, object = captures
+
+      replace(
+        node.location.expression,
+        "delegate :#{attribute}, to: :#{object}"
+      )
+    end
+
 
 ### Replacing file
 
 Now let's imagine we have a file like `sample.rb` with the following code:
 
-```ruby
-def good_bye
-  message = ["good", "bye"]
-  puts message.join(' ')
-end
-```
+    def good_bye
+      message = ["good", "bye"]
+      puts message.join(' ')
+    end
 
-...and we decide to inline the contents of the `message` variable right after
-`puts`.
+and we decide to inline the contents of the `message` variable right after
 
+    def good_bye
+      puts ["good", "bye"].join(' ')
+    end
 
-To do this we would need to:
+To refactor and reach the proposed example, follow a few steps:
 
-* Remove the local variable assignment
-* Store the now-removed variable's value
-* Substitute the value where the variable was used before
+1. Remove the local variable assignment
+2. Store the now-removed variable's value
+3. Substitute the value where the variable was used before
 
-```ruby
-assignment = nil
-query = '({ lvasgn lvar } message )'
+    assignment = nil
 
-Fast.replace_file('sample.rb', query, -> (node, _) {
-  # Find a variable assignment
-  if node.type == :lvasgn
-    assignment = node.children.last
+    Fast.replace_file 'sample.rb', '({ lvasgn lvar } message )', -> (node, _) {
+      # Find a variable assignment
+      if node.type == :lvasgn
+        assignment = node.children.last
+        # Remove the node responsible for the assignment
+        remove(node.location.expression)
+      # Look for the variable being used
+      elsif node.type == :lvar
+        # Replace the variable with the contents of the variable
+        replace(
+          node.location.expression,
+          assignment.location.expression.source
+        )
+      end
+    end 
 
-    # Remove the node responsible for the assignment
-    remove(node.location.expression)
-  # Look for the variable being used
-  elsif node.type == :lvar
-    # Replace the variable with the contents of the variable
-    replace(
-      node.location.expression,
-      assignment.location.expression.source
-    )
-  end
-})
-```
+Keep in mind the current example returns a content output but do not rewrite the
+file.
 
-## Other useful functions
+## Other utility functions
 
 To manipulate ruby files, sometimes you'll need some extra tasks.
 
-## Fast.ast_from_File(file)
+## Fast.ast_from_file(file)
 
 This method parses code from a file and loads it into an AST representation.
 
-```ruby
-Fast.ast_from_file('sample.rb')
-```
+    Fast.ast_from_file('sample.rb')
 
 ## Fast.search_file
 
 You can use `search_file` to for search for expressions inside files.
 
-```ruby
-Fast.search_file(expression, 'file.rb')
-```
+    Fast.search_file(expression, 'file.rb')
 
 It's a combination of `Fast.ast_from_file` with `Fast.search`.
 
@@ -447,28 +397,22 @@ It's a combination of `Fast.ast_from_file` with `Fast.search`.
 
 You can use `Fast.capture_file` to only return captures:
 
-```ruby
- Fast.capture_file('(class (const nil $_))', 'lib/fast.rb')
- # => [:Rewriter, :ExpressionParser, :Find, :FindString, ...]
-```
+    Fast.capture_file('(class (const nil $_))', 'lib/fast.rb')
+    # => [:Rewriter, :ExpressionParser, :Find, :FindString, ...]
 
 ## Fast.ruby_files_from(arguments)
 
-`Fast.ruby_files_from(arguments)` can get all Ruby files in a location:
+The `Fast.ruby_files_from(arguments)` can get all ruby files from file list or folders:
 
-```ruby
-Fast.ruby_files_from('lib')
-# => ["lib/fast.rb"]
-```
+    Fast.ruby_files_from('lib') 
+    # => ["lib/fast/experiment.rb", "lib/fast/cli.rb", "lib/fast/version.rb", "lib/fast.rb"]
 
 ## `fast` in the command line
 
 Fast also comes with a command line utility called `fast`. You can use it to
 search and find code much like the library version:
 
-```
-$ fast '(def match?)' lib/fast.rb
-```
+    fast '(def match?)' lib/fast.rb
 
 The CLI tool takes the following flags
 
@@ -483,44 +427,35 @@ The CLI tool takes the following flags
 You can use `--pry` to stop on a particular source node, and run Pry at that
 location:
 
-```
-$ fast '(block (send nil it))' spec --pry
-```
+    fast '(block (send nil it))' spec --pry
 
 Inside the pry session you can access `result` for the first result that was
 located, or `results` to get all of the occurrences found.
 
 Let's take a look at `results`:
 
-```ruby
-results.map { |e| e.children[0].children[2] }
-# => [s(:str, "parses ... as Find"),
-# s(:str, "parses $ as Capture"),
-# s(:str, "parses quoted values as strings"),
-# s(:str, "parses {} as Any"),
-# s(:str, "parses [] as All"), ...]
-```
+    results.map { |e| e.children[0].children[2] }
+    # => [s(:str, "parses ... as Find"),
+    # s(:str, "parses $ as Capture"),
+    # s(:str, "parses quoted values as strings"),
+    # s(:str, "parses {} as Any"),
+    # s(:str, "parses [] as All"), ...]
 
 ### Fast with RSpec
 
 Let's say we wanted to get all the `it` blocks in our `RSpec` code that
 currently do not have descriptions:
 
-```
-$ fast '(block (send nil it (nil)) (args) (!str)) ) )' spec
-```
+    fast '(block (send nil it (nil)) (args) (!str)) ) )' spec
 
 This will return the following:
 
-```ruby
-# spec/fast_spec.rb:166
-it { expect(described_class).to be_match(s(:int, 1), '(...)') }
-# spec/fast_spec.rb:167
-it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
-# spec/fast_spec.rb:168
-it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
-# ... more results
-```
+    # spec/fast_spec.rb:166
+    it { expect(described_class).to be_match(s(:int, 1), '(...)') }
+    # spec/fast_spec.rb:167
+    it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
+    # spec/fast_spec.rb:168
+    it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
 
 ## Experiments
 
@@ -534,21 +469,19 @@ from our specs.
 
 If the spec still pass we can confidently say that the hook is useless.
 
-```ruby
-Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
-  # Lookup our spec files
-  lookup 'spec'
+    Fast.experiment("RSpec/RemoveUselessBeforeAfterHook") do
+      # Lookup our spec files
+      lookup 'spec'
 
-  # Look for every block starting with before or after
-  search "(block (send nil {before after}))"
+      # Look for every block starting with before or after
+      search "(block (send nil {before after}))"
 
-  # Remove those blocks
-  edit { |node| remove(node.loc.expression) }
+      # Remove those blocks
+      edit { |node| remove(node.loc.expression) }
 
-  # Create a new file, and run RSpec against that new file
-  policy { |new_file| system("bin/spring rspec --fail-fast #{new_file}") }
-end
-```
+      # Create a new file, and run RSpec against that new file
+      policy { |new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+    end
 
 - `lookup` can be used to pass in files or folders.
 - `search` contains the expression you want to match
@@ -581,13 +514,8 @@ After checking out the repo, run `bin/setup` to install dependencies. Then, run 
 
 On the console we have a few functions like `s` and `code` to make it easy ;)
 
-```
-$ bin/console
-```
-
-```ruby
-code("a = 1") # => s(:lvasgn, s(:int, 1))
-```
+    bin/console
+    code("a = 1") # => s(:lvasgn, s(:int, 1))
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 

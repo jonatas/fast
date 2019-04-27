@@ -22,12 +22,14 @@ end
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
+  # Literals are shortcuts allowed inside {ExpressionParser}
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
     '_' => ->(node) { !node.nil? },
     'nil' => nil
   }.freeze
 
+  # Allowed tokens in the node pattern domain
   TOKENIZER = %r/
     [\+\-\/\*\\!]         # operators or negation
     |
@@ -65,38 +67,82 @@ module Fast
   /x.freeze
 
   class << self
-    def match?(ast, search, *args)
-      Matcher.new(ast, search, *args).match?
+    # @return [Astrolabe::Node] from the parsed content
+    # @example
+    #   Fast.ast("1") # => s(:int, 1)
+    #   Fast.ast("a.b") # => s(:send, s(:send, nil, :a), :b)
+    def ast(content, buffer_name: '(string)')
+      buffer = Parser::Source::Buffer.new(buffer_name)
+      buffer.source = content
+      Parser::CurrentRuby.new(Astrolabe::Builder.new).parse(buffer)
     end
 
-    def replace(ast, search, &replacement)
+    # @return [Astrolabe::Node] parsed from file content
+    # caches the content based on the filename.
+    # @example
+    #   Fast.ast_from_file("example.rb") # => s(...)
+    def ast_from_file(file)
+      @cache ||= {}
+      @cache[file] ||= ast(IO.read(file), buffer_name: file)
+    end
+
+    # Verify if a given AST matches with a specific pattern
+    # @return [Boolean] case matches ast with the current expression
+    # @example
+    #   Fast.match?(Fast.ast("1"),"int") # => true
+    def match?(ast, pattern, *args)
+      Matcher.new(ast, pattern, *args).match?
+    end
+
+    # Replaces content based on a pattern.
+    # @param &replacement gives the [Rewriter] context in the block.
+    # @example
+    #   Fast.replace?(Fast.ast("a = 1"),"lvasgn") do |node|
+    #     replace(node.location.name, 'variable_renamed')
+    #   end # => variable_renamed = 1
+    # @return [String] with the new source code after apply the replacement
+    # @see Fast::Rewriter
+    def replace(ast, pattern, &replacement)
       buffer = Parser::Source::Buffer.new('replacement')
       buffer.source = ast.loc.expression.source
-      to_replace = search(ast, search)
+      to_replace = search(ast, pattern)
       types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
       rewriter = Rewriter.new
       rewriter.buffer = buffer
-      rewriter.search = search
+      rewriter.search = pattern
       rewriter.replacement = replacement
       rewriter.affect_types(*types)
       rewriter.rewrite(buffer, ast)
     end
 
-    def replace_file(file, search, &replacement)
+    # Replaces the source of an {#ast_from_file} with
+    # based on a search.
+    # @return [String] with the content of the new file
+    # and the same source if the pattern does not match.
+    def replace_file(file, pattern, &replacement)
       ast = ast_from_file(file)
-      replace(ast, search, &replacement)
+      replace(ast, pattern, &replacement)
     end
 
+    # Search with pattern directly on file
+    # @return Array<Astrolabe::Node> that matches the pattern
     def search_file(pattern, file)
       node = ast_from_file(file)
       search node, pattern
     end
 
+    # Capture elements from searches in files. Keep in mind you need to use `$`
+    # in the pattern to make it work.
+    # @return Array<Object> captured from the pattern matched in the file
     def capture_file(pattern, file)
       node = ast_from_file(file)
       capture node, pattern
     end
 
+    # Search recursively into a node and its children.
+    # If the node matches with the pattern it returns the node,
+    # otherwise it recursively collect possible children nodes
+    # @yield node and capture if block given
     def search(node, pattern)
       if (match = Fast.match?(node, pattern))
         yield node, match if block_given?
@@ -108,6 +154,9 @@ module Fast
       end
     end
 
+    # Return only captures from a search
+    # @return Array<Object> with all captured elements.
+    # If the result is only a single capture, it will return the single element.
     def capture(node, pattern)
       res =
         if (match = Fast.match?(node, pattern))
@@ -120,17 +169,8 @@ module Fast
       res&.size == 1 ? res[0] : res
     end
 
-    def ast(content, buffer_name: '(string)')
-      buffer = Parser::Source::Buffer.new(buffer_name)
-      buffer.source = content
-      Parser::CurrentRuby.new(Astrolabe::Builder.new).parse(buffer)
-    end
-
-    def ast_from_file(file)
-      @cache ||= {}
-      @cache[file] ||= ast(IO.read(file), buffer_name: file)
-    end
-
+    # Highligh some source code based on the node.
+    # Useful for printing code with syntax highlight.
     def highlight(node, show_sexp: false)
       output =
         if node.respond_to?(:loc) && !show_sexp
@@ -141,6 +181,13 @@ module Fast
       CodeRay.scan(output, :ruby).term
     end
 
+    # Combines {.highlight} with files printing file name in the head with the
+    # source line.
+    # @param result [Astrolabe::Node]
+    # @param show_sexp [Boolean] Show string expression instead of source
+    # @param file [String] Show the file name and result line before content
+    # @example
+    #   Fast.highlight(Fast.search(...))
     def report(result, show_sexp: nil, file: nil)
       if file
         line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
@@ -152,8 +199,19 @@ module Fast
     def expression(string)
       ExpressionParser.new(string).parse
     end
+
     attr_accessor :debugging
 
+    # Utility function to inspect search details using debug block.
+    #
+    # It prints output of all matching cases.
+    #
+    # @example
+    #   Fast.debug do
+    #      Fast.match?(s(:int, 1), [:int, 1])
+    #   end
+    #  int == (int 1) # => true
+    #  1 == 1 # => true
     def debug
       return yield if debugging
 
@@ -169,6 +227,9 @@ module Fast
       result
     end
 
+    # @return Array<String> with all ruby files from arguments.
+    # @param *files can be files or directories.
+    # When the argument is a folder, it recursively fetches all `.rb` files from it.
     def ruby_files_from(*files)
       directories = files.select(&File.method(:directory?))
 
@@ -180,6 +241,15 @@ module Fast
       files
     end
 
+    # Extracts a node pattern expression from a given node supressing identifiers and primitive types.
+    # Useful to index abstract patterns or similar code structure.
+    # @see https://jonatas.github.io/fast/similarity_tutorial/
+    # @return [String] with an pattern to search from it.
+    # @param node [Astrolabe::Node]
+    # @example
+    #   Fast.expression_from(Fast.ast('1')) # => '(int _)'
+    #   Fast.expression_from(Fast.ast('a = 1')) # => '(lvasgn _ (int _))'
+    #   Fast.expression_from(Fast.ast('def name; person.name end')) # => '(def _ (args) (send (send nil _) _))'
     def expression_from(node)
       case node
       when Parser::AST::Node
@@ -195,9 +265,22 @@ module Fast
     end
   end
 
-  # Rewriter encapsulates `#match_index` allowing to rewrite only specific matching occurrences
-  # into the file. It empowers the `Fast.experiment`  and offers some useful insights for running experiments.
+  # Rewriter encapsulates {Rewriter#match_index} to allow
+  # {ExperimentFile.partial_replace} in a {Fast::ExperimentFile}.
+  # @see https://www.rubydoc.info/github/whitequark/parser/Parser/TreeRewriter
+  # @note the standalone class needs to combines {Rewriter#affect_types} to properly generate the `on_<node-type>` methods depending on the expression being used.
+  # @example Simple Rewriter
+  #    ast = Fast.ast("a = 1")
+  #    buffer = Parser::Source::Buffer.new('replacement')
+  #    buffer.source = ast.loc.expression.source
+  #    rewriter = Rewriter.new
+  #    rewriter.buffer = buffer
+  #    rewriter.search ='(lvasgn _ ...)'
+  #    rewriter.replacement =  -> (node) { replace(node.location.name, 'variable_renamed') }
+  #    rewriter.affect_types(:lvasgn)
+  #    rewriter.rewrite(buffer, ast) # => "variable_renamed = 1"
   class Rewriter < Parser::TreeRewriter
+    # @return [Integer] with occurrence index
     attr_reader :match_index
     attr_accessor :buffer, :search, :replacement
     def initialize(*args)
@@ -209,6 +292,8 @@ module Fast
       Fast.match?(node, search)
     end
 
+    # Generate methods for all affected types.
+    # @see Fast.replace
     def affect_types(*types) # rubocop:disable Metrics/MethodLength
       types.map do |type|
         self.class.send :define_method, "on_#{type}" do |node|
@@ -227,19 +312,45 @@ module Fast
   end
 
   # ExpressionParser empowers the AST search in Ruby.
-  # You can check a few classes inheriting `Fast::Find` and adding extra behavior.
-  # Parens encapsulates node search: `(node_type children...)` .
+  # All classes inheriting Fast::Find have a grammar shortcut that is processed here.
+  #
   # Exclamation Mark to negate: `!(int _)` is equivalent to a `not integer` node.
   # Curly Braces allows [Any]: `({int float} _)`  or `{(int _) (float _)}`.
   # Square Braquets allows [All]: [(int _) !(int 0)] # all integer less zero.
   # Dollar sign can be used to capture values: `(${int float} _)` will capture the node type.
+  #
+  # @example find a simple int node
+  #   Fast.expression("int")
+  #   # => #<Fast::Find:0x00007ffae39274e0 @token="int">
+  # @example parens make the expression an array of Fast::Find and children classes
+  #   Fast.expression("(int _)")
+  #   # => [#<Fast::Find:0x00007ffae3a860e8 @token="int">, #<Fast::Find:0x00007ffae3a86098 @token="_">]
+  # @example not int token
+  #   Fast.expression("!int")
+  #   # => #<Fast::Not:0x00007ffae43f35b8 @token=#<Fast::Find:0x00007ffae43f35e0 @token="int">>
+  # @example int or float token
+  #   Fast.expression("{int float}")
+  #   # => #<Fast::Any:0x00007ffae43bbf00 @token=[
+  #   #      #<Fast::Find:0x00007ffae43bbfa0 @token="int">,
+  #   #      #<Fast::Find:0x00007ffae43bbf50 @token="float">
+  #   #     #]>
+  # @example capture something not nil
+  #   Fast.expression("$_")
+  #   # => #<Fast::Capture:0x00007ffae433a860 @captures=[], @token=#<Fast::Find:0x00007ffae433a888 @token="_">>
+  # @example capture a hash with keys that all are not string and not symbols
+  #   Fast.expression("(hash (pair ([!sym !str] _))")
+  #   # => [#<Fast::Find:0x00007ffae3b45010 @token="hash">,
+  #   #      [#<Fast::Find:0x00007ffae3b44f70 @token="pair">,
+  #   #       [#<Fast::All:0x00007ffae3b44cf0 @token=[
+  #   #         #<Fast::Not:0x00007ffae3b44e30 @token=#<Fast::Find:0x00007ffae3b44e80 @token="sym">>,
+  #   #         #<Fast::Not:0x00007ffae3b44d40 @token=#<Fast::Find:0x00007ffae3b44d68 @token="str">>]>,
+  #   #         #<Fast::Find:0x00007ffae3b44ca0 @token="_">]]]")")
+  # @example of match using string expression
+  #   Fast.match?(Fast.ast("{1 => 1}"),"(hash (pair ([!sym !str] _))") => true")")
   class ExpressionParser
+    # @param expression [String]
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
-    end
-
-    def next_token
-      @tokens.shift
     end
 
     # rubocop:disable Metrics/CyclomaticComplexity
@@ -262,9 +373,16 @@ module Fast
       else Find.new(token)
       end
     end
+
     # rubocop:enable Metrics/CyclomaticComplexity
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
+
+    private
+
+    def next_token
+      @tokens.shift
+    end
 
     def parse_until_peek(token)
       list = []
@@ -387,6 +505,11 @@ module Fast
 
   # Allow use previous captures while searching in the AST.
   # Use `\\1` to point the match to the first captured element
+  # or sequential numbers considering the order of the captures.
+  #
+  # @example check comparision of integers that will always return true
+  #   ast = Fast.ast("1 == 1") => s(:send, s(:int, 1), :==, s(:int, 1))
+  #   Fast.match?(ast, "(send $(int _) == \1)") # => [s(:int, 1)]
   class FindWithCapture < Find
     attr_writer :previous_captures
 
@@ -406,8 +529,14 @@ module Fast
     end
   end
 
+  # Allow the user to interpolate expressions from external stuff.
   # Use `%1` in the expression and the Matcher#prepare_arguments will
   # interpolate the argument in the expression.
+  # @example interpolate the node value 1
+  #   Fast.match?(Fast.ast("1"), "(int %1)", 1) # => true
+  #   Fast.match?(Fast.ast("1"), "(int %1)", 2) # => false
+  # @example interpolate multiple arguments
+  #   Fast.match?(Fast.ast("1"), "(%1 %2)", :int, 1) # => true
   class FindFromArgument < Find
     attr_writer :arguments
 
@@ -430,19 +559,41 @@ module Fast
     end
   end
 
-  # Capture some expression while searching for it:
-  # Example: `(${int float} _)` will capture the node type
-  # Example: `$({int float} _)` will capture the node
-  # Example: `({int float} $_)` will capture the value
-  # Example: `(${int float} $_)` will capture both node type and value
-  # You can capture multiple levels
+  # Capture some expression while searching for it.
+  #
+  # The captures behaves exactly like Fast::Find and the only difference is that
+  # when it {#match?} stores #captures for future usage.
+  #
+  # @example capture int node
+  #   capture = Fast::Capture.new("int") => #<Fast::Capture:0x00...e0 @captures=[], @token="int">
+  #   capture.match?(Fast.ast("1")) # => [s(:int, 1)]
+  #
+  # @example binding directly in the Fast.expression
+  #   Fast.match?(Fast.ast("1"), "(int $_)") # => [1]
+  #
+  # @example capture the value of a local variable assignment
+  #   (${int float} _)
+  # @example expression to capture only the node type
+  #   (${int float} _)
+  # @example expression to capture entire node
+  #   $({int float} _)
+  # @example expression to capture only the node value of int or float nodes
+  #   ({int float} $_)
+  # @example expression to capture both node type and value
+  #   ($_ $_)
+  #
+  # You can capture stuff in multiple levels and
+  # build expressions that  reference captures with Fast::FindWithCapture.
   class Capture < Find
+    # Stores nodes that matches with the current expression.
     attr_reader :captures
+
     def initialize(token)
       super
       @captures = []
     end
 
+    # Append the matching node to {#captures} if it matches
     def match?(node)
       @captures << node if super
     end
@@ -507,7 +658,24 @@ module Fast
     end
   end
 
-  # Joins the AST and the search expression to create a complete match
+  # Joins the AST and the search expression to create a complete matcher that
+  # recusively check if the node pattern expression matches with the given AST.
+  #
+  ### Using captures
+  #
+  # One of the most important features of the matcher is find captures and also
+  # bind them on demand in case the expression is using previous captures.
+  #
+  # @example simple match
+  #   ast = Fast.ast("a = 1")
+  #   expression = Fast.expression("(lvasgn _ (int _))")
+  #   Matcher.new(ast,expression).match? # true
+  #
+  # @example simple capture
+  #   ast = Fast.ast("a = 1")
+  #   expression = Fast.expression("(lvasgn _ (int $_))")
+  #   Matcher.new(ast,expression).match? # => [1]
+  #
   class Matcher
     def initialize(ast, fast, *args)
       @ast = ast
@@ -520,19 +688,8 @@ module Fast
       prepare_arguments(@fast, args) if args.any?
     end
 
-    def prepare_arguments(expression, arguments)
-      case expression
-      when Array
-        expression.each do |item|
-          prepare_arguments(item, arguments)
-        end
-      when Fast::FindFromArgument
-        expression.arguments = arguments
-      when Fast::Find
-        prepare_arguments expression.token, arguments
-      end
-    end
-
+    # @return [true] if the @param ast recursively matches with expression.
+    # @return #find_captures case matches
     def match?(ast = @ast, fast = @fast)
       head, *tail = fast
       return false unless head.match?(ast)
@@ -547,13 +704,9 @@ module Fast
       end && find_captures
     end
 
-    def prepare_token(token)
-      case token
-      when Fast::FindWithCapture
-        token.previous_captures = find_captures
-      end
-    end
-
+    # Look recursively into @param fast to check if the expression is have
+    # captures.
+    # @return [true] if any sub expression have captures.
     def captures?(fast = @fast)
       case fast
       when Capture then true
@@ -562,6 +715,12 @@ module Fast
       end
     end
 
+    # Find search captures recursively.
+    #
+    # @return Array<Object> of captures from the expression
+    # @return true in case of no captures in the expression
+    # @see Fast::Capture
+    # @see Fast::FindFromArgument
     def find_captures(fast = @fast)
       return true if fast == @fast && !captures?(fast)
 
@@ -569,6 +728,33 @@ module Fast
       when Capture then fast.captures
       when Array then fast.flat_map(&method(:find_captures)).compact
       when Find then find_captures(fast.token)
+      end
+    end
+
+    private
+
+    # Prepare arguments case the expression needs to bind extra arguments.
+    # @return [void]
+    def prepare_arguments(expression, arguments)
+      case expression
+      when Array
+        expression.each do |item|
+          prepare_arguments(item, arguments)
+        end
+      when Fast::FindFromArgument
+        expression.arguments = arguments
+      when Fast::Find
+        prepare_arguments expression.token, arguments
+      end
+    end
+
+    # @param [FindWithCapture] set the current captures
+    # as previous captures to the current node.
+    # @return [void] and only set [FindWithCapture#previous_captures]
+    def prepare_token(token)
+      case token
+      when Fast::FindWithCapture
+        token.previous_captures = find_captures
       end
     end
   end
