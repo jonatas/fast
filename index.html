@@ -763,15 +763,13 @@ the expression. It also returns captures if they exist.</p>
 
 <h2 id="fastreplace">Fast.replace<a class="headerlink" href="#fastreplace" title="Permanent link">&para;</a></h2>
 <p>And if I want to refactor a code and use <code>delegate &lt;attribute&gt;, to: &lt;object&gt;</code>, try with replace:</p>
-<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">replace</span> <span class="n">ast</span><span class="p">,</span>
-  <span class="s1">&#39;(def $_ ... (send (send nil $_) \1))&#39;</span><span class="p">,</span>
-  <span class="o">-&gt;</span> <span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">captures</span><span class="p">)</span> <span class="p">{</span>
+<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">replace</span> <span class="n">ast</span><span class="p">,</span> <span class="s1">&#39;(def $_ ... (send (send nil $_) \1))&#39;</span> <span class="k">do</span> <span class="o">|</span><span class="n">node</span><span class="p">,</span> <span class="n">captures</span><span class="o">|</span>
     <span class="n">attribute</span><span class="p">,</span> <span class="n">object</span> <span class="o">=</span> <span class="n">captures</span>
     <span class="n">replace</span><span class="p">(</span>
       <span class="n">node</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span>
       <span class="s2">&quot;delegate :</span><span class="si">#{</span><span class="n">attribute</span><span class="si">}</span><span class="s2">, to: :</span><span class="si">#{</span><span class="n">object</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="p">)</span>
-  <span class="p">}</span>
+  <span class="k">end</span>
 </pre></div>
 
 
