@@ -359,7 +359,7 @@ module Fast
       end
       done!
     end
-    #
+
     # Writes a new file with partial replacements based on the current combination.
     # Raise error if no changes was made with the given combination indices.
     # @param [Array<Integer>] combination to be replaced.
