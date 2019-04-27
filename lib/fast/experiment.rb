@@ -109,20 +109,20 @@ module Fast
       @expression = expression
     end
 
-    # @param &block yields the node that matches and return the block in the
+    # @param block yields the node that matches and return the block in the
     # instance context of a [Fast::Rewriter]
     def edit(&block)
       @replacement = block
     end
 
-    # @param [String] that will be combined to find the {#files}
+    # @param [String] files_or_folders that will be combined to find the {#files}
     def lookup(files_or_folders)
       @files_or_folders = files_or_folders
     end
 
     # It calls the block after the replacement and use the result
     # to drive the {Fast::ExperimentFile#ok_experiments} and {Fast::ExperimentFile#fail_experiments}.
-    # @param &block yields a temporary file with the content replaced in the current round.
+    # @param block yields a temporary file with the content replaced in the current round.
     def policy(&block)
       @ok_if = block
     end
@@ -362,7 +362,7 @@ module Fast
     #
     # Writes a new file with partial replacements based on the current combination.
     # Raise error if no changes was made with the given combination indices.
-    # @param [Array<Integer>] combinations to be replaced.
+    # @param [Array<Integer>] combination to be replaced.
     def run_partial_replacement_with(combination)
       content = partial_replace(*combination)
       experimental_file = experimental_filename(combination)

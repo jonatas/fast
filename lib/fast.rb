@@ -95,7 +95,9 @@ module Fast
     end
 
     # Replaces content based on a pattern.
-    # @param &replacement gives the [Rewriter] context in the block.
+    # @param [Astrolabe::Node] ast with the current AST to search.
+    # @param [String] pattern with the expression to be targeting nodes.
+    # @param [Proc] replacement gives the [Rewriter] context in the block.
     # @example
     #   Fast.replace?(Fast.ast("a = 1"),"lvasgn") do |node|
     #     replace(node.location.name, 'variable_renamed')
@@ -115,9 +117,7 @@ module Fast
       rewriter.rewrite(buffer, ast)
     end
 
-    # Replaces the source of an {#ast_from_file} with
-    # based on a search.
-    # @return [String] with the content of the new file
+    # Replaces the source of an {Fast#ast_from_file} with
     # and the same source if the pattern does not match.
     def replace_file(file, pattern, &replacement)
       ast = ast_from_file(file)
@@ -125,7 +125,7 @@ module Fast
     end
 
     # Search with pattern directly on file
-    # @return Array<Astrolabe::Node> that matches the pattern
+    # @return [Array<Astrolabe::Node>] that matches the pattern
     def search_file(pattern, file)
       node = ast_from_file(file)
       search node, pattern
@@ -133,7 +133,7 @@ module Fast
 
     # Capture elements from searches in files. Keep in mind you need to use `$`
     # in the pattern to make it work.
-    # @return Array<Object> captured from the pattern matched in the file
+    # @return [Array<Object>] captured from the pattern matched in the file
     def capture_file(pattern, file)
       node = ast_from_file(file)
       capture node, pattern
@@ -155,7 +155,7 @@ module Fast
     end
 
     # Return only captures from a search
-    # @return Array<Object> with all captured elements.
+    # @return [Array<Object>] with all captured elements.
     # If the result is only a single capture, it will return the single element.
     def capture(node, pattern)
       res =
@@ -227,8 +227,8 @@ module Fast
       result
     end
 
-    # @return Array<String> with all ruby files from arguments.
-    # @param *files can be files or directories.
+    # @return [Array<String>] with all ruby files from arguments.
+    # @param files can be file paths or directories.
     # When the argument is a folder, it recursively fetches all `.rb` files from it.
     def ruby_files_from(*files)
       directories = files.select(&File.method(:directory?))
@@ -313,11 +313,6 @@ module Fast
 
   # ExpressionParser empowers the AST search in Ruby.
   # All classes inheriting Fast::Find have a grammar shortcut that is processed here.
-  #
-  # Exclamation Mark to negate: `!(int _)` is equivalent to a `not integer` node.
-  # Curly Braces allows [Any]: `({int float} _)`  or `{(int _) (float _)}`.
-  # Square Braquets allows [All]: [(int _) !(int 0)] # all integer less zero.
-  # Dollar sign can be used to capture values: `(${int float} _)` will capture the node type.
   #
   # @example find a simple int node
   #   Fast.expression("int")
@@ -620,7 +615,8 @@ module Fast
   end
 
   # Matches any of the internal expressions. Works like a **OR** condition.
-  # `{int float}` means int or float.
+  # @example Matchig int or float
+  #   Fast.expression("{int float}")
   class Any < Find
     def match?(node)
       token.any? { |expression| Fast.match?(node, expression) }
@@ -717,8 +713,8 @@ module Fast
 
     # Find search captures recursively.
     #
-    # @return Array<Object> of captures from the expression
-    # @return true in case of no captures in the expression
+    # @return [Array<Object>] of captures from the expression
+    # @return [true] in case of no captures in the expression
     # @see Fast::Capture
     # @see Fast::FindFromArgument
     def find_captures(fast = @fast)
@@ -748,9 +744,10 @@ module Fast
       end
     end
 
-    # @param [FindWithCapture] set the current captures
-    # as previous captures to the current node.
-    # @return [void] and only set [FindWithCapture#previous_captures]
+    # Prepare token  with previous captures
+    # @param [FindWithCapture] token set the current captures
+    # @return [void]
+    # @see [FindWithCapture#previous_captures]
     def prepare_token(token)
       case token
       when Fast::FindWithCapture
