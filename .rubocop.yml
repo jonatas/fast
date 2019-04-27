@@ -2,6 +2,7 @@
 
 require:
   - rubocop-rspec
+  - rubocop-performance
 
 AllCops:
   Exclude:
