@@ -696,11 +696,13 @@ module Fast
     def match?(ast = @ast, fast = @fast)
       head, *tail = fast
       return false unless head.match?(ast)
-      if tail.empty?
-        return ast == @ast ? find_captures : true # root node
-      end
+      return find_captures if tail.empty?
 
-      child = ast.children
+      match_tail?(ast.children, tail)
+    end
+
+    # @return [true] if all children matches with tail
+    def match_tail?(child, tail)
       tail.each_with_index.all? do |token, i|
         prepare_token(token)
         token.is_a?(Array) ? match?(child[i], token) : token.match?(child[i])
