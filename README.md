@@ -1,6 +1,8 @@
 # Fast
 
 [![Build Status](https://travis-ci.org/jonatas/fast.svg?branch=master)](https://travis-ci.org/jonatas/fast)
+[![Maintainability](https://api.codeclimate.com/v1/badges/b03d62ee266399e76e32/maintainability)](https://codeclimate.com/github/jonatas/fast/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/b03d62ee266399e76e32/test_coverage)](https://codeclimate.com/github/jonatas/fast/test_coverage)
 
 Fast, short for "Find AST", is a tool to search, prune, and edit Ruby ASTs.
 
