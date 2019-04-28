@@ -113,7 +113,7 @@ module Fast
       rewriter.buffer = buffer
       rewriter.search = pattern
       rewriter.replacement = replacement
-      rewriter.affect_types(*types)
+      rewriter.replace_on(*types)
       rewriter.rewrite(buffer, ast)
     end
 
@@ -268,7 +268,7 @@ module Fast
   # Rewriter encapsulates {Rewriter#match_index} to allow
   # {ExperimentFile.partial_replace} in a {Fast::ExperimentFile}.
   # @see https://www.rubydoc.info/github/whitequark/parser/Parser/TreeRewriter
-  # @note the standalone class needs to combines {Rewriter#affect_types} to properly generate the `on_<node-type>` methods depending on the expression being used.
+  # @note the standalone class needs to combines {Rewriter#replace_on} to properly generate the `on_<node-type>` methods depending on the expression being used.
   # @example Simple Rewriter
   #    ast = Fast.ast("a = 1")
   #    buffer = Parser::Source::Buffer.new('replacement')
@@ -277,7 +277,7 @@ module Fast
   #    rewriter.buffer = buffer
   #    rewriter.search ='(lvasgn _ ...)'
   #    rewriter.replacement =  -> (node) { replace(node.location.name, 'variable_renamed') }
-  #    rewriter.affect_types(:lvasgn)
+  #    rewriter.replace_on(:lvasgn)
   #    rewriter.rewrite(buffer, ast) # => "variable_renamed = 1"
   class Rewriter < Parser::TreeRewriter
     # @return [Integer] with occurrence index
@@ -294,19 +294,26 @@ module Fast
 
     # Generate methods for all affected types.
     # @see Fast.replace
-    def affect_types(*types) # rubocop:disable Metrics/MethodLength
+    def replace_on(*types)
       types.map do |type|
         self.class.send :define_method, "on_#{type}" do |node|
           if captures = match?(node) # rubocop:disable Lint/AssignmentInCondition
             @match_index += 1
-            if replacement.parameters.length == 1
-              instance_exec node, &replacement
-            else
-              instance_exec node, captures, &replacement
-            end
+            execute_replacement(node, captures)
           end
           super(node)
         end
+      end
+    end
+
+    # Execute {#replacement} block
+    # @param [Astrolabe::Node] node that will be yield in the replacement block
+    # @param [Array<Object>, nil] captures are yield if {#replacement} take second argument.
+    def execute_replacement(node, captures)
+      if replacement.parameters.length == 1
+        instance_exec node, &replacement
+      else
+        instance_exec node, captures, &replacement
       end
     end
   end
