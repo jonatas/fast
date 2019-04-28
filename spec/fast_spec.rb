@@ -202,6 +202,7 @@ RSpec.describe Fast do
       it { expect(described_class).to be_match(nil, '.nil?') }
       it { expect(described_class).not_to be_match(s(:int, 1), '(int .even?)') }
       it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
+      it { expect(described_class).to be_match(code['111.2345'], '(float 111.2345)') }
 
       context 'with astrolable node methods' do
         it { expect(described_class).to be_match(code['method'], '.send_type?') }
@@ -641,6 +642,18 @@ RSpec.describe Fast do
     it { expect(described_class.expression_from(code['1'])).to eq('(int _)') }
     it { expect(described_class.expression_from(code['nil'])).to eq('(nil)') }
     it { expect(described_class.expression_from(code['a = 1'])).to eq('(lvasgn _ (int _))') }
+    it { expect(described_class.expression_from(code['[1]'])).to eq('(array (int _))') }
     it { expect(described_class.expression_from(code['def name; person.name end'])).to eq('(def _ (args) (send (send nil _) _))') }
+  end
+
+  describe 'Find and descendant classes' do
+    describe '#to_s' do
+      it { expect(described_class.expression('...').to_s).to eq('f[...]') }
+      it { expect(described_class.expression('$...').to_s).to eq('c[f[...]]') }
+      it { expect(described_class.expression('{ a b }').to_s).to eq('any[f[a], f[b]]') }
+      it { expect(described_class.expression('\\1').to_s).to eq('fc[\\1]') }
+      it { expect(described_class.expression('^int').to_s).to eq('^f[int]') }
+      it { expect(described_class.expression('%1').to_s).to eq('find_with_arg[\\0]') }
+    end
   end
 end

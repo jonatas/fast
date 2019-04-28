@@ -169,33 +169,6 @@ module Fast
       res&.size == 1 ? res[0] : res
     end
 
-    # Highligh some source code based on the node.
-    # Useful for printing code with syntax highlight.
-    def highlight(node, show_sexp: false)
-      output =
-        if node.respond_to?(:loc) && !show_sexp
-          node.loc.expression.source
-        else
-          node
-        end
-      CodeRay.scan(output, :ruby).term
-    end
-
-    # Combines {.highlight} with files printing file name in the head with the
-    # source line.
-    # @param result [Astrolabe::Node]
-    # @param show_sexp [Boolean] Show string expression instead of source
-    # @param file [String] Show the file name and result line before content
-    # @example
-    #   Fast.highlight(Fast.search(...))
-    def report(result, show_sexp: nil, file: nil)
-      if file
-        line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
-        puts Fast.highlight("# #{file}:#{line}")
-      end
-      puts Fast.highlight(result, show_sexp: show_sexp)
-    end
-
     def expression(string)
       ExpressionParser.new(string).parse
     end
@@ -259,8 +232,6 @@ module Fast
         'nil'
       when Symbol, String, Numeric
         '_'
-      when Array, Hash
-        '...'
       end
     end
   end
@@ -442,7 +413,7 @@ module Fast
     end
 
     def to_s
-      "f[#{[*token].join(', ')}]"
+      "f[#{[*token].map(&:to_s).join(', ')}]"
     end
 
     def ==(other)
@@ -601,7 +572,7 @@ module Fast
     end
 
     def to_s
-      "c[#{token} $: #{@captures}]"
+      "c[#{token}]"
     end
   end
 
@@ -630,7 +601,7 @@ module Fast
     end
 
     def to_s
-      "any[#{token}]"
+      "any[#{token.map(&:to_s).join(', ')}]"
     end
   end
 

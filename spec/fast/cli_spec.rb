@@ -4,6 +4,10 @@ require 'spec_helper'
 require 'fast/cli'
 
 RSpec.describe Fast::Cli do
+  def highlight(output)
+    CodeRay.scan(output, :ruby).term
+  end
+
   describe '.initialize' do
     subject(:cli) { described_class.new args }
 
@@ -54,6 +58,15 @@ RSpec.describe Fast::Cli do
       its(:pattern) { is_expected.to eq('(float 1.1)') }
     end
 
+    context 'with --version' do
+      let(:args) { %w[--version] }
+
+      it do
+        expect { cli.run! }.to output(Fast::VERSION.to_s + "\n").to_stdout
+          .and raise_error SystemExit
+      end
+    end
+
     shared_examples_for 'show help' do
       it { expect { cli.run! }.to output(/Usage: /).to_stdout }
     end
@@ -68,6 +81,48 @@ RSpec.describe Fast::Cli do
       let(:args) { %w[--h] }
 
       it_behaves_like 'show help'
+    end
+
+    context 'with search in file' do
+      let(:args) { %w[casgn lib/fast/version.rb] }
+
+      it 'prints file with line number' do
+        expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+          # lib/fast/version.rb:4
+          VERSION = '#{Fast::VERSION}'
+        RUBY
+      end
+
+      context 'with args to print ast' do
+        let(:args) { %w[casgn lib/fast/version.rb --ast] }
+
+        it 'prints ast instead of source code' do
+          expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+            # lib/fast/version.rb:4
+            (casgn nil :VERSION
+              (str "#{Fast::VERSION}"))
+          RUBY
+        end
+      end
+    end
+  end
+
+  describe 'Fast.highlight' do
+    it 'uses coderay to make ruby syntax highlight' do
+      out = instance_double('term')
+      allow(out).to receive(:term)
+      allow(CodeRay).to receive(:scan).with(:symbol, :ruby).and_return(out)
+      Fast.highlight(:symbol)
+    end
+  end
+
+  describe 'Fast.report' do
+    it 'highlight the code with file in the header' do
+      ast = Fast.ast('a = 1')
+      allow(Fast).to receive(:highlight).with('# some_file.rb:1').and_call_original
+      allow(Fast).to receive(:highlight).with(ast, show_sexp: false).and_call_original
+      expect { Fast.report(ast, file: 'some_file.rb', show_sexp: false) }
+        .to output(highlight("# some_file.rb:1\na = 1\n")).to_stdout
     end
   end
 end

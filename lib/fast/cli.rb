@@ -6,7 +6,37 @@ require 'coderay'
 require 'optparse'
 require 'ostruct'
 
+# Command Line Interface powered by CodeRay
 module Fast
+  module_function
+
+  # Highligh some source code based on the node.
+  # Useful for printing code with syntax highlight.
+  def highlight(node, show_sexp: false)
+    output =
+      if node.respond_to?(:loc) && !show_sexp
+        node.loc.expression.source
+      else
+        node
+      end
+    CodeRay.scan(output, :ruby).term
+  end
+
+  # Combines {.highlight} with files printing file name in the head with the
+  # source line.
+  # @param result [Astrolabe::Node]
+  # @param show_sexp [Boolean] Show string expression instead of source
+  # @param file [String] Show the file name and result line before content
+  # @example
+  #   Fast.highlight(Fast.search(...))
+  def report(result, show_sexp: nil, file: nil)
+    if file
+      line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
+      puts Fast.highlight("# #{file}:#{line}")
+    end
+    puts Fast.highlight(result, show_sexp: show_sexp)
+  end
+
   # Command Line Interface for Fast
   class Cli
     attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help
