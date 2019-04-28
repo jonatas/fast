@@ -147,7 +147,7 @@ module Fast
       if (match = Fast.match?(node, pattern))
         yield node, match if block_given?
         match != true ? [node, match] : [node]
-      elsif Fast.match?(node, '...')
+      else
         node.each_child_node
           .flat_map { |e| search(e, pattern) }
           .compact.flatten
@@ -156,12 +156,12 @@ module Fast
 
     # Return only captures from a search
     # @return [Array<Object>] with all captured elements.
-    # If the result is only a single capture, it will return the single element.
+    # @return [Object] with single element when single capture.
     def capture(node, pattern)
       res =
         if (match = Fast.match?(node, pattern))
           match == true ? node : match
-        elsif node.child_nodes.any?
+        else
           node.each_child_node
             .flat_map { |child| capture(child, pattern) }
             .compact.flatten
