@@ -144,7 +144,7 @@ module Fast
     # otherwise it recursively collect possible children nodes
     # @yield node and capture if block given
     def search(node, pattern)
-      if (match = Fast.match?(node, pattern))
+      if (match = match?(node, pattern))
         yield node, match if block_given?
         match != true ? [node, match] : [node]
       else
@@ -159,7 +159,7 @@ module Fast
     # @return [Object] with single element when single capture.
     def capture(node, pattern)
       res =
-        if (match = Fast.match?(node, pattern))
+        if (match = match?(node, pattern))
           match == true ? node : match
         else
           node.each_child_node
@@ -226,7 +226,7 @@ module Fast
     def expression_from(node)
       case node
       when Parser::AST::Node
-        children_expression = node.children.map(&Fast.method(:expression_from)).join(' ')
+        children_expression = node.children.map(&method(:expression_from)).join(' ')
         "(#{node.type}#{' ' + children_expression if node.children.any?})"
       when nil, 'nil'
         'nil'
