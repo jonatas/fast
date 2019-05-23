@@ -203,6 +203,7 @@ RSpec.describe Fast do
       it { expect(described_class).not_to be_match(s(:int, 1), '(int .even?)') }
       it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
       it { expect(described_class).to be_match(code['111.2345'], '(float 111.2345)') }
+      it { expect(described_class).to be_match(code['I18n'], '(const nil I18n)') }
 
       context 'with astrolable node methods' do
         it { expect(described_class).to be_match(code['method'], '.send_type?') }

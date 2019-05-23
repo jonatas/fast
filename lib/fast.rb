@@ -436,8 +436,8 @@ module Fast
 
     def typecast_value(token)
       case token
-      when /\d+\.\d*/ then token.to_f
-      when /\d+/ then token.to_i
+      when /^\d+\.\d*/ then token.to_f
+      when /^\d+/ then token.to_i
       else token.to_sym
       end
     end
