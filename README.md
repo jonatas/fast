@@ -350,14 +350,16 @@ and we decide to inline the contents of the `message` variable right after
       puts ["good", "bye"].join(' ')
     end
 
+
 To refactor and reach the proposed example, follow a few steps:
 
 1. Remove the local variable assignment
 2. Store the now-removed variable's value
 3. Substitute the value where the variable was used before
 
-    assignment = nil
+#### Entire example
 
+    assignment = nil
     Fast.replace_file 'sample.rb', '({ lvasgn lvar } message )', -> (node, _) {
       # Find a variable assignment
       if node.type == :lvasgn
