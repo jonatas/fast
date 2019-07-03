@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   end
 
   spec.bindir        = 'bin'
-  spec.executables   = ['fast', 'fast-experiment']
+  spec.executables   = %w[fast fast-experiment]
   spec.require_paths = %w[lib experiments]
 
   spec.add_dependency 'astrolabe'
