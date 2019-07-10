@@ -81,7 +81,7 @@ module Fast
           @help = true
         end
 
-        @pattern, @files = args.reject { |arg| arg.start_with? '-' }
+        @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
       end
       @opt.parse! args
 

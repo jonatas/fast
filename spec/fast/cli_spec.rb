@@ -19,6 +19,17 @@ RSpec.describe Fast::Cli do
       its(:files) { is_expected.to eq(['lib/fast.rb']) }
     end
 
+    context 'with expression and folders' do
+      let(:args) { %w[def lib/fast spec/fast] }
+
+      its(:pattern) { is_expected.to eq('def') }
+
+      its(:files) do
+        is_expected.to include('lib/fast/cli.rb')
+        is_expected.to include('spec/fast/cli_spec.rb')
+      end
+    end
+
     context 'with expression and file' do
       let(:args) { %w[match? lib/fast.rb -c] }
 
