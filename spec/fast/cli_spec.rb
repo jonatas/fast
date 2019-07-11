@@ -128,12 +128,20 @@ RSpec.describe Fast::Cli do
   end
 
   describe 'Fast.report' do
+    let(:ast) { Fast.ast('a = 1') }
+
     it 'highlight the code with file in the header' do
-      ast = Fast.ast('a = 1')
       allow(Fast).to receive(:highlight).with('# some_file.rb:1').and_call_original
       allow(Fast).to receive(:highlight).with(ast, show_sexp: false).and_call_original
       expect { Fast.report(ast, file: 'some_file.rb', show_sexp: false) }
         .to output(highlight("# some_file.rb:1\na = 1\n")).to_stdout
+    end
+
+    context 'with headless option' do
+      it 'highlight the code without the file printed in the header' do
+        expect { Fast.report(ast, file: 'some_file.rb', headless: true) }
+          .to output(highlight("a = 1\n")).to_stdout
+      end
     end
   end
 end

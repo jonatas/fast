@@ -27,12 +27,13 @@ module Fast
   # @param result [Astrolabe::Node]
   # @param show_sexp [Boolean] Show string expression instead of source
   # @param file [String] Show the file name and result line before content
+  # @param headless [Boolean] Skip printing the file name and line before content
   # @example
   #   Fast.highlight(Fast.search(...))
-  def report(result, show_sexp: nil, file: nil)
+  def report(result, show_sexp: false, file: nil, headless: false)
     if file
       line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
-      puts Fast.highlight("# #{file}:#{line}")
+      puts(Fast.highlight("# #{file}:#{line}")) unless headless
     end
     puts Fast.highlight(result, show_sexp: show_sexp)
   end
@@ -52,6 +53,10 @@ module Fast
 
         opts.on('--ast', 'Print AST instead of code') do
           @show_sexp = true
+        end
+
+        opts.on('--headless', 'Print results without the file name in the header') do
+          @headless = true
         end
 
         opts.on('--pry', 'Jump into a pry session with results') do
@@ -151,7 +156,7 @@ module Fast
     end
 
     def report(result, file)
-      Fast.report(result, file: file, show_sexp: @show_sexp)
+      Fast.report(result, file: file, show_sexp: @show_sexp, headless: @headless)
     end
   end
 end
