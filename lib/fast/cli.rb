@@ -55,6 +55,10 @@ module Fast
           @show_sexp = true
         end
 
+        opts.on('--captures', 'Print only captures of the patterns and skip node results') do
+          @captures = true
+        end
+
         opts.on('--headless', 'Print results without the file name in the header') do
           @headless = true
         end
@@ -119,7 +123,7 @@ module Fast
         Fast.debug { Fast.search_file(expression, file) }
       else
         begin
-          Fast.search_file(expression, file)
+          Fast.public_send(@captures ? :capture_file : :search_file, expression, file)
         rescue StandardError
           debug "Ops! An error occurred trying to search in #{expression.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
           []
@@ -129,8 +133,9 @@ module Fast
 
     def search
       files.each do |file|
-        results = search_file(file)
-        next if results.nil? || results.empty?
+        results = [*search_file(file)]
+
+        next if results.empty?
 
         results.each do |result|
           if @pry

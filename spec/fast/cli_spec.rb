@@ -115,6 +115,14 @@ RSpec.describe Fast::Cli do
           RUBY
         end
       end
+
+      context 'with args --headless --captures' do
+        let(:args) { ['(casgn nil _ (str $_))', 'lib/fast/version.rb', '--captures', '--headless'] }
+
+        it 'prints only captured scope' do
+          expect { cli.run! }.to output(highlight(Fast::VERSION + "\n")).to_stdout
+        end
+      end
     end
   end
 
