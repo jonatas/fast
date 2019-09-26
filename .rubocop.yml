@@ -40,3 +40,6 @@ RSpec/ExampleLength:
 
 RSpec/MultipleExpectations:
   Enabled: false
+
+RSpec/DescribedClass:
+  Enabled: false
