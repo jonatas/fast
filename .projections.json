@@ -1,0 +1,4 @@
+{
+  "README.md": { "type": "readme" },
+  "lib/*.rb": { "type": "lib", "alternate": "spec/{}_spec.rb" }
+}
