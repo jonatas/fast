@@ -35,7 +35,7 @@ RSpec.describe Fast::Experiment do
 
     describe '#replace' do
       it 'replace only first case' do
-        expect(experiment_file.partial_replace(1)).to eq(<<~RUBY.chomp)
+        expect(experiment_file.partial_replace(1)).to eq(<<~RUBY)
           let(:user) { build_stubbed(:user) }
           let(:address) { create(:address) }
           let(:phone_number) { create(:phone_number) }
@@ -45,7 +45,7 @@ RSpec.describe Fast::Experiment do
       end
 
       it 'replace only second case' do
-        expect(experiment_file.partial_replace(2)).to eq(<<~RUBY.chomp)
+        expect(experiment_file.partial_replace(2)).to eq(<<~RUBY)
           let(:user) { create(:user) }
           let(:address) { build_stubbed(:address) }
           let(:phone_number) { create(:phone_number) }

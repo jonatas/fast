@@ -456,6 +456,7 @@ RSpec.describe Fast do
     before do
       File.open('sample.rb', 'w+') do |file|
         file.puts <<~RUBY
+          # One new comment
           class SelfPromotion
             AUTHOR = "Jônatas Davi Paganini"
             def initialize(name, language='pt')
@@ -535,7 +536,8 @@ RSpec.describe Fast do
         end
 
         it 'replaces all occurrences' do # rubocop:disable RSpec/ExampleLength
-          expect(rename_const).to eq(<<~RUBY.chomp)
+          expect(rename_const).to eq(<<~RUBY)
+            # One new comment
             class SelfPromotion
               CREATOR = "Jônatas Davi Paganini"
               def initialize(name, language='pt')
@@ -573,7 +575,8 @@ RSpec.describe Fast do
         end
 
         it 'replaces all occurrences' do
-          expect(inline_var).to eq(<<~RUBY.chomp)
+          expect(inline_var).to eq(<<~RUBY)
+            # One new comment
             class SelfPromotion
               AUTHOR = "Jônatas Davi Paganini"
               def initialize(name, language='pt')

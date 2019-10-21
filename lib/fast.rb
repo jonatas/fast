@@ -104,9 +104,9 @@ module Fast
     #   end # => variable_renamed = 1
     # @return [String] with the new source code after apply the replacement
     # @see Fast::Rewriter
-    def replace(ast, pattern, &replacement)
+    def replace(ast, pattern, source=nil, &replacement)
       buffer = Parser::Source::Buffer.new('replacement')
-      buffer.source = ast.loc.expression.source
+      buffer.source = source || ast.loc.expression.source
       to_replace = search(ast, pattern)
       types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
       rewriter = Rewriter.new
@@ -121,7 +121,7 @@ module Fast
     # and the same source if the pattern does not match.
     def replace_file(file, pattern, &replacement)
       ast = ast_from_file(file)
-      replace(ast, pattern, &replacement)
+      replace(ast, pattern, IO.read(file), &replacement)
     end
 
     # Search with pattern directly on file
