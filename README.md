@@ -426,6 +426,64 @@ The CLI tool takes the following flags
 - Use `-c` to search from code example
 - Use `-s` to search similar code
 
+### Define your `Fastfile`
+
+Fastfile is loaded while fast is being used.
+
+You can also define extra Fastfile in your home dir or setting a directory with
+the `FAST_FILE_DIR`.
+
+You can define a `Fastfile` in any project with your custom shortcuts.
+
+```ruby
+Fast.shortcut(:version, '(casgn nil VERSION (str _))', 'lib/fast/version.rb')
+```
+
+Let's say you'd like to show the version of your library. Your normal
+command line will look like:
+
+    $ fast '(casgn nil VERSION)' lib/*/version.rb
+
+Or generalizing to search all constants in the version files:
+
+    $ fast casgn lib/*/version.rb
+
+It will output but the command is not very handy. In order to just say `fast .version`
+you can use the previous snipped in your `Fastfile`.
+
+And it will output something like this:
+
+```ruby
+# lib/fast/version.rb:4
+VERSION = '0.1.2'
+```
+
+Create shortcuts with blocks that are able to introduce custom coding in
+the scope of the `Fast` module
+
+To bump a new version of your library for example you can type `fast .bump_version`
+and add the snippet to your library fixing the filename.
+
+```ruby
+Fast.shortcut :bump_version do
+  rewrite_file('lib/fast/version.rb', '(casgn nil VERSION (str _)') do |node|
+    target = node.children.last.loc.expression
+    pieces = target.source.split(".").map(&:to_i)
+    pieces.reverse.each_with_index do |fragment,i|
+      if fragment < 9
+        pieces[-(i+1)] = fragment +1
+        break
+      else
+        pieces[-(i+1)] = 0
+      end
+    end
+    replace(target, "'#{pieces.join(".")}'")
+  end
+end
+```
+
+You can find more examples in the [Fastfile](./Fastfile).
+
 ### Fast with Pry
 
 You can use `--pry` to stop on a particular source node, and run Pry at that

@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'fast/cli'
+require 'fast/shortcut'
 
 RSpec.describe Fast::Cli do
   def highlight(output)
@@ -30,7 +31,7 @@ RSpec.describe Fast::Cli do
       end
     end
 
-    context 'with expression and file' do
+    context 'with -c to search from code and file' do
       let(:args) { %w[match? lib/fast.rb -c] }
 
       its(:pattern) { is_expected.to eq('(send nil :match?)') }
@@ -112,6 +113,25 @@ RSpec.describe Fast::Cli do
             # lib/fast/version.rb:4
             (casgn nil :VERSION
               (str "#{Fast::VERSION}"))
+          RUBY
+        end
+      end
+
+      context 'with shortcut' do
+        let(:args) { ['.show_version'] }
+
+        before do
+          Fast.shortcuts.delete :show_version
+          Fast.shortcut(:show_version, '(casgn nil _ (str _))', 'lib/fast/version.rb')
+        end
+
+        its(:pattern) { is_expected.to eq('(casgn nil _ (str _))') }
+        its(:files) { is_expected.to eq(['lib/fast/version.rb']) }
+
+        it 'uses the predefined values from the shortcut' do
+          expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+            # lib/fast/version.rb:4
+            VERSION = '#{Fast::VERSION}'
           RUBY
         end
       end

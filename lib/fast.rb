@@ -104,17 +104,25 @@ module Fast
     #   end # => variable_renamed = 1
     # @return [String] with the new source code after apply the replacement
     # @see Fast::Rewriter
-    def replace(ast, pattern, source=nil, &replacement)
+    def replace(ast, pattern, source = nil, &replacement)
       buffer = Parser::Source::Buffer.new('replacement')
       buffer.source = source || ast.loc.expression.source
       to_replace = search(ast, pattern)
       types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
+
       rewriter = Rewriter.new
       rewriter.buffer = buffer
       rewriter.search = pattern
       rewriter.replacement = replacement
       rewriter.replace_on(*types)
       rewriter.rewrite(buffer, ast)
+    end
+
+    # Search with pattern directly on file
+    # @return [Array<Astrolabe::Node>] that matches the pattern
+    def search_file(pattern, file)
+      node = ast_from_file(file)
+      search node, pattern
     end
 
     # Replaces the source of an {Fast#ast_from_file} with
@@ -124,11 +132,12 @@ module Fast
       replace(ast, pattern, IO.read(file), &replacement)
     end
 
-    # Search with pattern directly on file
-    # @return [Array<Astrolabe::Node>] that matches the pattern
-    def search_file(pattern, file)
-      node = ast_from_file(file)
-      search node, pattern
+    # Combines #replace_file output overriding the file if the output is different
+    # from the original file content.
+    def rewrite_file(file, pattern, &replacement)
+      previous_content = IO.read(file)
+      content = replace_file(file, pattern, &replacement)
+      File.open(file, 'w+') { |f| f.puts content } if content != previous_content
     end
 
     # Capture elements from searches in files. Keep in mind you need to use `$`
@@ -244,8 +253,7 @@ module Fast
   #    ast = Fast.ast("a = 1")
   #    buffer = Parser::Source::Buffer.new('replacement')
   #    buffer.source = ast.loc.expression.source
-  #    rewriter = Rewriter.new
-  #    rewriter.buffer = buffer
+  #    rewriter = Rewriter.new buffer
   #    rewriter.search ='(lvasgn _ ...)'
   #    rewriter.replacement =  -> (node) { replace(node.location.name, 'variable_renamed') }
   #    rewriter.replace_on(:lvasgn)

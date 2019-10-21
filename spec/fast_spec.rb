@@ -523,7 +523,7 @@ RSpec.describe Fast do
       end
     end
 
-    describe 'replace file' do
+    describe '.replace_file' do
       context 'with rename constant example' do
         let(:rename_const) do
           described_class.replace_file('sample.rb', '({casgn const} nil AUTHOR )') do |node|
@@ -597,6 +597,26 @@ RSpec.describe Fast do
             end
           RUBY
         end
+      end
+    end
+
+    describe '.rewrite_file' do
+      subject(:remove_methods) do
+        described_class.rewrite_file('sample.rb', '{def defs}') do |node, _|
+          remove(node.location.expression)
+        end
+      end
+
+      specify do
+        expect { remove_methods }.to change { IO.read('sample.rb') }.to(<<~RUBY)
+          # One new comment
+          class SelfPromotion
+            AUTHOR = "Jônatas Davi Paganini"
+          \s\s
+          \s\s
+          \s\s
+          end
+        RUBY
       end
     end
   end

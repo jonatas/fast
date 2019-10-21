@@ -39,7 +39,7 @@ module Fast
   end
 
   # Command Line Interface for Fast
-  class Cli
+  class Cli # rubocop:disable Metrics/ClassLength
     attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help
 
     # rubocop:disable Metrics/MethodLength
@@ -89,13 +89,39 @@ module Fast
         opts.on_tail('-h', '--help', 'Show help. More at https://jonatas.github.io/fast') do
           @help = true
         end
-
-        @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
       end
+
+      if args.first&.start_with?('.') # shortcut! :tada:
+        shortcut = find_shortcut args.first[1..-1]
+
+        if shortcut.single_run_with_block?
+          shortcut.run
+          exit
+        else
+          args = shortcut.args
+        end
+      end
+
+      @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
+
       @opt.parse! args
 
-      @files = [*@files]
-      @files.reject! { |arg| arg.start_with?('-') }
+      @files = [*@files].reject { |arg| arg.start_with?('-') }
+    end
+
+    def find_shortcut(name)
+      require 'fast/shortcut'
+      Fast.load_fast_files!
+
+      shortcut = Fast.shortcuts[name] || Fast.shortcuts[name.to_sym]
+
+      shortcut || exit_shortcut_not_found(name)
+    end
+
+    def exit_shortcut_not_found(name)
+      puts "shortcut #{name} not found"
+      puts "Available shortcuts are: #{Fast.shortcuts.keys.join(', ')}" if Fast::Shortcut.fast_files.any?
+      exit
     end
 
     # rubocop:enable Metrics/MethodLength
