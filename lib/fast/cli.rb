@@ -93,12 +93,11 @@ module Fast
 
       if args.first&.start_with?('.') # shortcut! :tada:
         shortcut = find_shortcut args.first[1..-1]
-
         if shortcut.single_run_with_block?
           shortcut.run
           exit
         else
-          args = shortcut.args
+          args = args.one? ? shortcut.args : shortcut.merge_args(args[1..-1])
         end
       end
 
