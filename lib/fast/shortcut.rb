@@ -25,14 +25,14 @@ module Fast
       @shortcuts ||= {}
     end
 
-    # @return [Array<String>] with existent Fastfiles from [LOOKUP_FAST_FILES_DIRECTORIES].
+    # @return [Array<String>] with existent Fastfiles from {LOOKUP_FAST_FILES_DIRECTORIES}.
     def fast_files
       @fast_files ||= LOOKUP_FAST_FILES_DIRECTORIES.compact
         .map { |dir| File.join(dir, 'Fastfile') }
         .select(&File.method(:exists?))
     end
 
-    # Load `Fastfiles` from [#fast_files] list
+    # Loads `Fastfiles` from {.fast_files} list
     def load_fast_files!
       fast_files.each(&method(:load))
     end

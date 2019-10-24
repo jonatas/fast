@@ -428,7 +428,7 @@ The CLI tool takes the following flags
 
 ### Define your `Fastfile`
 
-Fastfile is loaded while fast is being used.
+Fastfile is loaded when you start a pattern with a `.`.
 
 You can also define extra Fastfile in your home dir or setting a directory with
 the `FAST_FILE_DIR`.

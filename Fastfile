@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Fastfile is loaded while fast is being used.
+# Fastfile is loaded when you start an expression with a dot.
 #
 # You can introduce shortcuts or methods that can be embedded during your
 # command line interactions with fast.
