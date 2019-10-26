@@ -312,6 +312,47 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#-c-to-search-from-code-example" title="-c to search from code example" class="md-nav__link">
+    -c to search from code example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastfile" title="Fastfile" class="md-nav__link">
+    Fastfile
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shortcuts" title="Shortcuts" class="md-nav__link">
+    Shortcuts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-print-library-version" title="Example: Print library version." class="md-nav__link">
+    Example: Print library version.
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-bumping-a-gem-version" title="Example: Bumping a gem version" class="md-nav__link">
+    Example: Bumping a gem version
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
       
       
       
@@ -400,6 +441,47 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#-c-to-search-from-code-example" title="-c to search from code example" class="md-nav__link">
+    -c to search from code example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fastfile" title="Fastfile" class="md-nav__link">
+    Fastfile
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#shortcuts" title="Shortcuts" class="md-nav__link">
+    Shortcuts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-print-library-version" title="Example: Print library version." class="md-nav__link">
+    Example: Print library version.
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-bumping-a-gem-version" title="Example: Bumping a gem version" class="md-nav__link">
+    Example: Bumping a gem version
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
       
       
       
@@ -420,8 +502,8 @@
                 
                 
                 <h1 id="command-line">Command line<a class="headerlink" href="#command-line" title="Permanent link">&para;</a></h1>
-<p>It will also inject a executable named <code>fast</code> and you can use it to search and
-find code using the concept:</p>
+<p>When you install the ffast gem, it will also create an executable named <code>fast</code> 
+and you can use it to search and find code using the concept:</p>
 <div class="codehilite"><pre><span></span>$ fast &#39;(def match?)&#39; lib/fast.rb
 </pre></div>
 
@@ -504,8 +586,8 @@ $ fast -s &#39;a.b&#39; sample.rb
 </pre></div>
 
 
-<p>See also <a href="simi">Code Similarity</a>ilarity_tutorial.md) tutorial.</p>
-<h1 id="-c-to-search-from-code-example"><code>-c</code> to search from code example<a class="headerlink" href="#-c-to-search-from-code-example" title="Permanent link">&para;</a></h1>
+<p>See also <a href="../similarity_tutorial/">Code Similarity</a> tutorial.</p>
+<h2 id="-c-to-search-from-code-example"><code>-c</code> to search from code example<a class="headerlink" href="#-c-to-search-from-code-example" title="Permanent link">&para;</a></h2>
 <p>You can search  for the exact expression with <code>-c</code></p>
 <div class="codehilite"><pre><span></span>$ fast -c &#39;object.method&#39; sample.rb
 </pre></div>
@@ -523,6 +605,95 @@ The generated expression from AST was:
 (send
   (send nil :object) :method)
 </pre></div>
+
+
+<h2 id="fastfile">Fastfile<a class="headerlink" href="#fastfile" title="Permanent link">&para;</a></h2>
+<p><code>Fastfile</code> will loaded when you start a pattern with a dot. It means the pattern
+will be a shortcut predefined on these Fastfiles.</p>
+<p>It will make three attempts to load <code>Fastfile</code> defined in <code>$PWD</code>, <code>$HOME</code> or
+checking if the <code>$FAST_FILE_DIR</code> is configured.</p>
+<p>You can define a <code>Fastfile</code> in any project with your custom shortcuts and easy
+check some code or run some task.</p>
+<h2 id="shortcuts">Shortcuts<a class="headerlink" href="#shortcuts" title="Permanent link">&para;</a></h2>
+<p>Create shortcuts with blocks enables introduce custom coding in
+the scope of the <code>Fast</code> module.</p>
+<h2 id="example-print-library-version">Example: Print library version.<a class="headerlink" href="#example-print-library-version" title="Permanent link">&para;</a></h2>
+<p>Let's say you'd like to show the version of your library. Your regular params
+in the command line will look like:</p>
+<div class="codehilite"><pre><span></span>$ fast &#39;(casgn nil VERSION)&#39; lib/*/version.rb
+</pre></div>
+
+
+<p>It will output but the command is not very handy. In order to just say <code>fast .version</code>
+you can use the previous snippet in your <code>Fastfile</code>.</p>
+<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:version</span><span class="p">,</span> <span class="s1">&#39;(casgn nil VERSION)&#39;</span><span class="p">,</span> <span class="s1">&#39;lib/fast/version.rb&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>And calling <code>fast .version</code> it will output something like this:</p>
+<div class="codehilite"><pre><span></span><span class="c1"># lib/fast/version.rb:4</span>
+<span class="no">VERSION</span> <span class="o">=</span> <span class="s1">&#39;0.1.2&#39;</span>
+</pre></div>
+
+
+<p>We can also always override the files params passing some other target file
+like <code>fast .version lib/other/file.rb</code> and it will reuse the other arguments
+from command line but replace the target files.</p>
+<h3 id="example-bumping-a-gem-version">Example: Bumping a gem version<a class="headerlink" href="#example-bumping-a-gem-version" title="Permanent link">&para;</a></h3>
+<p>While releasing a new gem version, we always need to mechanical go through the
+<code>lib/&lt;your_gem&gt;/version.rb</code> and change the string value to bump the version
+of your library. It's pretty mechanical and here is an example that allow you 
+to simple use <code>fast .bump_version</code>:</p>
+<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span> <span class="ss">:bump_version</span> <span class="k">do</span>
+  <span class="n">rewrite_file</span><span class="p">(</span><span class="s1">&#39;lib/fast/version.rb&#39;</span><span class="p">,</span> <span class="s1">&#39;(casgn nil VERSION (str _)&#39;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">node</span><span class="o">|</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">last</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span>
+    <span class="n">pieces</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:to_i</span><span class="p">)</span>
+    <span class="n">pieces</span><span class="o">.</span><span class="n">reverse</span><span class="o">.</span><span class="n">each_with_index</span> <span class="k">do</span> <span class="o">|</span><span class="n">fragment</span><span class="p">,</span><span class="n">i</span><span class="o">|</span>
+      <span class="k">if</span> <span class="n">fragment</span> <span class="o">&lt;</span> <span class="mi">9</span>
+        <span class="n">pieces</span><span class="o">[-</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">]</span> <span class="o">=</span> <span class="n">fragment</span> <span class="o">+</span><span class="mi">1</span>
+        <span class="k">break</span>
+      <span class="k">else</span>
+        <span class="n">pieces</span><span class="o">[-</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">]</span> <span class="o">=</span> <span class="mi">0</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+    <span class="n">replace</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="s2">&quot;&#39;</span><span class="si">#{</span><span class="n">pieces</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<div class="admonition note">
+<p class="admonition-title">Note the shortcut scope</p>
+<p>The shortcut calls <code>rewrite_file</code> from <code>Fast</code> scope as it use
+<code>Fast.instance_exec</code> for shortcuts that yields blocks.</p>
+</div>
+<p>Checking the version:</p>
+<div class="codehilite"><pre><span></span>$ fast .version                                                                                                                                                                                                                            <span class="m">13</span>:58:40
+<span class="c1"># lib/fast/version.rb:4</span>
+<span class="nv">VERSION</span> <span class="o">=</span> <span class="s1">&#39;0.1.2&#39;</span>
+</pre></div>
+
+
+<p>Bumping the version:</p>
+<div class="codehilite"><pre><span></span>$ fast .bump_version                                                                                                                                                                                                                       <span class="m">13</span>:58:43
+</pre></div>
+
+
+<p>No output because we don't print anything. Checking version again:</p>
+<div class="codehilite"><pre><span></span>$ fast .version                                                                                                                                                                                                                            <span class="m">13</span>:58:54
+<span class="c1"># lib/fast/version.rb:4</span>
+<span class="nv">VERSION</span> <span class="o">=</span> <span class="s1">&#39;0.1.3&#39;</span>
+</pre></div>
+
+
+<p>And now a fancy shortcut to report the other shortcuts :)</p>
+<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span> <span class="ss">:shortcuts</span> <span class="k">do</span>
+  <span class="n">report</span><span class="p">(</span><span class="n">shortcuts</span><span class="o">.</span><span class="n">keys</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<p>You can find these examples in the <a href="https://github.com/jonatas/fast/tree/master/Fastfile">Fastfile</a>.</p>
                 
                   
                 
