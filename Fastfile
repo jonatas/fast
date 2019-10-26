@@ -32,3 +32,8 @@ Fast.shortcut :bump_version do
     replace(target, "'#{pieces.join('.')}'")
   end
 end
+
+# And now a shortcut to print the other shortcuts :)
+Fast.shortcut :shortcuts do
+  report(shortcuts.keys)
+end
