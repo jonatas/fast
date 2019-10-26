@@ -6,7 +6,9 @@ require 'coderay'
 require 'optparse'
 require 'ostruct'
 
-# Command Line Interface powered by CodeRay
+# Fast is a powerful tool to search through the command line for specific Ruby code.
+# It defines #report and #highlight functions that can be used to pretty print
+# code and results from the search.
 module Fast
   module_function
 
@@ -39,7 +41,7 @@ module Fast
   end
 
   # Command Line Interface for Fast
-  class Cli
+  class Cli # rubocop:disable Metrics/ClassLength
     attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help
 
     # rubocop:disable Metrics/MethodLength
@@ -89,23 +91,34 @@ module Fast
         opts.on_tail('-h', '--help', 'Show help. More at https://jonatas.github.io/fast') do
           @help = true
         end
-
-        @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
       end
+
+      if args.first&.start_with?('.') # shortcut! :tada:
+        shortcut = find_shortcut args.first[1..-1]
+        if shortcut.single_run_with_block?
+          shortcut.run
+          exit
+        else
+          args = args.one? ? shortcut.args : shortcut.merge_args(args[1..-1])
+        end
+      end
+
+      @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
+
       @opt.parse! args
 
-      @files = [*@files]
-      @files.reject! { |arg| arg.start_with?('-') }
+      @files = [*@files].reject { |arg| arg.start_with?('-') }
     end
-
     # rubocop:enable Metrics/MethodLength
     # rubocop:enable Metrics/AbcSize
 
+    # Run a new command line interface digesting the arguments
     def self.run!(argv)
       argv = argv.dup
       new(argv).run!
     end
 
+    # Show help or search for node patterns
     def run!
       if @help || @files.empty? && @pattern.nil?
         puts @opt.help
@@ -114,10 +127,15 @@ module Fast
       end
     end
 
+    # Create fast expression from node pattern using the command line
     def expression
       Fast.expression(@pattern)
     end
 
+    # Search for each file independent.
+    # If -d (debug option) is enabled, it will output details of each search.
+    # If capture option is enabled it will only print the captures, otherwise it
+    # prints all the results.
     def search_file(file)
       if debug_mode?
         Fast.debug { Fast.search_file(expression, file) }
@@ -131,6 +149,9 @@ module Fast
       end
     end
 
+    # Search for the {#expression} on all the {#files}.
+    # It {#report} results if no options are passed.
+    # It binds pry if option "--pry" is passed.
     def search
       files.each do |file|
         results = [*search_file(file)]
@@ -148,20 +169,46 @@ module Fast
       end
     end
 
+    # @return [Array<String>] with files from command line expression.
+    # @see Fast.ruby_files_from
     def files
       Fast.ruby_files_from(*@files)
     end
 
+    # @return [Boolean] true when "-d" or "--debug" option is passed
     def debug_mode?
       @debug == true
     end
 
+    # Output information if #debug_mode? is true.
     def debug(*info)
       puts(info) if debug_mode?
     end
 
+    # Report results using the actual options binded from command line.
+    # @see Fast.report
     def report(result, file)
       Fast.report(result, file: file, show_sexp: @show_sexp, headless: @headless)
+    end
+
+    # Find shortcut by name. Preloads all `Fastfiles` before start.
+    # @param name [String]
+    # @return [Fast::Shortcut]
+    def find_shortcut(name)
+      require 'fast/shortcut'
+      Fast.load_fast_files!
+
+      shortcut = Fast.shortcuts[name] || Fast.shortcuts[name.to_sym]
+
+      shortcut || exit_shortcut_not_found(name)
+    end
+
+    # Exit process with warning message bolding the shortcut that was not found.
+    # Prints available shortcuts as extra help and exit with code 1.
+    def exit_shortcut_not_found(name)
+      puts "Shortcut \033[1m#{name}\033[0m not found :("
+      puts "Available shortcuts are: #{Fast.shortcuts.keys.join(', ')}." if Fast.shortcuts.any?
+      exit 1
     end
   end
 end

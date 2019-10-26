@@ -1,7 +1,7 @@
 # Command line
 
-It will also inject a executable named `fast` and you can use it to search and
-find code using the concept:
+When you install the ffast gem, it will also create an executable named `fast` 
+and you can use it to search and find code using the concept:
 
 ```
 $ fast '(def match?)' lib/fast.rb
@@ -87,9 +87,9 @@ The option `-s` build an expression from the code ignoring final values.
 object.method
 ```
 
-See also [Code Similarity](simi)ilarity_tutorial.md) tutorial.
+See also [Code Similarity](similarity_tutorial.md) tutorial.
 
-# `-c` to search from code example
+## `-c` to search from code example
 
 You can search  for the exact expression with `-c`
 
@@ -109,4 +109,106 @@ The generated expression from AST was:
 (send
   (send nil :object) :method)
 ```
+
+## Fastfile
+
+`Fastfile` will loaded when you start a pattern with a dot. It means the pattern
+will be a shortcut predefined on these Fastfiles.
+
+It will make three attempts to load `Fastfile` defined in `$PWD`, `$HOME` or
+checking if the `$FAST_FILE_DIR` is configured.
+
+You can define a `Fastfile` in any project with your custom shortcuts and easy
+check some code or run some task.
+
+
+## Shortcuts
+
+Create shortcuts with blocks enables introduce custom coding in
+the scope of the `Fast` module.
+
+## Example: Print library version.
+
+Let's say you'd like to show the version of your library. Your regular params
+in the command line will look like:
+
+    $ fast '(casgn nil VERSION)' lib/*/version.rb
+
+It will output but the command is not very handy. In order to just say `fast .version`
+you can use the previous snippet in your `Fastfile`.
+
+```ruby
+Fast.shortcut(:version, '(casgn nil VERSION)', 'lib/fast/version.rb')
+```
+
+And calling `fast .version` it will output something like this:
+
+```ruby
+# lib/fast/version.rb:4
+VERSION = '0.1.2'
+```
+
+We can also always override the files params passing some other target file
+like `fast .version lib/other/file.rb` and it will reuse the other arguments
+from command line but replace the target files.
+
+### Example: Bumping a gem version
+
+While releasing a new gem version, we always need to mechanical go through the
+`lib/<your_gem>/version.rb` and change the string value to bump the version
+of your library. It's pretty mechanical and here is an example that allow you 
+to simple use `fast .bump_version`:
+
+```ruby
+Fast.shortcut :bump_version do
+  rewrite_file('lib/fast/version.rb', '(casgn nil VERSION (str _)') do |node|
+    target = node.children.last.loc.expression
+    pieces = target.source.split(".").map(&:to_i)
+    pieces.reverse.each_with_index do |fragment,i|
+      if fragment < 9
+        pieces[-(i+1)] = fragment +1
+        break
+      else
+        pieces[-(i+1)] = 0
+      end
+    end
+    replace(target, "'#{pieces.join(".")}'")
+  end
+end
+```
+
+!!! note "Note the shortcut scope"
+    The shortcut calls `rewrite_file` from `Fast` scope as it use
+    `Fast.instance_exec` for shortcuts that yields blocks.
+
+Checking the version:
+
+```bash
+$ fast .version                                                                                                                                                                                                                            13:58:40
+# lib/fast/version.rb:4
+VERSION = '0.1.2'
+```
+Bumping the version:
+
+```bash
+$ fast .bump_version                                                                                                                                                                                                                       13:58:43
+```
+
+No output because we don't print anything. Checking version again:
+
+```bash
+$ fast .version                                                                                                                                                                                                                            13:58:54
+# lib/fast/version.rb:4
+VERSION = '0.1.3'
+```
+
+And now a fancy shortcut to report the other shortcuts :)
+
+```ruby
+Fast.shortcut :shortcuts do
+  report(shortcuts.keys)
+end
+```
+
+You can find these examples in the [Fastfile](https://github.com/jonatas/fast/tree/master/Fastfile).
 

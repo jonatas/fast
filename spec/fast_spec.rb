@@ -114,9 +114,11 @@ RSpec.describe Fast do
       it 'negates inverting the logic' do
         expect(described_class.expression('!str')).to eq(nf[f['str']])
       end
+
       it 'negates nested expressions' do
         expect(described_class.expression('!{str sym}')).to eq(nf[any[[f['str'], f['sym']]]])
       end
+
       it 'negates entire nodes' do
         expect(described_class.expression('!(int _)')).to eq(nf[[f['int'], f['_']]])
       end
@@ -456,6 +458,7 @@ RSpec.describe Fast do
     before do
       File.open('sample.rb', 'w+') do |file|
         file.puts <<~RUBY
+          # One new comment
           class SelfPromotion
             AUTHOR = "Jônatas Davi Paganini"
             def initialize(name, language='pt')
@@ -522,7 +525,7 @@ RSpec.describe Fast do
       end
     end
 
-    describe 'replace file' do
+    describe '.replace_file' do
       context 'with rename constant example' do
         let(:rename_const) do
           described_class.replace_file('sample.rb', '({casgn const} nil AUTHOR )') do |node|
@@ -535,7 +538,8 @@ RSpec.describe Fast do
         end
 
         it 'replaces all occurrences' do # rubocop:disable RSpec/ExampleLength
-          expect(rename_const).to eq(<<~RUBY.chomp)
+          expect(rename_const).to eq(<<~RUBY)
+            # One new comment
             class SelfPromotion
               CREATOR = "Jônatas Davi Paganini"
               def initialize(name, language='pt')
@@ -573,7 +577,8 @@ RSpec.describe Fast do
         end
 
         it 'replaces all occurrences' do
-          expect(inline_var).to eq(<<~RUBY.chomp)
+          expect(inline_var).to eq(<<~RUBY)
+            # One new comment
             class SelfPromotion
               AUTHOR = "Jônatas Davi Paganini"
               def initialize(name, language='pt')
@@ -594,6 +599,26 @@ RSpec.describe Fast do
             end
           RUBY
         end
+      end
+    end
+
+    describe '.rewrite_file' do
+      subject(:remove_methods) do
+        described_class.rewrite_file('sample.rb', '{def defs}') do |node, _|
+          remove(node.location.expression)
+        end
+      end
+
+      specify do
+        expect { remove_methods }.to change { IO.read('sample.rb') }.to(<<~RUBY)
+          # One new comment
+          class SelfPromotion
+            AUTHOR = "Jônatas Davi Paganini"
+          \s\s
+          \s\s
+          \s\s
+          end
+        RUBY
       end
     end
   end

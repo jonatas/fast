@@ -43,3 +43,6 @@ RSpec/MultipleExpectations:
 
 RSpec/DescribedClass:
   Enabled: false
+
+RSpec/ImplicitSubject:
+  Enabled: false
