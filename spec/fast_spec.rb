@@ -114,9 +114,11 @@ RSpec.describe Fast do
       it 'negates inverting the logic' do
         expect(described_class.expression('!str')).to eq(nf[f['str']])
       end
+
       it 'negates nested expressions' do
         expect(described_class.expression('!{str sym}')).to eq(nf[any[[f['str'], f['sym']]]])
       end
+
       it 'negates entire nodes' do
         expect(described_class.expression('!(int _)')).to eq(nf[[f['int'], f['_']]])
       end

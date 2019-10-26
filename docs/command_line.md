@@ -202,7 +202,7 @@ $ fast .version                                                                 
 VERSION = '0.1.3'
 ```
 
-And now a shortcut to print the other shortcuts :)
+And now a fancy shortcut to report the other shortcuts :)
 
 ```ruby
 Fast.shortcut :shortcuts do
@@ -210,5 +210,5 @@ Fast.shortcut :shortcuts do
 end
 ```
 
-You can find these examples in the [Fastfile](../Fastfile).
+You can find these examples in the [Fastfile](https://github.com/jonatas/fast/tree/master/Fastfile).
 
