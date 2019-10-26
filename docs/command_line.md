@@ -210,5 +210,33 @@ Fast.shortcut :shortcuts do
 end
 ```
 
-You can find these examples in the [Fastfile](https://github.com/jonatas/fast/tree/master/Fastfile).
+Or we can make it a bit more friendly and also use Fast to process the shortcut
+positions and pick the comment that each shortcut have in the previous line: 
+
+```ruby
+# List all shortcut with comments
+Fast.shortcut :shortcuts do
+  fast_files.each do |file|
+    lines = File.readlines(file).map{|line|line.chomp.gsub(/\s*#/,'').strip}
+    result = capture_file('(send ... shortcut $(sym _))', file)
+    result = [result] unless result.is_a?Array
+    result.each do |capture|
+      target = capture.loc.expression
+      puts "fast .#{target.source[1..-1].ljust(30)} # #{lines[target.line-2]}"
+    end
+  end
+end
+```
+
+And it will be printing all loaded shortcuts with comments:
+
+```
+$ fast .shortcuts
+fast .version                        # Let's say you'd like to show the version that is over the version file
+fast .parser                         # Simple shortcut that I used often to show how the expression parser works
+fast .bump_version                   # Use `fast .bump_version` to rewrite the version file
+fast .shortcuts                      # List all shortcut with comments
+```
+
+You can find more examples in the [Fastfile](https://github.com/jonatas/fast/tree/master/Fastfile).
 
