@@ -106,8 +106,6 @@ module Fast
 
       @files = [*@files].reject { |arg| arg.start_with?('-') }
     end
-    # rubocop:enable Metrics/MethodLength
-    # rubocop:enable Metrics/AbcSize
 
     # Run a new command line interface digesting the arguments
     def self.run!(argv)
@@ -149,14 +147,10 @@ module Fast
                 report(result, file)
               end
             end
-          rescue StandardError
-            debug "Ops! An error occurred trying to search in #{expression.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
-            []
           end
         end
       end
     end
-
 
     # @return [Boolean] true when "-d" or "--debug" option is passed
     def debug_mode?
