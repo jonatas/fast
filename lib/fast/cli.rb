@@ -35,19 +35,16 @@ module Fast
   def report(result, show_sexp: false, file: nil, headless: false)
     if file
       line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
-      puts(Fast.highlight("# #{file}:#{line}")) unless headless
+      puts(highlight("# #{file}:#{line}")) unless headless
     end
-    puts Fast.highlight(result, show_sexp: show_sexp)
+    puts highlight(result, show_sexp: show_sexp)
   end
 
   # Command Line Interface for Fast
-  class Cli # rubocop:disable Metrics/ClassLength
+  class Cli
     attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help
-
-    # rubocop:disable Metrics/MethodLength
-    # rubocop:disable Metrics/AbcSize
     def initialize(args)
-      @opt = OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
+      @opt = OptionParser.new do |opts|
         opts.banner = 'Usage: fast expression <files> [options]'
         opts.on('-d', '--debug', 'Debug fast engine') do
           @debug = true
@@ -136,44 +133,30 @@ module Fast
     # If -d (debug option) is enabled, it will output details of each search.
     # If capture option is enabled it will only print the captures, otherwise it
     # prints all the results.
-    def search_file(file)
+    def search
       if debug_mode?
-        Fast.debug { Fast.search_file(expression, file) }
+        Fast.debug { Fast.search_all(expression, @files) }
       else
         begin
-          Fast.public_send(@captures ? :capture_file : :search_file, expression, file)
-        rescue StandardError
-          debug "Ops! An error occurred trying to search in #{expression.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
-          []
-        end
-      end
-    end
-
-    # Search for the {#expression} on all the {#files}.
-    # It {#report} results if no options are passed.
-    # It binds pry if option "--pry" is passed.
-    def search
-      files.each do |file|
-        results = [*search_file(file)]
-
-        next if results.empty?
-
-        results.each do |result|
-          if @pry
-            require 'pry'
-            binding.pry # rubocop:disable Lint/Debugger
-          else
-            report(result, file)
+          method_name = @captures ? :capture_all : :search_all
+          Fast.public_send(method_name, expression, @files).each do |file, results|
+            results = [results] unless results.is_a?(Array)
+            results.each do |result|
+              if @pry
+                require 'pry'
+                binding.pry
+              else
+                report(result, file)
+              end
+            end
+          rescue StandardError
+            debug "Ops! An error occurred trying to search in #{expression.inspect} in #{file}", $ERROR_INFO, $ERROR_POSITION
+            []
           end
         end
       end
     end
 
-    # @return [Array<String>] with files from command line expression.
-    # @see Fast.ruby_files_from
-    def files
-      Fast.ruby_files_from(*@files)
-    end
 
     # @return [Boolean] true when "-d" or "--debug" option is passed
     def debug_mode?
