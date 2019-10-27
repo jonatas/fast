@@ -41,10 +41,20 @@ module Fast
   end
 
   # Command Line Interface for Fast
-  class Cli
+  class Cli # rubocop:disable Metrics/ClassLength
     attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help
     def initialize(args)
-      @opt = OptionParser.new do |opts|
+      args = replace_args_with_shortcut(args) if args.first&.start_with?('.')
+
+      @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
+
+      option_parser.parse! args
+
+      @files = [*@files].reject { |arg| arg.start_with?('-') }
+    end
+
+    def option_parser # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+      @option_parser ||= OptionParser.new do |opts| # rubocop:disable Metrics/BlockLength
         opts.banner = 'Usage: fast expression <files> [options]'
         opts.on('-d', '--debug', 'Debug fast engine') do
           @debug = true
@@ -64,6 +74,7 @@ module Fast
 
         opts.on('--pry', 'Jump into a pry session with results') do
           @pry = true
+          require 'pry'
         end
 
         opts.on('-c', '--code', 'Create a pattern from code example') do
@@ -89,22 +100,16 @@ module Fast
           @help = true
         end
       end
+    end
 
-      if args.first&.start_with?('.') # shortcut! :tada:
-        shortcut = find_shortcut args.first[1..-1]
-        if shortcut.single_run_with_block?
-          shortcut.run
-          exit
-        else
-          args = args.one? ? shortcut.args : shortcut.merge_args(args[1..-1])
-        end
+    def replace_args_with_shortcut(args)
+      shortcut = find_shortcut args.first[1..-1]
+      if shortcut.single_run_with_block?
+        shortcut.run
+        exit
+      else
+        args.one? ? shortcut.args : shortcut.merge_args(args[1..-1])
       end
-
-      @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
-
-      @opt.parse! args
-
-      @files = [*@files].reject { |arg| arg.start_with?('-') }
     end
 
     # Run a new command line interface digesting the arguments
@@ -116,7 +121,7 @@ module Fast
     # Show help or search for node patterns
     def run!
       if @help || @files.empty? && @pattern.nil?
-        puts @opt.help
+        puts option_parser.help
       else
         search
       end
@@ -133,22 +138,22 @@ module Fast
     # prints all the results.
     def search
       if debug_mode?
-        Fast.debug { Fast.search_all(expression, @files) }
+        Fast.debug { execute_search }
       else
-        begin
-          method_name = @captures ? :capture_all : :search_all
-          Fast.public_send(method_name, expression, @files).each do |file, results|
-            results = [results] unless results.is_a?(Array)
-            results.each do |result|
-              if @pry
-                require 'pry'
-                binding.pry
-              else
-                report(result, file)
-              end
-            end
+        execute_search do |file, results|
+          results.each do |result|
+            binding.pry if @pry # rubocop:disable Lint/Debugger
+            report(result, file)
           end
         end
+      end
+    end
+
+    def execute_search
+      method_name = @captures ? :capture_all : :search_all
+      Fast.public_send(method_name, expression, @files).each do |file, results|
+        results = [results] unless results.is_a?(Array)
+        yield file, results
       end
     end
 
