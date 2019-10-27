@@ -107,25 +107,25 @@ ast = s(:lvasgn, :value, s(:int, 42))
 Now, lets find local variable named `value` with an value `42`:
 
 ```ruby
-Fast.match?(ast, '(lvasgn value (int 42))') # true
+Fast.match?('(lvasgn value (int 42))', ast) # true
 ```
 
 Lets abstract a bit and allow some integer value using `_` as a shortcut:
 
 ```ruby
-Fast.match?(ast, '(lvasgn value (int _))') # true
+Fast.match?('(lvasgn value (int _))', ast) # true
 ```
 
 Lets abstract more and allow float or integer:
 
 ```ruby
-Fast.match?(ast, '(lvasgn value ({float int} _))') # true
+Fast.match?('(lvasgn value ({float int} _))', ast) # true
 ```
 
 Or combine multiple assertions using `[]` to join conditions:
 
 ```ruby
-Fast.match?(ast, '(lvasgn value ([!str !hash !array] _))') # true
+Fast.match?('(lvasgn value ([!str !hash !array] _))', ast) # true
 ```
 
 Matches all local variables not string **and** not hash **and** not array.
@@ -133,25 +133,25 @@ Matches all local variables not string **and** not hash **and** not array.
 We can match "a node with children" using `...`:
 
 ```ruby
-Fast.match?(ast, '(lvasgn value ...)') # true
+Fast.match?('(lvasgn value ...)', ast) # true
 ```
 
 You can use `$` to capture a node:
 
 ```ruby
-Fast.match?(ast, '(lvasgn value $...)') # => [s(:int, 42)]
+Fast.match?(ast, '(lvasgn value $...)') # => [s(:int), 42]
 ```
 
 Or match whatever local variable assignment combining both `_` and `...`:
 
 ```ruby
-Fast.match?(ast, '(lvasgn _ ...)') # true
+Fast.match?('(lvasgn _ ...)', ast) # true
 ```
 
 You can also use captures in any levels you want:
 
 ```ruby
-Fast.match?(ast, '(lvasgn $_ $...)') # [:value, s(:int, 42)]
+Fast.match?('(lvasgn $_ $...)', ast) # [:value, s(:int), 42]
 ```
 
 Keep in mind that `_` means something not nil and `...` means a node with
@@ -220,7 +220,7 @@ Fast.match?(
 If something does not work you can debug with a block:
 
 ```ruby
-Fast.debug { Fast.match?(s(:int, 1), [:int, 1]) }
+Fast.debug { Fast.match?([:int, 1], s(:int, 1)) }
 ```
 
 It will output each comparison to stdout:

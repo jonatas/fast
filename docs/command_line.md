@@ -35,12 +35,8 @@ Getting all `it` blocks without description:
 
 ```ruby
 # spec/fast_spec.rb:166
-it { expect(described_class).to be_match(s(:int, 1), '(...)') }
-# spec/fast_spec.rb:167
-it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
-# spec/fast_spec.rb:168
-it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
-# ... more results
+it { expect(described_class).to be_match('(...)', s(:int, 1)) }
+...
 ```
 
 ## `--debug`
