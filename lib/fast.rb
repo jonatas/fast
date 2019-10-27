@@ -677,12 +677,12 @@ module Fast
   # @example simple match
   #   ast = Fast.ast("a = 1")
   #   expression = Fast.expression("(lvasgn _ (int _))")
-  #   Matcher.new(ast,expression).match? # true
+  #   Matcher.new(expression, ast).match? # true
   #
   # @example simple capture
   #   ast = Fast.ast("a = 1")
   #   expression = Fast.expression("(lvasgn _ (int $_))")
-  #   Matcher.new(ast,expression).match? # => [1]
+  #   Matcher.new(expression, ast).match? # => [1]
   #
   class Matcher
     def initialize(pattern, ast, *args)
@@ -691,7 +691,7 @@ module Fast
                       Fast.expression(pattern)
                     else
                       [*pattern].map(&Find.method(:new))
-              end
+                    end
       @captures = []
       prepare_arguments(@expression, args) if args.any?
     end
