@@ -6,7 +6,6 @@ and you can use it to search and find code using the concept:
 ```
 $ fast '(def match?)' lib/fast.rb
 ```
-
 - Use `-d` or `--debug` for enable debug mode.
 - Use `--ast` to output the AST instead of the original code
 - Use `--pry` to jump debugging the first result with pry
@@ -118,12 +117,12 @@ You can define a `Fastfile` in any project with your custom shortcuts and easy
 check some code or run some task.
 
 
-## Shortcuts
+## Shortcut examples
 
 Create shortcuts with blocks enables introduce custom coding in
 the scope of the `Fast` module.
 
-## Example: Print library version.
+### Print library version.
 
 Let's say you'd like to show the version of your library. Your regular params
 in the command line will look like:
@@ -148,7 +147,7 @@ We can also always override the files params passing some other target file
 like `fast .version lib/other/file.rb` and it will reuse the other arguments
 from command line but replace the target files.
 
-### Example: Bumping a gem version
+### Bumping a gem version
 
 While releasing a new gem version, we always need to mechanical go through the
 `lib/<your_gem>/version.rb` and change the string value to bump the version
