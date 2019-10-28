@@ -131,11 +131,7 @@ module Fast
     # @return [Hash<String,Array<Astrolabe::Node>>] with files and results
     def search_all(pattern, locations = ['.'])
       search_pattern = method(:search_file).curry.call(pattern)
-      locations.flat_map do |location|
-        ruby_files_from(location)
-          .map { |f| [f, search_pattern.call(f)] }
-          .reject { |_, results| results.nil? }
-      end
+      group_results(search_pattern, locations)
     end
 
     # Capture with pattern on a directory or multiple files
@@ -144,11 +140,14 @@ module Fast
     # @return [Hash<String,Object>] with files and captures
     def capture_all(pattern, locations = ['.'])
       capture_pattern = method(:capture_file).curry.call(pattern)
-      locations.flat_map do |location|
-        ruby_files_from(location)
-          .map { |f| [f, capture_pattern.call(f)] }
-          .reject { |_, results| results.nil? }
-      end
+      group_results(capture_pattern, locations)
+    end
+
+    def group_results(search_pattern, locations)
+      ruby_files_from(*locations)
+        .map { |f| { f => search_pattern.call(f) } }
+        .reject { |results| results.values.all?(&:empty?) }
+        .inject(&:merge!)
     end
 
     # Replaces the source of an {Fast#ast_from_file} with
