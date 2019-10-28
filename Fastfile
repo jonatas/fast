@@ -18,7 +18,7 @@ Fast.shortcut(:parser, '(class (const nil ExpressionParser)', 'lib/fast.rb')
 
 # Use `fast .bump_version` to rewrite the version file
 Fast.shortcut :bump_version do
-  rewrite_file('lib/fast/version.rb', '(casgn nil VERSION (str _)') do |node|
+  rewrite_file('(casgn nil VERSION (str _)', 'lib/fast/version.rb') do |node|
     target = node.children.last.loc.expression
     pieces = target.source.split('.').map(&:to_i)
     pieces.reverse.each_with_index do |fragment, i|
