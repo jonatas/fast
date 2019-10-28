@@ -251,56 +251,8 @@ def duplicate(value)
 # example.rb:
 duplicate
 ```
+
 One extra method name was printed because of `$` is capturing the element.
-
-Let's use the `--pry` for inspecting the results.
-
-    $ fast '(def $_)' example.rb --pry
-
-It will open pry with access to `result` as the first result and
-`results` with all matching results.
-
-```
-From: /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/ffast-0.0.2/bin/fast @ line 60 :
-
-    55:
-    56:   results.each do |result|
-    57:     next if result.nil? || result == []
-    58:     if pry
-    59:       require 'pry'
- => 60:       binding.pry # rubocop:disable Lint/Debugger
-    61:     else
-    62:       Fast.report(result, file: file, show_sexp: show_sexp)
-    63:     end
-    64:   end
-    65: end
-```
-
-Inspecting the results you can see that they are mixing AST nodes and the
-captures.
-
-```ruby
-[1] pry(main)> results
-=> [s(:def, :magic,
-  s(:args),
-  s(:send, nil, :rand,
-    s(:const, nil, :ANSWER))),
- :magic,
- s(:def, :duplicate,
-  s(:args,
-    s(:arg, :value)),
-  s(:send,
-    s(:lvar, :value), :*,
-    s(:int, 2))),
- :duplicate]
-```
-
-We can filter the captures to make it easy to analyze.
-
-```ruby
-[2] pry(main)> results.grep(Symbol)
-=> [:magic, :duplicate]
-```
 
 ## `nil` matches exactly **nil**
 
@@ -368,7 +320,7 @@ ANSWER = 42
 ANSWER
 ```
 
-## Calling Custom Methods
+## `#` for custom methods
 
 Custom methods can let you into ruby doman for more complicated rules. Let's say
 we're looking for duplicated methods in the same class. We need to collect
@@ -403,10 +355,41 @@ more details of the node
 ```ruby
 puts Fast.search_file('[ (def a) #debug ]', 'example.rb')
 ```
-## Calling Instance Methods
+
+## `.` for instance methods
 
 You can also call instance methods using `.<method-name>`.
 
 Example `nil` is the same of calling `nil?` and you can also use `(int .odd?)`
 to pick only odd integers. The `int` fragment can also be `int_type?`.
 
+## `\1` for first previous capture
+
+Imagine you're looking for a method that is just delegating something to
+another method, like:
+
+```ruby
+def name
+  person.name
+end
+```
+
+This can be represented as the following AST:
+
+```
+(def :name
+  (args)
+  (send
+    (send nil :person) :name))
+```
+
+Then, let's build a search for methods that calls an attribute with the same
+name:
+
+```ruby
+Fast.match?('(def $_ ... (send (send nil _) \1))', ast) # => [:name]
+```
+
+With the method name being captured with `$_` it can be later referenced in the
+expression with `\1`. If the search contains multiple captures, the `\2`,`\3`
+can be used as the sequence of captures.
