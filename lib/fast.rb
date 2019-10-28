@@ -89,7 +89,7 @@ module Fast
     # Verify if a given AST matches with a specific pattern
     # @return [Boolean] case matches ast with the current expression
     # @example
-    #   Fast.match?(Fast.ast("1"),"int") # => true
+    #   Fast.match?("int", Fast.ast("1")) # => true
     def match?(pattern, ast, *args)
       Matcher.new(pattern, ast, *args).match?
     end
@@ -215,7 +215,7 @@ module Fast
     #
     # @example
     #   Fast.debug do
-    #      Fast.match?(s(:int, 1), [:int, 1])
+    #      Fast.match?([:int, 1], s(:int, 1))
     #   end
     #  int == (int 1) # => true
     #  1 == 1 # => true
@@ -515,7 +515,7 @@ module Fast
   #
   # @example check comparision of integers that will always return true
   #   ast = Fast.ast("1 == 1") => s(:send, s(:int, 1), :==, s(:int, 1))
-  #   Fast.match?(ast, "(send $(int _) == \1)") # => [s(:int, 1)]
+  #   Fast.match?("(send $(int _) == \1)", ast) # => [s(:int, 1)]
   class FindWithCapture < Find
     attr_writer :previous_captures
 
@@ -539,10 +539,10 @@ module Fast
   # Use `%1` in the expression and the Matcher#prepare_arguments will
   # interpolate the argument in the expression.
   # @example interpolate the node value 1
-  #   Fast.match?(Fast.ast("1"), "(int %1)", 1) # => true
-  #   Fast.match?(Fast.ast("1"), "(int %1)", 2) # => false
+  #   Fast.match?("(int %1)", Fast.ast("1"), 1) # => true
+  #   Fast.match?("(int %1)", Fast.ast("1"), 2) # => false
   # @example interpolate multiple arguments
-  #   Fast.match?(Fast.ast("1"), "(%1 %2)", :int, 1) # => true
+  #   Fast.match?("(%1 %2)", Fast.ast("1"), :int, 1) # => true
   class FindFromArgument < Find
     attr_writer :arguments
 
