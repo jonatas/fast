@@ -81,11 +81,11 @@ Fast.ast("b += 2")  # => s(:op_asgn, s(:lvasgn, :b), :+, s(:int, 2))
 It uses [astrolable](https://github.com/yujinakayama/astrolabe) gem behind the scenes:
 
 ```ruby
-Fast.ast(Fast.ast("1").class
+Fast.ast(Fast.ast("1")).class
 => Astrolabe::Node
-Fast.ast(Fast.ast("1").type
+Fast.ast(Fast.ast("1")).type
 => :int
-Fast.ast(Fast.ast("1").children
+Fast.ast(Fast.ast("1")).children
 => [1]
 ```
 
@@ -382,7 +382,7 @@ Combines the [search_file](#search_file) with [ruby_files_from](#ruby_files_from
 multiple locations and returns tuples with files and results.
 
 ```ruby
-Fast.search_all("(def ast_from_file")
+Fast.search_all("(def ast_from_file)")
 => {"./lib/fast.rb"=>[s(:def, :ast_from_file,
   s(:args,
     s(:arg, :file)),
