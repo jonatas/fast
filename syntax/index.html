@@ -343,15 +343,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#calling-custom-methods" title="Calling Custom Methods" class="md-nav__link">
-    Calling Custom Methods
+  <a href="#for-custom-methods" title="# for custom methods" class="md-nav__link">
+    # for custom methods
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#calling-instance-methods" title="Calling Instance Methods" class="md-nav__link">
-    Calling Instance Methods
+  <a href="#for-instance-methods" title=". for instance methods" class="md-nav__link">
+    . for instance methods
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-for-first-previous-capture" title="\1 for first previous capture" class="md-nav__link">
+    \1 for first previous capture
   </a>
   
 </li>
@@ -499,15 +506,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#calling-custom-methods" title="Calling Custom Methods" class="md-nav__link">
-    Calling Custom Methods
+  <a href="#for-custom-methods" title="# for custom methods" class="md-nav__link">
+    # for custom methods
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#calling-instance-methods" title="Calling Instance Methods" class="md-nav__link">
-    Calling Instance Methods
+  <a href="#for-instance-methods" title=". for instance methods" class="md-nav__link">
+    . for instance methods
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-for-first-previous-capture" title="\1 for first previous capture" class="md-nav__link">
+    \1 for first previous capture
   </a>
   
 </li>
@@ -782,53 +796,6 @@ name.</p>
 
 
 <p>One extra method name was printed because of <code>$</code> is capturing the element.</p>
-<p>Let's use the <code>--pry</code> for inspecting the results.</p>
-<div class="codehilite"><pre><span></span>$ fast &#39;(def $_)&#39; example.rb --pry
-</pre></div>
-
-
-<p>It will open pry with access to <code>result</code> as the first result and
-<code>results</code> with all matching results.</p>
-<div class="codehilite"><pre><span></span>From: /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/gems/2.5.0/gems/ffast-0.0.2/bin/fast @ line 60 :
-
-    55:
-    56:   results.each do |result|
-    57:     next if result.nil? || result == []
-    58:     if pry
-    59:       require &#39;pry&#39;
- =&gt; 60:       binding.pry # rubocop:disable Lint/Debugger
-    61:     else
-    62:       Fast.report(result, file: file, show_sexp: show_sexp)
-    63:     end
-    64:   end
-    65: end
-</pre></div>
-
-
-<p>Inspecting the results you can see that they are mixing AST nodes and the
-captures.</p>
-<div class="codehilite"><pre><span></span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">results</span>
-<span class="o">=&gt;</span> <span class="o">[</span><span class="n">s</span><span class="p">(</span><span class="ss">:def</span><span class="p">,</span> <span class="ss">:magic</span><span class="p">,</span>
-  <span class="n">s</span><span class="p">(</span><span class="ss">:args</span><span class="p">),</span>
-  <span class="n">s</span><span class="p">(</span><span class="ss">:send</span><span class="p">,</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">:rand</span><span class="p">,</span>
-    <span class="n">s</span><span class="p">(</span><span class="ss">:const</span><span class="p">,</span> <span class="kp">nil</span><span class="p">,</span> <span class="ss">:ANSWER</span><span class="p">))),</span>
- <span class="ss">:magic</span><span class="p">,</span>
- <span class="n">s</span><span class="p">(</span><span class="ss">:def</span><span class="p">,</span> <span class="ss">:duplicate</span><span class="p">,</span>
-  <span class="n">s</span><span class="p">(</span><span class="ss">:args</span><span class="p">,</span>
-    <span class="n">s</span><span class="p">(</span><span class="ss">:arg</span><span class="p">,</span> <span class="ss">:value</span><span class="p">)),</span>
-  <span class="n">s</span><span class="p">(</span><span class="ss">:send</span><span class="p">,</span>
-    <span class="n">s</span><span class="p">(</span><span class="ss">:lvar</span><span class="p">,</span> <span class="ss">:value</span><span class="p">),</span> <span class="ss">:*</span><span class="p">,</span>
-    <span class="n">s</span><span class="p">(</span><span class="ss">:int</span><span class="p">,</span> <span class="mi">2</span><span class="p">))),</span>
- <span class="ss">:duplicate</span><span class="o">]</span>
-</pre></div>
-
-
-<p>We can filter the captures to make it easy to analyze.</p>
-<div class="codehilite"><pre><span></span><span class="o">[</span><span class="mi">2</span><span class="o">]</span> <span class="n">pry</span><span class="p">(</span><span class="n">main</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">results</span><span class="o">.</span><span class="n">grep</span><span class="p">(</span><span class="no">Symbol</span><span class="p">)</span>
-<span class="o">=&gt;</span> <span class="o">[</span><span class="ss">:magic</span><span class="p">,</span> <span class="ss">:duplicate</span><span class="o">]</span>
-</pre></div>
-
-
 <h2 id="nil-matches-exactly-nil"><code>nil</code> matches exactly <strong>nil</strong><a class="headerlink" href="#nil-matches-exactly-nil" title="Permanent link">&para;</a></h2>
 <p>Nil is used in the code as a node type but parser gem also represents empty
 spaces in expressions with nil.</p>
@@ -892,7 +859,7 @@ ANSWER
 </pre></div>
 
 
-<h2 id="calling-custom-methods">Calling Custom Methods<a class="headerlink" href="#calling-custom-methods" title="Permanent link">&para;</a></h2>
+<h2 id="for-custom-methods"><code>#</code> for custom methods<a class="headerlink" href="#for-custom-methods" title="Permanent link">&para;</a></h2>
 <p>Custom methods can let you into ruby doman for more complicated rules. Let's say
 we're looking for duplicated methods in the same class. We need to collect
 method names and guarantee they are unique.</p>
@@ -928,10 +895,36 @@ more details of the node</p>
 </pre></div>
 
 
-<h2 id="calling-instance-methods">Calling Instance Methods<a class="headerlink" href="#calling-instance-methods" title="Permanent link">&para;</a></h2>
+<h2 id="for-instance-methods"><code>.</code> for instance methods<a class="headerlink" href="#for-instance-methods" title="Permanent link">&para;</a></h2>
 <p>You can also call instance methods using <code>.&lt;method-name&gt;</code>.</p>
 <p>Example <code>nil</code> is the same of calling <code>nil?</code> and you can also use <code>(int .odd?)</code>
 to pick only odd integers. The <code>int</code> fragment can also be <code>int_type?</code>.</p>
+<h2 id="1-for-first-previous-capture"><code>\1</code> for first previous capture<a class="headerlink" href="#1-for-first-previous-capture" title="Permanent link">&para;</a></h2>
+<p>Imagine you're looking for a method that is just delegating something to
+another method, like:</p>
+<div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">name</span>
+  <span class="n">person</span><span class="o">.</span><span class="n">name</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<p>This can be represented as the following AST:</p>
+<div class="codehilite"><pre><span></span>(def :name
+  (args)
+  (send
+    (send nil :person) :name))
+</pre></div>
+
+
+<p>Then, let's build a search for methods that calls an attribute with the same
+name:</p>
+<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">match?</span><span class="p">(</span><span class="s1">&#39;(def $_ ... (send (send nil _) \1))&#39;</span><span class="p">,</span> <span class="n">ast</span><span class="p">)</span> <span class="c1"># =&gt; [:name]</span>
+</pre></div>
+
+
+<p>With the method name being captured with <code>$_</code> it can be later referenced in the
+expression with <code>\1</code>. If the search contains multiple captures, the <code>\2</code>,<code>\3</code>
+can be used as the sequence of captures.</p>
                 
                   
                 

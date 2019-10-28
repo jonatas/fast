@@ -327,23 +327,23 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#shortcuts" title="Shortcuts" class="md-nav__link">
-    Shortcuts
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-print-library-version" title="Example: Print library version." class="md-nav__link">
-    Example: Print library version.
+  <a href="#shortcut-examples" title="Shortcut examples" class="md-nav__link">
+    Shortcut examples
   </a>
   
     <nav class="md-nav">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#example-bumping-a-gem-version" title="Example: Bumping a gem version" class="md-nav__link">
-    Example: Bumping a gem version
+  <a href="#print-library-version" title="Print library version." class="md-nav__link">
+    Print library version.
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bumping-a-gem-version" title="Bumping a gem version" class="md-nav__link">
+    Bumping a gem version
   </a>
   
 </li>
@@ -456,23 +456,23 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#shortcuts" title="Shortcuts" class="md-nav__link">
-    Shortcuts
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-print-library-version" title="Example: Print library version." class="md-nav__link">
-    Example: Print library version.
+  <a href="#shortcut-examples" title="Shortcut examples" class="md-nav__link">
+    Shortcut examples
   </a>
   
     <nav class="md-nav">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#example-bumping-a-gem-version" title="Example: Bumping a gem version" class="md-nav__link">
-    Example: Bumping a gem version
+  <a href="#print-library-version" title="Print library version." class="md-nav__link">
+    Print library version.
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bumping-a-gem-version" title="Bumping a gem version" class="md-nav__link">
+    Bumping a gem version
   </a>
   
 </li>
@@ -537,12 +537,8 @@ to use all occurrences found.</p>
 
 
 <div class="codehilite"><pre><span></span><span class="c1"># spec/fast_spec.rb:166</span>
-<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="n">s</span><span class="p">(</span><span class="ss">:int</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;(...)&#39;</span><span class="p">)</span> <span class="p">}</span>
-<span class="c1"># spec/fast_spec.rb:167</span>
-<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="n">s</span><span class="p">(</span><span class="ss">:int</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;(_ _)&#39;</span><span class="p">)</span> <span class="p">}</span>
-<span class="c1"># spec/fast_spec.rb:168</span>
-<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="n">code</span><span class="o">[</span><span class="s1">&#39;&quot;string&quot;&#39;</span><span class="o">]</span><span class="p">,</span> <span class="s1">&#39;(str &quot;string&quot;)&#39;</span><span class="p">)</span> <span class="p">}</span>
-<span class="c1"># ... more results</span>
+<span class="n">it</span> <span class="p">{</span> <span class="n">expect</span><span class="p">(</span><span class="n">described_class</span><span class="p">)</span><span class="o">.</span><span class="n">to</span> <span class="n">be_match</span><span class="p">(</span><span class="s1">&#39;(...)&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">(</span><span class="ss">:int</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="p">}</span>
+<span class="o">...</span>
 </pre></div>
 
 
@@ -614,10 +610,10 @@ will be a shortcut predefined on these Fastfiles.</p>
 checking if the <code>$FAST_FILE_DIR</code> is configured.</p>
 <p>You can define a <code>Fastfile</code> in any project with your custom shortcuts and easy
 check some code or run some task.</p>
-<h2 id="shortcuts">Shortcuts<a class="headerlink" href="#shortcuts" title="Permanent link">&para;</a></h2>
+<h2 id="shortcut-examples">Shortcut examples<a class="headerlink" href="#shortcut-examples" title="Permanent link">&para;</a></h2>
 <p>Create shortcuts with blocks enables introduce custom coding in
 the scope of the <code>Fast</code> module.</p>
-<h2 id="example-print-library-version">Example: Print library version.<a class="headerlink" href="#example-print-library-version" title="Permanent link">&para;</a></h2>
+<h3 id="print-library-version">Print library version.<a class="headerlink" href="#print-library-version" title="Permanent link">&para;</a></h3>
 <p>Let's say you'd like to show the version of your library. Your regular params
 in the command line will look like:</p>
 <div class="codehilite"><pre><span></span>$ fast &#39;(casgn nil VERSION)&#39; lib/*/version.rb
@@ -639,7 +635,7 @@ you can use the previous snippet in your <code>Fastfile</code>.</p>
 <p>We can also always override the files params passing some other target file
 like <code>fast .version lib/other/file.rb</code> and it will reuse the other arguments
 from command line but replace the target files.</p>
-<h3 id="example-bumping-a-gem-version">Example: Bumping a gem version<a class="headerlink" href="#example-bumping-a-gem-version" title="Permanent link">&para;</a></h3>
+<h3 id="bumping-a-gem-version">Bumping a gem version<a class="headerlink" href="#bumping-a-gem-version" title="Permanent link">&para;</a></h3>
 <p>While releasing a new gem version, we always need to mechanical go through the
 <code>lib/&lt;your_gem&gt;/version.rb</code> and change the string value to bump the version
 of your library. It's pretty mechanical and here is an example that allow you 
