@@ -34,7 +34,7 @@ describe Fast::Shortcut do
   context 'when a block is given' do
     subject(:bump) do
       Fast.shortcut :bump_version do
-        rewrite_file('sample_version.rb', '(casgn nil VERSION (str _)') do |node|
+        rewrite_file('(casgn nil VERSION (str _)', 'sample_version.rb') do |node|
           target = node.children.last.loc.expression
           replace(target, '0.0.2'.inspect)
         end

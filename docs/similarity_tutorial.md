@@ -53,7 +53,7 @@ observe some specific node types and try to group the similarities
 using the pattern generated.
 
 ```ruby
-Fast.search_file('lib/fast.rb', 'class')
+Fast.search_file('class', 'lib/fast.rb')
 ```
 Capturing the constant name and filtering only for symbols is easy and we can
 see that we have a few classes defined in the the same file.

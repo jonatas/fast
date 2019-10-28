@@ -79,14 +79,14 @@ It's corresponding s-expression would be:
 If we wanted to find this particular assignment somewhere in our AST, we can use
 Fast to look for a local variable named `value` with a value `42`:
 
-    Fast.match?(ast, '(lvasgn value (int 42))') # => true
+    Fast.match? '(lvasgn value (int 42))', ast # => true
 
 ### Wildcard Token
 
 If we wanted to find a variable named `value` that was assigned any integer value
 we could replace `42` in our query with an underscore ( `_` ) as a shortcut:
 
-    Fast.match?(ast, '(lvasgn value (int _))') # => true
+    Fast.match? '(lvasgn value (int _))', ast # => true
 
 ### Set Inclusion Token
 
@@ -94,7 +94,7 @@ If we weren't sure the type of the value we're assigning, we can use our set
 inclusion token (`{}`) from earlier to tell Fast that we expect either a `Float`
 or an `Integer`:
 
-    Fast.match?(ast, '(lvasgn value ({float int} _))') # => true
+    Fast.match? '(lvasgn value ({float int} _))', ast # => true
 
 ### All Matching Token
 
@@ -103,28 +103,28 @@ all matching token (`[]`) to express multiple conditions that need to be true.
 In this case we don't want the value to be a `String`, `Hash`, or an `Array` by
 prefixing all of the types with `!`:
 
-    Fast.match?(ast, '(lvasgn value ([!str !hash !array] _))') # => true
+    Fast.match? '(lvasgn value ([!str !hash !array] _))', ast # => true
 
 ### Node Child Token
 
 We can match any node with children by using the child token ( `...` ):
 
-    Fast.match?(ast, '(lvasgn value ...)') # => true
+    Fast.match? '(lvasgn value ...)', ast # => true
 
 We could even match any local variable assignment combining both `_` and `...`:
 
-    Fast.match?(ast, '(lvasgn _ ...)') # => true
+    Fast.match? '(lvasgn _ ...)', ast # => true
 
 ### Capturing the Value of an Expression
 
 You can use `$` to capture the contents of an expression for later use:
 
-    Fast.match?(ast, '(lvasgn value $...)') # => [s(:int, 42)]
+    Fast.match?('(lvasgn value $...)', ast) # => [s(:int, 42)]
 
 Captures can be used in any position as many times as you want to capture whatever
 information you might need:
 
-    Fast.match?(ast, '(lvasgn $_ $...)') # => [:value, s(:int, 42)]
+    Fast.match?('(lvasgn $_ $...)', ast) # => [:value, s(:int, 42)]
 
 > Keep in mind that `_` means something not nil and `...` means a node with
 > children.
@@ -142,7 +142,7 @@ method names and guarantee they are unique.
       already_exists
     end
 
-    puts Fast.search_file( '(def #duplicated)', 'example.rb')
+    puts Fast.search_file('(def #duplicated)', 'example.rb')
 
 The same principle can be used in the node level or for debugging purposes.
 
@@ -195,35 +195,31 @@ a single `Object`, like `a.b.c.d`. Its corresponding s-expression would be:
 You can also search using nested arrays with **pure values**, or **shortcuts** or
 **procs**:
 
-    Fast.match?(ast, [:send, [:send, '...'], :d]) # => true
-    Fast.match?(ast, [:send, [:send, '...'], :c]) # => false
-    Fast.match?(ast, [:send, [:send, [:send, '...'], :c], :d]) # => true
+    Fast.match? [:send, [:send, '...'], :d], ast  # => true
+    Fast.match? [:send, [:send, '...'], :c], ast  # => false
 
 Shortcut tokens like child nodes `...` and wildcards `_` are just placeholders
 for procs. If you want, you can even use procs directly like so:
 
-    Fast.match?(ast, [
+    Fast.match?([
       :send, [
         -> (node) { node.type == :send },
         [:send, '...'],
         :c
       ],
       :d
-    ]) # => true
+    ], ast) # => true
 
 This also works with expressions:
 
-    Fast.match?(
-      ast,
-      '(send (send (send (send nil $_) $_) $_) $_)'
-    ) # => [:a, :b, :c, :d]
+    Fast.match?('(send (send (send (send nil $_) $_) $_) $_)', ast) # => [:a, :b, :c, :d]
 
 ### Debugging
 
 If you find that a particular expression isn't working, you can use `debug` to
 take a look at what Fast is doing:
 
-    Fast.debug { Fast.match?(s(:int, 1), [:int, 1]) }
+    Fast.debug { Fast.match?([:int, 1], s(:int, 1)) }
 
 Each comparison made while searching will be logged to your console (STDOUT) as
 Fast goes through the AST:
@@ -237,7 +233,7 @@ We can also dynamically interpolate arguments into our queries using the
 interpolation token `%`. This works much like `sprintf` using indexes starting
 from `1`:
 
-    Fast.match?(code('a = 1'), '(lvasgn %1 (int _))', :a) # => true
+    Fast.match? '(lvasgn %1 (int _))', ('a = 1'), :a  # => true
 
 ## Using previous captures in search
 
@@ -264,18 +260,18 @@ We can create a query that searches for such a method:
 Search allows you to go search the entire AST, collecting nodes that matches given
 expression. Any matching node is then returned:
 
-    Fast.search(code('a = 1'), '(int _)') # => s(:int, 1)
+    Fast.search(Fast.ast('a = 1'), '(int _)') # => s(:int, 1)
 
 If you use captures along with a search, both the matching nodes and the
 captures will be returned:
 
-    Fast.search(code('a = 1'), '(int $_)') # => [s(:int, 1), 1]
+    Fast.search(Fast.ast('a = 1'), '(int $_)') # => [s(:int, 1), 1]
 
 ## Fast.capture
 
 To only pick captures and ignore the nodes, use `Fast.capture`:
 
-  Fast.capture(code('a = 1'), '(int $_)') # => 1
+  Fast.capture(Fast.ast('a = 1'), '(int $_)') # => 1
 
 ## Fast.replace
 
@@ -325,7 +321,7 @@ Or only the method name:
 In the context of the rewriter, the objective is removing the method and inserting the new
 delegate content. Then, the scope is `node.location.expression`:
 
-    Fast.replace ast, '(def $_ ... (send (send nil $_) \1))' do |node, captures|
+    Fast.replace '(def $_ ... (send (send nil $_) \1))', ast do |node, captures|
       attribute, object = captures
 
       replace(
@@ -360,7 +356,7 @@ To refactor and reach the proposed example, follow a few steps:
 #### Entire example
 
     assignment = nil
-    Fast.replace_file 'sample.rb', '({ lvasgn lvar } message )', -> (node, _) {
+    Fast.replace_file '({ lvasgn lvar } message )', 'sample.rb' do |node, _|
       # Find a variable assignment
       if node.type == :lvasgn
         assignment = node.children.last
@@ -466,7 +462,7 @@ and add the snippet to your library fixing the filename.
 
 ```ruby
 Fast.shortcut :bump_version do
-  rewrite_file('lib/fast/version.rb', '(casgn nil VERSION (str _)') do |node|
+  rewrite_file('(casgn nil VERSION (str _)', 'lib/fast/version.rb') do |node|
     target = node.children.last.loc.expression
     pieces = target.source.split(".").map(&:to_i)
     pieces.reverse.each_with_index do |fragment,i|

@@ -287,7 +287,7 @@ module Fast
 
     # @return [Array<Astrolabe::Node>]
     def search_cases
-      Fast.search(@ast, experiment.expression) || []
+      Fast.search(experiment.expression, @ast) || []
     end
 
     # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
@@ -297,7 +297,7 @@ module Fast
     # @return [void]
     def partial_replace(*indices)
       replacement = experiment.replacement
-      new_content = Fast.replace_file @file, experiment.expression do |node, *captures|
+      new_content = Fast.replace_file experiment.expression, @file do |node, *captures|
         if indices.nil? || indices.empty? || indices.include?(match_index)
           if replacement.parameters.length == 1
             instance_exec node, &replacement

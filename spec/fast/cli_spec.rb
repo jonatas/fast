@@ -16,26 +16,19 @@ RSpec.describe Fast::Cli do
       let(:args) { %w[def lib/fast.rb] }
 
       its(:pattern) { is_expected.to eq('def') }
-
-      its(:files) { is_expected.to eq(['lib/fast.rb']) }
     end
 
     context 'with expression and folders' do
       let(:args) { %w[def lib/fast spec/fast] }
 
       its(:pattern) { is_expected.to eq('def') }
-
-      its(:files) do
-        is_expected.to include('lib/fast/cli.rb')
-        is_expected.to include('spec/fast/cli_spec.rb')
-      end
     end
 
     context 'with -c to search from code and file' do
       let(:args) { %w[match? lib/fast.rb -c] }
 
       its(:pattern) { is_expected.to eq('(send nil :match?)') }
-      its(:files) { is_expected.to eq(['lib/fast.rb']) }
+      its(:from_code) { is_expected.to be_truthy }
     end
 
     context 'with --pry' do
@@ -126,7 +119,6 @@ RSpec.describe Fast::Cli do
         end
 
         its(:pattern) { is_expected.to eq('(casgn nil _ (str _))') }
-        its(:files) { is_expected.to eq(['lib/fast/version.rb']) }
 
         it 'uses the predefined values from the shortcut' do
           expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
@@ -140,7 +132,7 @@ RSpec.describe Fast::Cli do
         let(:args) { ['(casgn nil _ (str $_))', 'lib/fast/version.rb', '--captures', '--headless'] }
 
         it 'prints only captured scope' do
-          expect { cli.run! }.to output(highlight(Fast::VERSION + "\n")).to_stdout
+          expect { cli.run! }.to output(highlight(Fast::VERSION) + "\n").to_stdout
         end
       end
     end

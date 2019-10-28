@@ -164,8 +164,8 @@ RSpec.describe Fast do
       end
 
       it 'allow interpolate custom methods' do
-        expect(described_class).to be_match(s(:int, 1), '#custom_method')
-        expect(described_class).not_to be_match(s(:int, 2), '#custom_method')
+        expect(described_class).to be_match('#custom_method', s(:int, 1))
+        expect(described_class).not_to be_match('#custom_method', s(:int, 2))
       end
     end
   end
@@ -173,11 +173,11 @@ RSpec.describe Fast do
   describe '.match?' do
     context 'with pure array expression' do
       it 'matches AST code with a pure array' do
-        expect(described_class).to be_match(s(:int, 1), [:int, 1])
+        expect(described_class).to be_match([:int, 1], s(:int, 1))
       end
 
       it 'matches deeply with sub arrays' do
-        expect(described_class).to be_match(s(:send, s(:send, nil, :object), :method), [:send, [:send, nil, :object], :method])
+        expect(described_class).to be_match([:send, [:send, nil, :object], :method], s(:send, s(:send, nil, :object), :method))
       end
     end
 
@@ -185,32 +185,32 @@ RSpec.describe Fast do
       let(:ast) { code['a += 1'] }
 
       it 'matches ending expression soon' do
-        expect(described_class).to be_match(ast, [:op_asgn, '...'])
+        expect(described_class).to be_match([:op_asgn, '...'], ast)
       end
 
       it 'matches going deep in the details' do
-        expect(described_class).to be_match(ast, [:op_asgn, '...', '_'])
+        expect(described_class).to be_match([:op_asgn, '...', '_'], ast)
       end
 
       it 'matches going deeply with multiple skips' do
-        expect(described_class).to be_match(ast, [:op_asgn, '...', '_', '...'])
+        expect(described_class).to be_match([:op_asgn, '...', '_', '...'], ast)
       end
     end
 
     context 'with `Fast.expressions`' do
-      it { expect(described_class).to be_match(s(:int, 1), '(...)') }
-      it { expect(described_class).to be_match(s(:int, 1), '(_ _)') }
-      it { expect(described_class).to be_match(s(:int, 1), '(int .odd?)') }
-      it { expect(described_class).to be_match(nil, '.nil?') }
-      it { expect(described_class).not_to be_match(s(:int, 1), '(int .even?)') }
-      it { expect(described_class).to be_match(code['"string"'], '(str "string")') }
-      it { expect(described_class).to be_match(code['111.2345'], '(float 111.2345)') }
-      it { expect(described_class).to be_match(code['I18n'], '(const nil I18n)') }
+      it { expect(described_class).to be_match('(...)', s(:int, 1)) }
+      it { expect(described_class).to be_match('(_ _)', s(:int, 1)) }
+      it { expect(described_class).to be_match('(int .odd?)', s(:int, 1)) }
+      it { expect(described_class).to be_match('.nil?', nil) }
+      it { expect(described_class).not_to be_match('(int .even?)', s(:int, 1)) }
+      it { expect(described_class).to be_match('(str "string")', code['"string"']) }
+      it { expect(described_class).to be_match('(float 111.2345)', code['111.2345']) }
+      it { expect(described_class).to be_match('(const nil I18n)', code['I18n']) }
 
       context 'with astrolable node methods' do
-        it { expect(described_class).to be_match(code['method'], '.send_type?') }
-        it { expect(described_class).to be_match(code['a.b'], '(.root? (!.root?))') }
-        it { expect(described_class).not_to be_match(code['a.b'], '(!.root? (.root?))') }
+        it { expect(described_class).to be_match('.send_type?', code['method']) }
+        it { expect(described_class).to be_match('(.root? (!.root?))', code['a.b']) }
+        it { expect(described_class).not_to be_match('(!.root? (.root?))', code['a.b']) }
       end
     end
 
@@ -220,188 +220,188 @@ RSpec.describe Fast do
       end
 
       it 'matches int' do
-        expect(described_class).to be_match(code['a += 1'], expression)
+        expect(described_class).to be_match(expression, code['a += 1'])
       end
 
       it 'matches float' do
-        expect(described_class).to be_match(code['a += 1.2'], expression)
+        expect(described_class).to be_match(expression, code['a += 1.2'])
       end
 
       it 'does not match string' do
-        expect(described_class).not_to be_match(code['a += ""'], expression)
+        expect(described_class).not_to be_match(expression, code['a += ""'])
       end
     end
 
     it 'ignores empty spaces' do
       expect(described_class).to be_match(
-        s(:send, s(:send, s(:send, nil, :a), :b), :c),
-        '(send    (send    (send   nil   _)   _)   _)'
+        '(send    (send    (send   nil   _)   _)   _)',
+        s(:send, s(:send, s(:send, nil, :a), :b), :c)
       )
     end
 
     describe '`{}`' do
       it 'allows match `or` operator' do
-        expect(described_class).to be_match(code['1.2'], '{int float} _')
+        expect(described_class).to be_match('{int float} _', code['1.2'])
       end
 
       it 'allows match first case' do
-        expect(described_class).to be_match(code['1'], '{int float} _')
+        expect(described_class).to be_match('{int float} _', code['1'])
       end
 
       it 'return false if does not match' do
-        expect(described_class).not_to be_match(code['""'], '{int float} _')
+        expect(described_class).not_to be_match('{int float} _', code['""'])
       end
 
       it 'works in nested levels' do
-        expect(described_class).to be_match(code['1.2 + 1'], '(send ({int float} _) :+ (int _))')
+        expect(described_class).to be_match('(send ({int float} _) :+ (int _))', code['1.2 + 1'])
       end
 
       it 'works with complex operations nested levels' do
-        expect(described_class).to be_match(code['2 + 5'], '(send ({int float} _) + (int _))')
+        expect(described_class).to be_match('(send ({int float} _) + (int _))', code['2 + 5'])
       end
 
       it 'does not match if the correct operator is missing' do
-        expect(described_class).not_to be_match(code['2 - 5'], '(send ({int float} _) + (int _))')
+        expect(described_class).not_to be_match('(send ({int float} _) + (int _))', code['2 - 5'])
       end
 
       it 'matches with the correct operator' do
-        expect(described_class).to be_match(code['2 - 5'], '(send ({int float} _) {+-} (int _))')
+        expect(described_class).to be_match('(send ({int float} _) {+-} (int _))', code['2 - 5'])
       end
 
       it 'matches multiple symbols' do
-        expect(described_class).to be_match(code['b'], '(send {nil ...} b)')
+        expect(described_class).to be_match('(send {nil ...} b)', code['b'])
       end
 
       it 'allows the maybe concept' do
-        expect(described_class).to be_match(code['a.b'], '(send {nil ...} b)')
+        expect(described_class).to be_match('(send {nil ...} b)', code['a.b'])
       end
     end
 
     describe '`[]`' do
       it 'join expressions with `and`' do
-        expect(described_class).to be_match(code['3'], '([!str !hash] _)')
+        expect(described_class).to be_match('([!str !hash] _)', code['3'])
       end
 
       it 'allow join in any level' do
-        expect(described_class).to be_match(code['3'], '(int [!1 !2])')
+        expect(described_class).to be_match('(int [!1 !2])', code['3'])
       end
     end
 
     describe '`not` negates with !' do
-      it { expect(described_class).to be_match(code['1.0'], '!(int _)') }
-      it { expect(described_class).not_to be_match(code['1'], '!(int _)') }
-      it { expect(described_class).to be_match(code[':symbol'], '!({str int float} _)') }
-      it { expect(described_class).not_to be_match(code['1'], '!({str int float} _)') }
+      it { expect(described_class).to be_match('!(int _)', code['1.0']) }
+      it { expect(described_class).not_to be_match('!(int _)', code['1']) }
+      it { expect(described_class).to be_match('!({str int float} _)', code[':symbol']) }
+      it { expect(described_class).not_to be_match('!({str int float} _)', code['1']) }
     end
 
     describe '`maybe` do partial search with `?`' do
       it 'allow maybe is a method call`' do
-        expect(described_class).to be_match(code['a.b'], '(send ?(send nil a) b)')
+        expect(described_class).to be_match('(send ?(send nil a) b)', code['a.b'])
       end
 
       it 'allow without the method call' do
-        expect(described_class).to be_match(code['b'],   '(send ?(send nil a) b)')
+        expect(described_class).to be_match('(send ?(send nil a) b)', code['b'])
       end
 
       it 'does not match if the node does not satisfy the expressin' do
-        expect(described_class).not_to be_match(code['b.a'], '(send ?(send nil a) b)')
+        expect(described_class).not_to be_match('(send ?(send nil a) b)', code['b.a'])
       end
     end
 
     describe '`$` for capturing' do
       it 'last children' do
-        expect(described_class.match?(s(:send, nil, :a), '(send nil $_)')).to eq([:a])
+        expect(described_class.match?('(send nil $_)', s(:send, nil, :a))).to eq([:a])
       end
 
       it 'the entire node' do
-        expect(described_class.match?(s(:int, 1),        '($(int _))')).to eq([s(:int, 1)])
+        expect(described_class.match?('($(int _))', s(:int, 1))).to eq([s(:int, 1)])
       end
 
       it 'the value' do
-        expect(described_class.match?(s(:sym, :a),       '(sym $_)')).to eq([:a])
+        expect(described_class.match?('(sym $_)', s(:sym, :a))).to eq([:a])
       end
 
       it 'multiple nodes' do
-        expect(described_class.match?(s(:send, s(:int, 1), :+, s(:int, 2)), '(:send $(:int _) :+ $(:int _))')).to eq([s(:int, 1), s(:int, 2)])
+        expect(described_class.match?('(:send $(:int _) :+ $(:int _))', s(:send, s(:int, 1), :+, s(:int, 2)))).to eq([s(:int, 1), s(:int, 2)])
       end
 
       it 'specific children' do
-        expect(described_class.match?(s(:send, s(:int, 1), :+, s(:int, 2)), '(send (int $_) :+ (int $_))')).to eq([1, 2])
+        expect(described_class.match?('(send (int $_) :+ (int $_))', s(:send, s(:int, 1), :+, s(:int, 2)))).to eq([1, 2])
       end
 
       it 'complex negated joined condition' do
-        expect(described_class.match?(s(:sym, :sym), '$!({str int float} _)')).to eq([s(:sym, :sym)])
+        expect(described_class.match?('$!({str int float} _)', s(:sym, :sym))).to eq([s(:sym, :sym)])
       end
 
       describe 'capture method' do
         let(:ast) { code['def reverse_string(string) string.reverse end'] }
 
         it 'anonymously name' do
-          expect(described_class.match?(ast, '(def $_ ... ...)')).to eq([:reverse_string])
+          expect(described_class.match?('(def $_ ... ...)', ast)).to eq([:reverse_string])
         end
 
         it 'static name' do
-          expect(described_class.match?(ast, '(def $reverse_string ... ...)')).to eq([:reverse_string])
+          expect(described_class.match?('(def $reverse_string ... ...)', ast)).to eq([:reverse_string])
         end
 
         it 'parameter' do
-          expect(described_class.match?(ast, '(def reverse_string (args (arg $_)) ...)')).to eq([:string])
+          expect(described_class.match?('(def reverse_string (args (arg $_)) ...)', ast)).to eq([:string])
         end
 
         it 'content' do
-          expect(described_class.match?(ast, '(def reverse_string (args (arg _)) $...)')).to eq([s(:send, s(:lvar, :string), :reverse)])
+          expect(described_class.match?('(def reverse_string (args (arg _)) $...)', ast)).to eq([s(:send, s(:lvar, :string), :reverse)])
         end
       end
 
       describe 'capture symbol in multiple conditions' do
         let(:expression) { '(send {nil ...} $_)' }
 
-        it { expect(described_class.match?(code['b'], expression)).to eq([:b]) }
-        it { expect(described_class.match?(code['a.b'], expression)).to eq([:b]) }
+        it { expect(described_class.match?(expression, code['b'])).to eq([:b]) }
+        it { expect(described_class.match?(expression, code['a.b'])).to eq([:b]) }
       end
     end
 
     describe '\\<capture-index> to match with previous captured symbols' do
       it 'allow capture method name and reuse in children calls' do
         ast = code['def name; person.name end']
-        expect(described_class.match?(ast, '(def $_ (_) (send (send nil _) \1))')).to eq([:name])
+        expect(described_class.match?('(def $_ (_) (send (send nil _) \1))', ast)).to eq([:name])
       end
 
       it 'captures local variable values in multiple nodes' do
-        expect(described_class.match?(code["a = 1\nb = 1"], '(begin (lvasgn _ $(...)) (lvasgn _ \1))')).to eq([s(:int, 1)])
+        expect(described_class.match?('(begin (lvasgn _ $(...)) (lvasgn _ \1))', code["a = 1\nb = 1"])).to eq([s(:int, 1)])
       end
 
       it 'allow reuse captured integers' do
-        expect(described_class.match?(code["a = 1\nb = 1"], '(begin (lvasgn _ (int $_)) (lvasgn _ (int \1)))')).to eq([1])
+        expect(described_class.match?('(begin (lvasgn _ (int $_)) (lvasgn _ (int \1)))', code["a = 1\nb = 1"])).to eq([1])
       end
     end
 
     describe '`Parent` can follow expression in children with `^`' do
       it 'ignores type and search in children using expression following' do
-        expect(described_class).to be_match(code['a = 1'], '^(int _)')
+        expect(described_class).to be_match('^(int _)', code['a = 1'])
       end
 
       it 'captures parent of parent and also ignore non node children' do
         ast = code['b = a = 1']
-        expect(described_class.match?(ast, '$^^(int _)')).to eq([ast])
+        expect(described_class.match?('$^^(int _)', ast)).to eq([ast])
       end
     end
 
     describe '%<argument-index> to bind an external argument into the expression' do
       it 'binds extra arguments into the expression' do
-        expect(described_class).to be_match(code['a = 1'], '(lvasgn %1 (int _))', :a)
-        expect(described_class).to be_match(code['"test"'], '(str %1)', 'test')
-        expect(described_class).to be_match(code['"test"'], '(%1 %2)', :str, 'test')
-        expect(described_class).to be_match(code[':symbol'], '(%1 %2)', :sym, :symbol)
-        expect(described_class).to be_match(code[':symbol'], '{%1 %2}', :sym, :str)
-        expect(described_class).not_to be_match(code['a = 1'], '(lvasgn %1 (int _))', :b)
-        expect(described_class).not_to be_match(code['1'], '{%1 %2}', :sym, :str)
+        expect(described_class).to be_match('(lvasgn %1 (int _))', code['a = 1'], :a)
+        expect(described_class).to be_match('(str %1)', code['"test"'], 'test')
+        expect(described_class).to be_match('(%1 %2)', code['"test"'], :str, 'test')
+        expect(described_class).to be_match('(%1 %2)', code[':symbol'], :sym, :symbol)
+        expect(described_class).to be_match('{%1 %2}', code[':symbol'], :str, :sym)
+        expect(described_class).not_to be_match('(lvasgn %1 (int _))', code['a = 1'], :b)
+        expect(described_class).not_to be_match('{%1 %2}', code['1'], :str, :sym)
       end
     end
   end
 
   describe '.replace' do
-    subject { described_class.replace(example, expression, &replacement) }
+    subject { described_class.replace(expression, example, &replacement) }
 
     context 'with a local variable rename' do
       let(:example) { code['a = 1'] }
@@ -528,7 +528,7 @@ RSpec.describe Fast do
     describe '.replace_file' do
       context 'with rename constant example' do
         let(:rename_const) do
-          described_class.replace_file('sample.rb', '({casgn const} nil AUTHOR )') do |node|
+          described_class.replace_file('({casgn const} nil AUTHOR )', 'sample.rb') do |node|
             if node.type == :const
               replace(node.location.expression, 'CREATOR')
             else
@@ -565,7 +565,7 @@ RSpec.describe Fast do
 
       context 'when inline local variable example' do
         let(:inline_var) do
-          described_class.replace_file('sample.rb', '({lvar lvasgn } message )') do |node, _|
+          described_class.replace_file('({lvar lvasgn } message )', 'sample.rb') do |node, _|
             if node.type == :lvasgn
               @assignment = node.children.last
               remove(node.location.expression)
@@ -604,7 +604,7 @@ RSpec.describe Fast do
 
     describe '.rewrite_file' do
       subject(:remove_methods) do
-        described_class.rewrite_file('sample.rb', '{def defs}') do |node, _|
+        described_class.rewrite_file('{def defs}', 'sample.rb') do |node, _|
           remove(node.location.expression)
         end
       end
@@ -627,7 +627,7 @@ RSpec.describe Fast do
     specify do
       expect do
         described_class.debug do
-          described_class.match?(s(:int, 1), [:int, 1])
+          described_class.match?([:int, 1], s(:int, 1))
         end
       end.to output(<<~OUTPUT).to_stdout
         int == (int 1) # => true
@@ -638,19 +638,19 @@ RSpec.describe Fast do
 
   describe '.capture' do
     it 'single element' do
-      expect(described_class.capture(code['a = 1'], '(lvasgn _ (int $_))')).to eq(1)
+      expect(described_class.capture('(lvasgn _ (int $_))', code['a = 1'])).to eq(1)
     end
 
     it 'array elements' do
-      expect(described_class.capture(code['a = 1'], '(lvasgn $_ (int $_))')).to eq([:a, 1])
+      expect(described_class.capture('(lvasgn $_ (int $_))', code['a = 1'])).to eq([:a, 1])
     end
 
     it 'nodes' do
-      expect(described_class.capture(code['a = 1'], '(lvasgn _ $(int _))')).to eq(code['1'])
+      expect(described_class.capture('(lvasgn _ $(int _))', code['a = 1'])).to eq(code['1'])
     end
 
     it 'multiple nodes' do
-      expect(described_class.capture(code['a = 1'], '$(lvasgn _ (int _))')).to eq(code['a = 1'])
+      expect(described_class.capture('$(lvasgn _ (int _))', code['a = 1'])).to eq(code['a = 1'])
     end
   end
 

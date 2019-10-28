@@ -89,9 +89,9 @@ module Fast
     # Verify if a given AST matches with a specific pattern
     # @return [Boolean] case matches ast with the current expression
     # @example
-    #   Fast.match?(Fast.ast("1"),"int") # => true
-    def match?(ast, pattern, *args)
-      Matcher.new(ast, pattern, *args).match?
+    #   Fast.match?("int", Fast.ast("1")) # => true
+    def match?(pattern, ast, *args)
+      Matcher.new(pattern, ast, *args).match?
     end
 
     # Replaces content based on a pattern.
@@ -104,10 +104,10 @@ module Fast
     #   end # => variable_renamed = 1
     # @return [String] with the new source code after apply the replacement
     # @see Fast::Rewriter
-    def replace(ast, pattern, source = nil, &replacement)
+    def replace(pattern, ast, source = nil, &replacement)
       buffer = Parser::Source::Buffer.new('replacement')
       buffer.source = source || ast.loc.expression.source
-      to_replace = search(ast, pattern)
+      to_replace = search(pattern, ast)
       types = to_replace.grep(Parser::AST::Node).map(&:type).uniq
 
       rewriter = Rewriter.new
@@ -122,21 +122,46 @@ module Fast
     # @return [Array<Astrolabe::Node>] that matches the pattern
     def search_file(pattern, file)
       node = ast_from_file(file)
-      search node, pattern
+      search pattern, node
+    end
+
+    # Search with pattern on a directory or multiple files
+    # @param [String] pattern
+    # @param [Array<String>] *locations where to search. Default is '.'
+    # @return [Hash<String,Array<Astrolabe::Node>>] with files and results
+    def search_all(pattern, locations = ['.'])
+      search_pattern = method(:search_file).curry.call(pattern)
+      group_results(search_pattern, locations)
+    end
+
+    # Capture with pattern on a directory or multiple files
+    # @param [String] pattern
+    # @param [Array<String>] locations where to search. Default is '.'
+    # @return [Hash<String,Object>] with files and captures
+    def capture_all(pattern, locations = ['.'])
+      capture_pattern = method(:capture_file).curry.call(pattern)
+      group_results(capture_pattern, locations)
+    end
+
+    def group_results(search_pattern, locations)
+      ruby_files_from(*locations)
+        .map { |f| { f => search_pattern.call(f) } }
+        .reject { |results| results.values.all?(&:empty?) }
+        .inject(&:merge!)
     end
 
     # Replaces the source of an {Fast#ast_from_file} with
     # and the same source if the pattern does not match.
-    def replace_file(file, pattern, &replacement)
+    def replace_file(pattern, file, &replacement)
       ast = ast_from_file(file)
-      replace(ast, pattern, IO.read(file), &replacement)
+      replace(pattern, ast, IO.read(file), &replacement)
     end
 
     # Combines #replace_file output overriding the file if the output is different
     # from the original file content.
-    def rewrite_file(file, pattern, &replacement)
+    def rewrite_file(pattern, file, &replacement)
       previous_content = IO.read(file)
-      content = replace_file(file, pattern, &replacement)
+      content = replace_file(pattern, file, &replacement)
       File.open(file, 'w+') { |f| f.puts content } if content != previous_content
     end
 
@@ -145,20 +170,20 @@ module Fast
     # @return [Array<Object>] captured from the pattern matched in the file
     def capture_file(pattern, file)
       node = ast_from_file(file)
-      capture node, pattern
+      capture pattern, node
     end
 
     # Search recursively into a node and its children.
     # If the node matches with the pattern it returns the node,
     # otherwise it recursively collect possible children nodes
     # @yield node and capture if block given
-    def search(node, pattern)
-      if (match = match?(node, pattern))
+    def search(pattern, node)
+      if (match = match?(pattern, node))
         yield node, match if block_given?
         match != true ? [node, match] : [node]
       else
         node.each_child_node
-          .flat_map { |e| search(e, pattern) }
+          .flat_map { |child| search(pattern, child) }
           .compact.flatten
       end
     end
@@ -166,13 +191,13 @@ module Fast
     # Return only captures from a search
     # @return [Array<Object>] with all captured elements.
     # @return [Object] with single element when single capture.
-    def capture(node, pattern)
+    def capture(pattern, node)
       res =
-        if (match = match?(node, pattern))
+        if (match = match?(pattern, node))
           match == true ? node : match
         else
           node.each_child_node
-            .flat_map { |child| capture(child, pattern) }
+            .flat_map { |child| capture(pattern, child) }
             .compact.flatten
         end
       res&.size == 1 ? res[0] : res
@@ -190,7 +215,7 @@ module Fast
     #
     # @example
     #   Fast.debug do
-    #      Fast.match?(s(:int, 1), [:int, 1])
+    #      Fast.match?([:int, 1], s(:int, 1))
     #   end
     #  int == (int 1) # => true
     #  1 == 1 # => true
@@ -268,7 +293,7 @@ module Fast
     end
 
     def match?(node)
-      Fast.match?(node, search)
+      Fast.match?(search, node)
     end
 
     # Generate methods for all affected types.
@@ -382,24 +407,24 @@ module Fast
     end
 
     def match?(node)
-      match_recursive(node, valuate(token))
+      match_recursive(valuate(token), node)
     end
 
-    def match_recursive(node, expression)
+    def match_recursive(expression, node)
       case expression
       when Proc then expression.call(node)
       when Find then expression.match?(node)
-      when Symbol then compare_symbol_or_head(node, expression)
+      when Symbol then compare_symbol_or_head(expression, node)
       when Enumerable
         expression.each_with_index.all? do |exp, i|
-          match_recursive(i.zero? ? node : node.children[i - 1], exp)
+          match_recursive(exp, i.zero? ? node : node.children[i - 1])
         end
       else
         node == expression
       end
     end
 
-    def compare_symbol_or_head(node, expression)
+    def compare_symbol_or_head(expression, node)
       case node
       when Parser::AST::Node
         node.type == expression.to_sym
@@ -410,13 +435,13 @@ module Fast
       end
     end
 
-    def debug_match_recursive(node, expression)
-      match = original_match_recursive(node, expression)
-      debug(node, expression, match)
+    def debug_match_recursive(expression, node)
+      match = original_match_recursive(expression, node)
+      debug(expression, node, match)
       match
     end
 
-    def debug(node, expression, match)
+    def debug(expression, node, match)
       puts "#{expression} == #{node} # => #{match}"
     end
 
@@ -490,7 +515,7 @@ module Fast
   #
   # @example check comparision of integers that will always return true
   #   ast = Fast.ast("1 == 1") => s(:send, s(:int, 1), :==, s(:int, 1))
-  #   Fast.match?(ast, "(send $(int _) == \1)") # => [s(:int, 1)]
+  #   Fast.match?("(send $(int _) == \1)", ast) # => [s(:int, 1)]
   class FindWithCapture < Find
     attr_writer :previous_captures
 
@@ -514,10 +539,10 @@ module Fast
   # Use `%1` in the expression and the Matcher#prepare_arguments will
   # interpolate the argument in the expression.
   # @example interpolate the node value 1
-  #   Fast.match?(Fast.ast("1"), "(int %1)", 1) # => true
-  #   Fast.match?(Fast.ast("1"), "(int %1)", 2) # => false
+  #   Fast.match?("(int %1)", Fast.ast("1"), 1) # => true
+  #   Fast.match?("(int %1)", Fast.ast("1"), 2) # => false
   # @example interpolate multiple arguments
-  #   Fast.match?(Fast.ast("1"), "(%1 %2)", :int, 1) # => true
+  #   Fast.match?("(%1 %2)", Fast.ast("1"), :int, 1) # => true
   class FindFromArgument < Find
     attr_writer :arguments
 
@@ -532,7 +557,7 @@ module Fast
     def match?(node)
       raise 'You must define arguments to match' unless @arguments
 
-      compare_symbol_or_head node, @arguments[@capture_argument]
+      compare_symbol_or_head @arguments[@capture_argument], node
     end
 
     def to_s
@@ -605,7 +630,7 @@ module Fast
   #   Fast.expression("{int float}")
   class Any < Find
     def match?(node)
-      token.any? { |expression| Fast.match?(node, expression) }
+      token.any? { |expression| Fast.match?(expression, node) }
     end
 
     def to_s
@@ -651,51 +676,51 @@ module Fast
   # @example simple match
   #   ast = Fast.ast("a = 1")
   #   expression = Fast.expression("(lvasgn _ (int _))")
-  #   Matcher.new(ast,expression).match? # true
+  #   Matcher.new(expression, ast).match? # true
   #
   # @example simple capture
   #   ast = Fast.ast("a = 1")
   #   expression = Fast.expression("(lvasgn _ (int $_))")
-  #   Matcher.new(ast,expression).match? # => [1]
+  #   Matcher.new(expression, ast).match? # => [1]
   #
   class Matcher
-    def initialize(ast, fast, *args)
+    def initialize(pattern, ast, *args)
       @ast = ast
-      @fast = if fast.is_a?(String)
-                Fast.expression(fast)
-              else
-                [*fast].map(&Find.method(:new))
-              end
+      @expression = if pattern.is_a?(String)
+                      Fast.expression(pattern)
+                    else
+                      [*pattern].map(&Find.method(:new))
+                    end
       @captures = []
-      prepare_arguments(@fast, args) if args.any?
+      prepare_arguments(@expression, args) if args.any?
     end
 
     # @return [true] if the @param ast recursively matches with expression.
     # @return #find_captures case matches
-    def match?(ast = @ast, fast = @fast)
-      head, *tail = fast
+    def match?(expression = @expression, ast = @ast)
+      head, *tail_expression = expression
       return false unless head.match?(ast)
-      return find_captures if tail.empty?
+      return find_captures if tail_expression.empty?
 
-      match_tail?(ast.children, tail)
+      match_tail?(tail_expression, ast.children)
     end
 
     # @return [true] if all children matches with tail
-    def match_tail?(child, tail)
+    def match_tail?(tail, child)
       tail.each_with_index.all? do |token, i|
         prepare_token(token)
-        token.is_a?(Array) ? match?(child[i], token) : token.match?(child[i])
+        token.is_a?(Array) ? match?(token, child[i]) : token.match?(child[i])
       end && find_captures
     end
 
-    # Look recursively into @param fast to check if the expression is have
+    # Look recursively into @param expression to check if the expression is have
     # captures.
     # @return [true] if any sub expression have captures.
-    def captures?(fast = @fast)
-      case fast
+    def captures?(expression = @expression)
+      case expression
       when Capture then true
-      when Array then fast.any?(&method(:captures?))
-      when Find then captures?(fast.token)
+      when Array then expression.any?(&method(:captures?))
+      when Find then captures?(expression.token)
       end
     end
 
@@ -705,13 +730,13 @@ module Fast
     # @return [true] in case of no captures in the expression
     # @see Fast::Capture
     # @see Fast::FindFromArgument
-    def find_captures(fast = @fast)
-      return true if fast == @fast && !captures?(fast)
+    def find_captures(expression = @expression)
+      return true if expression == @expression && !captures?(expression)
 
-      case fast
-      when Capture then fast.captures
-      when Array then fast.flat_map(&method(:find_captures)).compact
-      when Find then find_captures(fast.token)
+      case expression
+      when Capture then expression.captures
+      when Array then expression.flat_map(&method(:find_captures)).compact
+      when Find then find_captures(expression.token)
       end
     end
 
