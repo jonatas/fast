@@ -169,8 +169,7 @@ module Fast
     # in the pattern to make it work.
     # @return [Array<Object>] captured from the pattern matched in the file
     def capture_file(pattern, file)
-      node = ast_from_file(file)
-      capture pattern, node
+      capture pattern, ast_from_file(file)
     end
 
     # Search recursively into a node and its children.
@@ -192,15 +191,15 @@ module Fast
     # @return [Array<Object>] with all captured elements.
     # @return [Object] with single element when single capture.
     def capture(pattern, node)
-      res =
-        if (match = match?(pattern, node))
-          match == true ? node : match
-        else
-          node.each_child_node
-            .flat_map { |child| capture(pattern, child) }
-            .compact.flatten
-        end
-      res&.size == 1 ? res[0] : res
+      res = if (match = match?(pattern, node))
+              match == true ? node : match
+            else
+              node.each_child_node
+                .flat_map { |child| capture(pattern, child) }
+                .compact.flatten
+            end
+      res = [res] unless res.is_a?(Array)
+      res.one? ? res.first : res
     end
 
     def expression(string)

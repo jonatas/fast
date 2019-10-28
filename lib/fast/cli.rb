@@ -151,7 +151,7 @@ module Fast
 
     def execute_search
       method_name = @captures ? :capture_all : :search_all
-      Fast.public_send(method_name, expression, @files).each do |file, results|
+      (Fast.public_send(method_name, expression, @files) || []).each do |file, results|
         results = [results] unless results.is_a?(Array)
         yield file, results
       end
