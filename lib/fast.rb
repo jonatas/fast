@@ -99,6 +99,7 @@ module Fast
     # @return [Array<Astrolabe::Node>] that matches the pattern
     def search_file(pattern, file)
       node = ast_from_file(file)
+      return [] if node.nil?
       search pattern, node
     end
 
