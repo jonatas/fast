@@ -151,8 +151,8 @@ RSpec.describe Fast::Cli do
     let(:ast) { Fast.ast('a = 1') }
 
     it 'highlight the code with file in the header' do
-      allow(Fast).to receive(:highlight).with('# some_file.rb:1').and_call_original
-      allow(Fast).to receive(:highlight).with(ast, show_sexp: false).and_call_original
+      allow(Fast).to receive(:highlight).with('# some_file.rb:1', colorize: true).and_call_original
+      allow(Fast).to receive(:highlight).with(ast, show_sexp: false, colorize: true).and_call_original
       expect { Fast.report(ast, file: 'some_file.rb', show_sexp: false) }
         .to output(highlight("# some_file.rb:1\na = 1\n")).to_stdout
     end
