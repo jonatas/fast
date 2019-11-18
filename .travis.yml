@@ -14,5 +14,5 @@ before_script:
 after_script:
   - ./cc-test-reporter after-build -t simplecov --exit-code $TRAVIS_TEST_RESULT
 script:
-  - bundle exec rubocop
+  - bundle exec rubocop --fail-level warning --display-only-fail-level-offenses
   - bundle exec rspec
