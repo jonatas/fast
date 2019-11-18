@@ -100,6 +100,7 @@ module Fast
     def search_file(pattern, file)
       node = ast_from_file(file)
       return [] if node.nil?
+
       search pattern, node
     end
 
