@@ -14,6 +14,8 @@ module Fast
 
   # Highligh some source code based on the node.
   # Useful for printing code with syntax highlight.
+  # @param show_sexp [Boolean] prints node expression instead of code
+  # @param colorize [Boolean] skips `CodeRay` processing when false.
   def highlight(node, show_sexp: false, colorize: true)
     output =
       if node.respond_to?(:loc) && !show_sexp
@@ -21,9 +23,9 @@ module Fast
       else
         node
       end
+    return output unless colorize
 
-    code = CodeRay.scan(output, :ruby)
-    colorize ? code.term : code.plain
+    CodeRay.scan(output, :ruby).term
   end
 
   # Combines {.highlight} with files printing file name in the head with the
