@@ -99,7 +99,7 @@ module Fast
     # @return [Array<Astrolabe::Node>] that matches the pattern
     def search_file(pattern, file)
       node = ast_from_file(file)
-      return [] if node.nil?
+      return [] unless node
 
       search pattern, node
     end
@@ -133,7 +133,10 @@ module Fast
     # in the pattern to make it work.
     # @return [Array<Object>] captured from the pattern matched in the file
     def capture_file(pattern, file)
-      capture pattern, ast_from_file(file)
+      node = ast_from_file(file)
+      return [] unless node
+
+      capture pattern, node
     end
 
     # Search recursively into a node and its children.

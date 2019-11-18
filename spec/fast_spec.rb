@@ -471,6 +471,37 @@ RSpec.describe Fast do
     end
   end
 
+  describe '.search_all' do
+    it 'allow search multiple files in the same time' do
+      results = described_class.search_all('(casgn nil VERSION)', ['lib/fast/version.rb'])
+      expect(results).to have_key('lib/fast/version.rb')
+      expect(results['lib/fast/version.rb'].map { |n| n.loc.expression.source }).to eq(["VERSION = '#{Fast::VERSION}'"])
+    end
+
+    context 'with empty file' do
+      before { File.open('test-empty-file.rb', 'w+') { |f| f.puts '' } }
+
+      after { File.delete('test-empty-file.rb') }
+
+      it { expect(described_class.search_all('(casgn nil VERSION)', ['test-empty-file.rb'])).to be_nil }
+    end
+  end
+
+  describe '.capture_all' do
+    it 'allow search multiple files in the same time' do
+      results = described_class.capture_all('(casgn nil VERSION (str $_))', ['lib/fast/version.rb'])
+      expect(results).to eq('lib/fast/version.rb' => Fast::VERSION)
+    end
+
+    context 'with empty file' do
+      before { File.open('test-empty-file.rb', 'w+') { |f| f.puts '' } }
+
+      after { File.delete('test-empty-file.rb') }
+
+      it { expect(described_class.capture_all('(casgn nil VERSION)', ['test-empty-file.rb'])).to be_nil }
+    end
+  end
+
   describe '.debug' do
     specify do
       expect do
