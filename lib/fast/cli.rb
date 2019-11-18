@@ -14,13 +14,17 @@ module Fast
 
   # Highligh some source code based on the node.
   # Useful for printing code with syntax highlight.
-  def highlight(node, show_sexp: false)
+  # @param show_sexp [Boolean] prints node expression instead of code
+  # @param colorize [Boolean] skips `CodeRay` processing when false.
+  def highlight(node, show_sexp: false, colorize: true)
     output =
       if node.respond_to?(:loc) && !show_sexp
         node.loc.expression.source
       else
         node
       end
+    return output unless colorize
+
     CodeRay.scan(output, :ruby).term
   end
 
@@ -32,12 +36,12 @@ module Fast
   # @param headless [Boolean] Skip printing the file name and line before content
   # @example
   #   Fast.highlight(Fast.search(...))
-  def report(result, show_sexp: false, file: nil, headless: false)
+  def report(result, show_sexp: false, file: nil, headless: false, colorize: true)
     if file
       line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
-      puts(highlight("# #{file}:#{line}")) unless headless
+      puts(highlight("# #{file}:#{line}", colorize: colorize)) unless headless
     end
-    puts highlight(result, show_sexp: show_sexp)
+    puts highlight(result, show_sexp: show_sexp, colorize: colorize)
   end
 
   # Command Line Interface for Fast
@@ -47,6 +51,7 @@ module Fast
       args = replace_args_with_shortcut(args) if args.first&.start_with?('.')
 
       @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
+      @colorize = STDOUT.isatty
 
       option_parser.parse! args
 
@@ -89,6 +94,10 @@ module Fast
           @similar = true
           @pattern = Fast.expression_from(Fast.ast(@pattern))
           debug "Looking for code similar to #{@pattern}"
+        end
+
+        opts.on('--no-color', 'Disable color output') do
+          @colorize = false
         end
 
         opts.on_tail('--version', 'Show version') do
@@ -170,7 +179,7 @@ module Fast
     # Report results using the actual options binded from command line.
     # @see Fast.report
     def report(result, file)
-      Fast.report(result, file: file, show_sexp: @show_sexp, headless: @headless)
+      Fast.report(result, file: file, show_sexp: @show_sexp, headless: @headless, colorize: @colorize)
     end
 
     # Find shortcut by name. Preloads all `Fastfiles` before start.
