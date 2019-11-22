@@ -11,6 +11,36 @@ first param is not a shortcut. It should start with `.`.
 I'm building several researches and I'll make the examples open here to show
 several interesting cases in action.
 
+## Rails: Show validations from models
+
+If the shortcut does not define a block, it works as a holder for arguments from
+the command line.
+
+Let's say you always use `fast "(send nil {validate validates})" app/models` to
+check validations in the models. You can define a shortcut to hold the args and
+avoid retyping long lines:
+
+```ruby
+# Show validations from app/models
+Fast.shortcut(:validations, "(send nil {validate validates})", "app/models")
+```
+And you can reuse the search with the shortcut starting with a `.`:
+
+```
+fast .validations
+```
+And it will also accept params if you want to filter a specific file:
+
+```
+fast .validations app/models/user.rb
+```
+
+!!! info "Note that you can also use flags in the command line shortcuts"
+
+    Let's say you also want to use `fast --headless` you can add it to the params:
+
+    > Fast.shortcut(:validations, "(send nil {validate validates})", "app/models", "--headless")
+
 ## Automated Refactor: Bump version
 
 Let's start with a [real usage](https://github.com/jonatas/fast/blob/master/Fastfile#L20-L34)
@@ -36,7 +66,7 @@ end
 
 And then the change is done in the `lib/fast/version.rb`:
 
-```diff 
+```diff
 module Fast
 -  VERSION = '0.1.6'
 +  VERSION = '0.1.7'
@@ -177,5 +207,82 @@ And it will run with a single file from command line:
 
 ```
 fast .exp_remove_let spec/my_file_spec.rb
+```
+
+## FactoryBot: Replace `create` with `build_stubbed`
+
+For performance reasons, if we can avoid touching the database the test will
+always be faster.
+
+```ruby
+# Experimental switch from `create` to `build_stubbed`
+Fast.shortcut(:exp_build_stubbed) do
+  require 'fast/experiment'
+  Fast.experiment('FactoryBot/UseBuildStubbed') do
+  lookup ARGV.last
+    search '(send nil create)'
+    edit { |node| replace(node.loc.selector, 'build_stubbed') }
+    policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") }
+  end.run
+end
+```
+## RSpec: Use `let_it_be` instead of `let`
+
+The `let_it_be` is a simple helper from
+[TestProf](https://test-prof.evilmartians.io/#/let_it_be) gem that can speed up
+the specs by caching some factories using like a `before_all` approach.
+
+This experiment hunts  for `let(...) { create(...) }` and switch the `let` to
+`let_it_be`:
+
+```ruby
+# Experimental replace `let(_)`  with `let_it_be` case it calls `create` inside the block
+Fast.shortcut(:exp_let_it_be) do
+  require 'fast/experiment'
+  Fast.experiment('FactoryBot/LetItBe') do
+    lookup ARGV.last
+    search '(block (send nil let (sym _)) (args) (send nil create))'
+    edit { |node| replace(node.children.first.loc.selector, 'let_it_be') }
+    policy { |new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+  end.run
+end
+```
+
+## RSpec: Remove `before` or `after` blocks
+
+From time to time, we forget some left overs like `before` or `after` blocks
+that even removing from the code, the tests still passes. This experiment
+removes the before/after blocks and check if the test passes.
+
+```ruby
+# Experimental remove `before` or `after` blocks.
+Fast.shortcut(:exp_remove_before_after) do
+  require 'fast/experiment'
+  Fast.experiment('RSpec/RemoveBeforeAfter') do
+    lookup ARGV.last
+    search '(block (send nil {before after}))'
+    edit { |node| remove(node.loc.expression) }
+    policy { |new_file| system("bin/spring rspec --fail-fast #{new_file}") }
+  end.run
+end
+```
+
+## RSpec: Show message chains
+
+I often forget the syntax and need to search for message chains on specs, so I
+created an shortcut for it.
+
+```ruby
+# Show RSpec message chains
+Fast.shortcut(:message_chains, '^^(send nil receive_message_chain)', 'spec')
+```
+
+## RSpec: Show nested assertions
+
+I love to use nested assertions and I often need examples to refer to them:
+
+```ruby
+# Show RSpec nested assertions with .and
+Fast.shortcut(:nested_assertions, '^^(send ... and)', 'spec')
 ```
 
