@@ -316,6 +316,13 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#rails-show-validations-from-models" title="Rails: Show validations from models" class="md-nav__link">
+    Rails: Show validations from models
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#automated-refactor-bump-version" title="Automated Refactor: Bump version" class="md-nav__link">
     Automated Refactor: Bump version
   </a>
@@ -339,6 +346,41 @@
         <li class="md-nav__item">
   <a href="#rspec-remove-unused-let" title="RSpec: Remove unused let" class="md-nav__link">
     RSpec: Remove unused let
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#factorybot-replace-create-with-build_stubbed" title="FactoryBot: Replace create with build_stubbed" class="md-nav__link">
+    FactoryBot: Replace create with build_stubbed
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-use-let_it_be-instead-of-let" title="RSpec: Use let_it_be instead of let" class="md-nav__link">
+    RSpec: Use let_it_be instead of let
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-remove-before-or-after-blocks" title="RSpec: Remove before or after blocks" class="md-nav__link">
+    RSpec: Remove before or after blocks
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-show-message-chains" title="RSpec: Show message chains" class="md-nav__link">
+    RSpec: Show message chains
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-show-nested-assertions" title="RSpec: Show nested assertions" class="md-nav__link">
+    RSpec: Show nested assertions
   </a>
   
 </li>
@@ -411,6 +453,13 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#rails-show-validations-from-models" title="Rails: Show validations from models" class="md-nav__link">
+    Rails: Show validations from models
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#automated-refactor-bump-version" title="Automated Refactor: Bump version" class="md-nav__link">
     Automated Refactor: Bump version
   </a>
@@ -434,6 +483,41 @@
         <li class="md-nav__item">
   <a href="#rspec-remove-unused-let" title="RSpec: Remove unused let" class="md-nav__link">
     RSpec: Remove unused let
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#factorybot-replace-create-with-build_stubbed" title="FactoryBot: Replace create with build_stubbed" class="md-nav__link">
+    FactoryBot: Replace create with build_stubbed
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-use-let_it_be-instead-of-let" title="RSpec: Use let_it_be instead of let" class="md-nav__link">
+    RSpec: Use let_it_be instead of let
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-remove-before-or-after-blocks" title="RSpec: Remove before or after blocks" class="md-nav__link">
+    RSpec: Remove before or after blocks
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-show-message-chains" title="RSpec: Show message chains" class="md-nav__link">
+    RSpec: Show message chains
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rspec-show-nested-assertions" title="RSpec: Show nested assertions" class="md-nav__link">
+    RSpec: Show nested assertions
   </a>
   
 </li>
@@ -467,6 +551,34 @@
 first param is not a shortcut. It should start with <code>.</code>.</p>
 <p>I'm building several researches and I'll make the examples open here to show
 several interesting cases in action.</p>
+<h2 id="rails-show-validations-from-models">Rails: Show validations from models<a class="headerlink" href="#rails-show-validations-from-models" title="Permanent link">&para;</a></h2>
+<p>If the shortcut does not define a block, it works as a holder for arguments from
+the command line.</p>
+<p>Let's say you always use <code>fast "(send nil {validate validates})" app/models</code> to
+check validations in the models. You can define a shortcut to hold the args and
+avoid retyping long lines:</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Show validations from app/models</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:validations</span><span class="p">,</span> <span class="s2">&quot;(send nil {validate validates})&quot;</span><span class="p">,</span> <span class="s2">&quot;app/models&quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>And you can reuse the search with the shortcut starting with a <code>.</code>:</p>
+<div class="codehilite"><pre><span></span>fast .validations
+</pre></div>
+
+
+<p>And it will also accept params if you want to filter a specific file:</p>
+<div class="codehilite"><pre><span></span>fast .validations app/models/user.rb
+</pre></div>
+
+
+<div class="admonition info">
+<p class="admonition-title">Note that you can also use flags in the command line shortcuts</p>
+<p>Let's say you also want to use <code>fast --headless</code> you can add it to the params:</p>
+<blockquote>
+<p>Fast.shortcut(:validations, "(send nil {validate validates})", "app/models", "--headless")</p>
+</blockquote>
+</div>
 <h2 id="automated-refactor-bump-version">Automated Refactor: Bump version<a class="headerlink" href="#automated-refactor-bump-version" title="Permanent link">&para;</a></h2>
 <p>Let's start with a <a href="https://github.com/jonatas/fast/blob/master/Fastfile#L20-L34">real usage</a>
 to bump a new version of the gem.</p>
@@ -615,6 +727,73 @@ because we're going to introduce automated refactoring.</p>
 
 <p>And it will run with a single file from command line:</p>
 <div class="codehilite"><pre><span></span>fast .exp_remove_let spec/my_file_spec.rb
+</pre></div>
+
+
+<h2 id="factorybot-replace-create-with-build_stubbed">FactoryBot: Replace <code>create</code> with <code>build_stubbed</code><a class="headerlink" href="#factorybot-replace-create-with-build_stubbed" title="Permanent link">&para;</a></h2>
+<p>For performance reasons, if we can avoid touching the database the test will
+always be faster.</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Experimental switch from `create` to `build_stubbed`</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:exp_build_stubbed</span><span class="p">)</span> <span class="k">do</span>
+  <span class="nb">require</span> <span class="s1">&#39;fast/experiment&#39;</span>
+  <span class="no">Fast</span><span class="o">.</span><span class="n">experiment</span><span class="p">(</span><span class="s1">&#39;FactoryBot/UseBuildStubbed&#39;</span><span class="p">)</span> <span class="k">do</span>
+  <span class="n">lookup</span> <span class="no">ARGV</span><span class="o">.</span><span class="n">last</span>
+    <span class="n">search</span> <span class="s1">&#39;(send nil create)&#39;</span>
+    <span class="n">edit</span> <span class="p">{</span> <span class="o">|</span><span class="n">node</span><span class="o">|</span> <span class="n">replace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">selector</span><span class="p">,</span> <span class="s1">&#39;build_stubbed&#39;</span><span class="p">)</span> <span class="p">}</span>
+    <span class="n">policy</span> <span class="p">{</span> <span class="o">|</span><span class="n">new_file</span><span class="o">|</span> <span class="nb">system</span><span class="p">(</span><span class="s2">&quot;bundle exec rspec --fail-fast </span><span class="si">#{</span><span class="n">new_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="p">}</span>
+  <span class="k">end</span><span class="o">.</span><span class="n">run</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<h2 id="rspec-use-let_it_be-instead-of-let">RSpec: Use <code>let_it_be</code> instead of <code>let</code><a class="headerlink" href="#rspec-use-let_it_be-instead-of-let" title="Permanent link">&para;</a></h2>
+<p>The <code>let_it_be</code> is a simple helper from
+<a href="https://test-prof.evilmartians.io/#/let_it_be">TestProf</a> gem that can speed up
+the specs by caching some factories using like a <code>before_all</code> approach.</p>
+<p>This experiment hunts  for <code>let(...) { create(...) }</code> and switch the <code>let</code> to
+<code>let_it_be</code>:</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Experimental replace `let(_)`  with `let_it_be` case it calls `create` inside the block</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:exp_let_it_be</span><span class="p">)</span> <span class="k">do</span>
+  <span class="nb">require</span> <span class="s1">&#39;fast/experiment&#39;</span>
+  <span class="no">Fast</span><span class="o">.</span><span class="n">experiment</span><span class="p">(</span><span class="s1">&#39;FactoryBot/LetItBe&#39;</span><span class="p">)</span> <span class="k">do</span>
+    <span class="n">lookup</span> <span class="no">ARGV</span><span class="o">.</span><span class="n">last</span>
+    <span class="n">search</span> <span class="s1">&#39;(block (send nil let (sym _)) (args) (send nil create))&#39;</span>
+    <span class="n">edit</span> <span class="p">{</span> <span class="o">|</span><span class="n">node</span><span class="o">|</span> <span class="n">replace</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">children</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">selector</span><span class="p">,</span> <span class="s1">&#39;let_it_be&#39;</span><span class="p">)</span> <span class="p">}</span>
+    <span class="n">policy</span> <span class="p">{</span> <span class="o">|</span><span class="n">new_file</span><span class="o">|</span> <span class="nb">system</span><span class="p">(</span><span class="s2">&quot;bin/spring rspec --fail-fast </span><span class="si">#{</span><span class="n">new_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="p">}</span>
+  <span class="k">end</span><span class="o">.</span><span class="n">run</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<h2 id="rspec-remove-before-or-after-blocks">RSpec: Remove <code>before</code> or <code>after</code> blocks<a class="headerlink" href="#rspec-remove-before-or-after-blocks" title="Permanent link">&para;</a></h2>
+<p>From time to time, we forget some left overs like <code>before</code> or <code>after</code> blocks
+that even removing from the code, the tests still passes. This experiment
+removes the before/after blocks and check if the test passes.</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Experimental remove `before` or `after` blocks.</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:exp_remove_before_after</span><span class="p">)</span> <span class="k">do</span>
+  <span class="nb">require</span> <span class="s1">&#39;fast/experiment&#39;</span>
+  <span class="no">Fast</span><span class="o">.</span><span class="n">experiment</span><span class="p">(</span><span class="s1">&#39;RSpec/RemoveBeforeAfter&#39;</span><span class="p">)</span> <span class="k">do</span>
+    <span class="n">lookup</span> <span class="no">ARGV</span><span class="o">.</span><span class="n">last</span>
+    <span class="n">search</span> <span class="s1">&#39;(block (send nil {before after}))&#39;</span>
+    <span class="n">edit</span> <span class="p">{</span> <span class="o">|</span><span class="n">node</span><span class="o">|</span> <span class="n">remove</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span><span class="p">)</span> <span class="p">}</span>
+    <span class="n">policy</span> <span class="p">{</span> <span class="o">|</span><span class="n">new_file</span><span class="o">|</span> <span class="nb">system</span><span class="p">(</span><span class="s2">&quot;bin/spring rspec --fail-fast </span><span class="si">#{</span><span class="n">new_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="p">}</span>
+  <span class="k">end</span><span class="o">.</span><span class="n">run</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<h2 id="rspec-show-message-chains">RSpec: Show message chains<a class="headerlink" href="#rspec-show-message-chains" title="Permanent link">&para;</a></h2>
+<p>I often forget the syntax and need to search for message chains on specs, so I
+created an shortcut for it.</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Show RSpec message chains</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:message_chains</span><span class="p">,</span> <span class="s1">&#39;^^(send nil receive_message_chain)&#39;</span><span class="p">,</span> <span class="s1">&#39;spec&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<h2 id="rspec-show-nested-assertions">RSpec: Show nested assertions<a class="headerlink" href="#rspec-show-nested-assertions" title="Permanent link">&para;</a></h2>
+<p>I love to use nested assertions and I often need examples to refer to them:</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Show RSpec nested assertions with .and</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:nested_assertions</span><span class="p">,</span> <span class="s1">&#39;^^(send ... and)&#39;</span><span class="p">,</span> <span class="s1">&#39;spec&#39;</span><span class="p">)</span>
 </pre></div>
                 
                   
