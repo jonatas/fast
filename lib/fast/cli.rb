@@ -69,6 +69,10 @@ module Fast
           @show_sexp = true
         end
 
+        opts.on('-p', '--parallel', 'Paralelize search') do
+          @parallel = true
+        end
+
         opts.on('--captures', 'Print only captures of the patterns and skip node results') do
           @captures = true
         end
@@ -129,6 +133,8 @@ module Fast
 
     # Show help or search for node patterns
     def run!
+      raise 'pry and parallel options are incompatible :(' if @parallel && @pry
+
       if @help || @files.empty? && @pattern.nil?
         puts option_parser.help
       else
@@ -137,6 +143,7 @@ module Fast
     end
 
     # Create fast expression from node pattern using the command line
+    # @return [Array<Fast::Find>] with the expression from string.
     def expression
       Fast.expression(@pattern)
     end
@@ -146,24 +153,29 @@ module Fast
     # If capture option is enabled it will only print the captures, otherwise it
     # prints all the results.
     def search
-      if debug_mode?
-        Fast.debug { execute_search }
-      else
-        execute_search do |file, results|
-          results.each do |result|
-            binding.pry if @pry # rubocop:disable Lint/Debugger
-            report(result, file)
-          end
+      return Fast.debug(&method(:execute_search)) if debug_mode?
+
+      execute_search do |file, results|
+        results.each do |result|
+          binding.pry if @pry # rubocop:disable Lint/Debugger
+          report(file, result)
         end
       end
     end
 
-    def execute_search
-      method_name = @captures ? :capture_all : :search_all
-      (Fast.public_send(method_name, expression, @files) || []).each do |file, results|
-        results = [results] unless results.is_a?(Array)
-        yield file, results
-      end
+    # Executes search for all files yielding the results
+    # @yieldparam [String, Array] with file and respective search results
+    def execute_search(&on_result)
+      Fast.public_send(search_method_name,
+                       expression,
+                       @files,
+                       parallel: parallel?,
+                       on_result: on_result)
+    end
+
+    # @return [Symbol] with `:capture_all` or `:search_all` depending the command line options
+    def search_method_name
+      @captures ? :capture_all : :search_all
     end
 
     # @return [Boolean] true when "-d" or "--debug" option is passed
@@ -176,9 +188,13 @@ module Fast
       puts(info) if debug_mode?
     end
 
+    def parallel?
+      @parallel == true
+    end
+
     # Report results using the actual options binded from command line.
     # @see Fast.report
-    def report(result, file)
+    def report(file, result)
       Fast.report(result, file: file, show_sexp: @show_sexp, headless: @headless, colorize: @colorize)
     end
 
@@ -198,7 +214,10 @@ module Fast
     # Prints available shortcuts as extra help and exit with code 1.
     def exit_shortcut_not_found(name)
       puts "Shortcut \033[1m#{name}\033[0m not found :("
-      puts "Available shortcuts are: #{Fast.shortcuts.keys.join(', ')}." if Fast.shortcuts.any?
+      if Fast.shortcuts.any?
+        puts "Available shortcuts are: #{Fast.shortcuts.keys.join(', ')}."
+        Fast.load_fast_files!
+      end
       exit 1
     end
   end

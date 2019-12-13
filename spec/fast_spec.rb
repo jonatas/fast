@@ -490,7 +490,7 @@ RSpec.describe Fast do
   describe '.capture_all' do
     it 'allow search multiple files in the same time' do
       results = described_class.capture_all('(casgn nil VERSION (str $_))', ['lib/fast/version.rb'])
-      expect(results).to eq('lib/fast/version.rb' => Fast::VERSION)
+      expect(results).to eq('lib/fast/version.rb' => [Fast::VERSION])
     end
 
     context 'with empty file' do
@@ -517,7 +517,7 @@ RSpec.describe Fast do
 
   describe '.capture' do
     it 'single element' do
-      expect(described_class.capture('(lvasgn _ (int $_))', code['a = 1'])).to eq(1)
+      expect(described_class.capture('(lvasgn _ (int $_))', code['a = 1'])).to eq([1])
     end
 
     it 'array elements' do
@@ -525,11 +525,11 @@ RSpec.describe Fast do
     end
 
     it 'nodes' do
-      expect(described_class.capture('(lvasgn _ $(int _))', code['a = 1'])).to eq(code['1'])
+      expect(described_class.capture('(lvasgn _ $(int _))', code['a = 1'])).to eq([code['1']])
     end
 
     it 'multiple nodes' do
-      expect(described_class.capture('$(lvasgn _ (int _))', code['a = 1'])).to eq(code['a = 1'])
+      expect(described_class.capture('$(lvasgn _ (int _))', code['a = 1'])).to eq([code['a = 1']])
     end
   end
 

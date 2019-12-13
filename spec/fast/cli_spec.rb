@@ -37,6 +37,26 @@ RSpec.describe Fast::Cli do
       its(:pry) { is_expected.to be_truthy }
     end
 
+    context 'with --parallel' do
+      let(:args) { %w[--parallel] }
+
+      it { is_expected.to be_parallel }
+
+      context 'with -p as shortcut' do
+        let(:args) { %w[-p] }
+
+        it { is_expected.to be_parallel }
+      end
+
+      context 'with -p and --pry' do
+        let(:args) { %w[--parallel --pry] }
+
+        it 'raises incompatible error' do
+          expect { cli.run! }.to raise_error(RuntimeError, 'pry and parallel options are incompatible :(')
+        end
+      end
+    end
+
     context 'with --debug' do
       let(:args) { %w[--debug] }
 

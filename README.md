@@ -421,6 +421,7 @@ The CLI tool takes the following flags
 - Use `--pry` to jump debugging the first result with pry
 - Use `-c` to search from code example
 - Use `-s` to search similar code
+- Use `-p` or `--parallel` to parallelize the search
 
 ### Define your `Fastfile`
 
