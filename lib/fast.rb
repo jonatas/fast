@@ -108,25 +108,50 @@ module Fast
     # @param [String] pattern
     # @param [Array<String>] *locations where to search. Default is '.'
     # @return [Hash<String,Array<Astrolabe::Node>>] with files and results
-    def search_all(pattern, locations = ['.'])
-      search_pattern = method(:search_file).curry.call(pattern)
-      group_results(search_pattern, locations)
+    def search_all(pattern, locations = ['.'], parallel: true, on_result: nil)
+      group_results(build_grouped_search(:search_file, pattern, on_result),
+                    locations, parallel: parallel)
     end
 
     # Capture with pattern on a directory or multiple files
     # @param [String] pattern
     # @param [Array<String>] locations where to search. Default is '.'
     # @return [Hash<String,Object>] with files and captures
-    def capture_all(pattern, locations = ['.'])
-      capture_pattern = method(:capture_file).curry.call(pattern)
-      group_results(capture_pattern, locations)
+    def capture_all(pattern, locations = ['.'], parallel: true, on_result: nil)
+      group_results(build_grouped_search(:capture_file, pattern, on_result),
+                    locations, parallel: parallel)
     end
 
-    def group_results(search_pattern, locations)
-      ruby_files_from(*locations)
-        .map { |f| { f => search_pattern.call(f) } }
-        .reject { |results| results.values.all?(&:empty?) }
-        .inject(&:merge!)
+    # @return [Proc] binding `pattern` argument from a given `method_name`.
+    # @param [Symbol] method_name with `:capture_file` or `:search_file`
+    # @param [String] pattern to match in a search to any file
+    # @param [Proc] on_result is a callback that can be notified soon it matches
+    def build_grouped_search(method_name, pattern, on_result)
+      search_pattern = method(method_name).curry.call(pattern)
+      proc do |file|
+        results = search_pattern.call(file)
+        next if results.nil? || results.empty?
+
+        on_result&.(file, results)
+        { file => results }
+      end
+    end
+
+    # Compact grouped results by file allowing parallel processing.
+    # @param [Proc] group_files allows to define a search that can be executed
+    # parallel or not.
+    # @param [Proc] on_result allows to define a callback for fast feedback
+    # while it process several locations in parallel.
+    # @param [Boolean] parallel runs the `group_files` in parallel
+    # @return [Hash[String, Array]] with files and results
+    def group_results(group_files, locations, parallel: true)
+      files = ruby_files_from(*locations)
+      if parallel
+        require 'parallel' unless defined?(Parallel)
+        Parallel.map(files, &group_files)
+      else
+        files.map(&group_files)
+      end.inject(&:merge!)
     end
 
     # Capture elements from searches in files. Keep in mind you need to use `$`
@@ -154,19 +179,16 @@ module Fast
       end
     end
 
-    # Return only captures from a search
+    # Only captures from a search
     # @return [Array<Object>] with all captured elements.
-    # @return [Object] with single element when single capture.
     def capture(pattern, node)
-      res = if (match = match?(pattern, node))
-              match == true ? node : match
-            else
-              node.each_child_node
-                .flat_map { |child| capture(pattern, child) }
-                .compact.flatten
-            end
-      res = [res] unless res.is_a?(Array)
-      res.one? ? res.first : res
+      if (match = match?(pattern, node))
+        match == true ? node : match
+      else
+        node.each_child_node
+          .flat_map { |child| capture(pattern, child) }
+          .compact.flatten
+      end
     end
 
     def expression(string)

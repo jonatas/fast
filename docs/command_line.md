@@ -11,6 +11,7 @@ $ fast '(def match?)' lib/fast.rb
 - Use `--pry` to jump debugging the first result with pry
 - Use `-c` to search from code example
 - Use `-s` to search similar code
+- Use `-p` to or `--parallel` to use multi core search
 
 ## `--pry`
 
