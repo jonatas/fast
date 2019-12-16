@@ -26,7 +26,7 @@ describe Fast::Shortcut do
 
     describe '#merge_args' do
       it 'mix args replacing the params' do
-        expect(shortcut.merge_args('lib')).to eq(%w[match? -c lib])
+        expect(shortcut.merge_args(['lib'])).to eq(%w[match? -c lib])
       end
     end
   end
