@@ -8,6 +8,9 @@
 # Let's say you'd like to show the version that is over the version file
 Fast.shortcut(:version, '(casgn nil VERSION (str _))', 'lib/fast/version.rb')
 
+# Show all classes that inherits Fast::Find
+Fast.shortcut(:finders, '(class ... (const nil Find)', 'lib')
+
 # You can run shortcuts appending a dot to the shortcut.
 #   $ fast .version
 #   # lib/fast/version.rb:4
