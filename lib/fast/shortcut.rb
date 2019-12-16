@@ -66,7 +66,7 @@ module Fast
     # the options from previous alias and replacing the files with the
     # @param [Array] extra_args
     def merge_args(extra_args)
-      [params[0], *options, *extra_args]
+      [params[0], *options, *extra_args.select(&File.method(:exists?))]
     end
 
     # If the shortcut was defined with a single block and no extra arguments, it
