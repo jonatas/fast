@@ -151,7 +151,7 @@ module Fast
         Parallel.map(files, &group_files)
       else
         files.map(&group_files)
-      end.inject(&:merge!)
+      end.compact.inject(&:merge!)
     end
 
     # Capture elements from searches in files. Keep in mind you need to use `$`
