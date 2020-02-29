@@ -17,7 +17,7 @@ RSpec.describe Fast::Experiment do
   describe Fast::ExperimentFile do
     let(:experiment_file) { Fast::ExperimentFile.new(spec, experiment) }
     let(:spec) do
-      tempfile = Tempfile.new('some_spec.rb')
+      tempfile = Tempfile.new
       tempfile.write <<~RUBY
         let(:user) { create(:user) }
         let(:address) { create(:address) }
@@ -45,6 +45,7 @@ RSpec.describe Fast::Experiment do
       end
 
       it 'replace only second case' do
+        expect(File).to be_exists(spec)
         expect(experiment_file.partial_replace(2)).to eq(<<~RUBY)
           let(:user) { create(:user) }
           let(:address) { build_stubbed(:address) }
