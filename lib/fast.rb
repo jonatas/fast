@@ -50,7 +50,7 @@ module Fast
     |
     \?                    # maybe expression
     |
-    [\d\w_]+[\\!\?]?      # method names or numbers
+    [\d\w_]+[=\\!\?]?     # method names or numbers
     |
     \(|\)                 # parens `(` and `)` for tuples
     |
@@ -168,13 +168,13 @@ module Fast
     # If the node matches with the pattern it returns the node,
     # otherwise it recursively collect possible children nodes
     # @yield node and capture if block given
-    def search(pattern, node)
-      if (match = match?(pattern, node))
+    def search(pattern, node, *args)
+      if (match = match?(pattern, node, *args))
         yield node, match if block_given?
         match != true ? [node, match] : [node]
       else
         node.each_child_node
-          .flat_map { |child| search(pattern, child) }
+          .flat_map { |child| search(pattern, child, *args) }
           .compact.flatten
       end
     end

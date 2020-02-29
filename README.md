@@ -253,25 +253,29 @@ This can be represented as the following AST:
 
 We can create a query that searches for such a method:
 
-    Fast.match?(ast,'(def $_ ... (send (send nil _) \1))') # => [:name]
+    Fast.match?('(def $_ ... (send (send nil _) \1))', ast) # => [:name]
 
 ## Fast.search
 
 Search allows you to go search the entire AST, collecting nodes that matches given
 expression. Any matching node is then returned:
 
-    Fast.search(Fast.ast('a = 1'), '(int _)') # => s(:int, 1)
+    Fast.search('(int _)', Fast.ast('a = 1')) # => s(:int, 1)
 
 If you use captures along with a search, both the matching nodes and the
 captures will be returned:
 
-    Fast.search(Fast.ast('a = 1'), '(int $_)') # => [s(:int, 1), 1]
+    Fast.search('(int $_)', Fast.ast('a = 1')) # => [s(:int, 1), 1]
+
+You can also bind external parameters from the search:
+
+    Fast.search('(int %1)', Fast.ast('a = 1'), 1) # => [s(:int, 1)]
 
 ## Fast.capture
 
 To only pick captures and ignore the nodes, use `Fast.capture`:
 
-  Fast.capture(Fast.ast('a = 1'), '(int $_)') # => 1
+  Fast.capture('(int $_)', Fast.ast('a = 1')) # => 1
 
 ## Fast.replace
 
