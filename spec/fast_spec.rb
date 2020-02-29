@@ -78,6 +78,10 @@ RSpec.describe Fast do
       expect(described_class.expression('_')).to eq(f['_'])
     end
 
+    it 'allows setter methods in find' do
+      expect(described_class.expression('attribute=')).to eq(f['attribute='])
+    end
+
     it 'ignores semicolon' do
       expect(described_class.expression(':send')).to eq(described_class.expression('send'))
     end
@@ -396,6 +400,28 @@ RSpec.describe Fast do
         expect(described_class).not_to be_match('(lvasgn %1 (int _))', code['a = 1'], :b)
         expect(described_class).not_to be_match('{%1 %2}', code['1'], :str, :sym)
       end
+    end
+  end
+
+  describe '#search' do
+    subject(:search) { described_class.search(pattern, node, *args) }
+
+    let 'with extra args' do
+      let(:args) { [:int, 1] }
+      let(:node) { code['1'] }
+      let(:pattern) { '(%1 %2)' }
+
+      it 'binds arguments to the pattern' do
+        expect(search).to eq([code['1']])
+      end
+    end
+
+    context 'without extra args' do
+      let(:args) { nil }
+      let(:node) { code['1'] }
+      let(:pattern) { '(int 1)' }
+
+      it { expect(search).to eq([code['1']]) }
     end
   end
 

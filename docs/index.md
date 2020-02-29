@@ -269,6 +269,11 @@ If you use captures, it returns the node and the captures respectively:
 Fast.search('(int $_)', Fast.ast('a = 1')) # => [s(:int, 1), 1]
 ```
 
+You can also bind external parameters in the search using extra arguments:
+```ruby
+    Fast.search('(int %1)', Fast.ast('a = 1'), 1) # => [s(:int, 1)]
+```
+
 ## capture
 
 To pick just the captures and ignore the nodes, use `Fast.capture`:
