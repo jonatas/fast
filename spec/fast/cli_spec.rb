@@ -97,13 +97,13 @@ RSpec.describe Fast::Cli do
     end
 
     context 'with --help' do
-      let(:args) { %w[--h] }
+      let(:args) { %w[--help] }
 
       it_behaves_like 'show help'
     end
 
     context 'without arguments' do
-      let(:args) { %w[--h] }
+      let(:args) { %w[] }
 
       it_behaves_like 'show help'
     end

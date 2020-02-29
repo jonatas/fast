@@ -10,7 +10,7 @@ AllCops:
     - 'examples/*'
   TargetRubyVersion: 2.3
 
-Metrics/LineLength:
+Layout/LineLength:
   Enabled: false
 
 Metrics/BlockLength:
@@ -46,3 +46,12 @@ RSpec/DescribedClass:
 
 RSpec/ImplicitSubject:
   Enabled: false
+
+Style/HashEachMethods:
+  Enabled: true
+
+Style/HashTransformKeys:
+  Enabled: true
+
+Style/HashTransformValues:
+  Enabled: true
