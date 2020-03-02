@@ -226,14 +226,15 @@ module Fast
     # @param files can be file paths or directories.
     # When the argument is a folder, it recursively fetches all `.rb` files from it.
     def ruby_files_from(*files)
-      directories = files.select(&File.method(:directory?))
+      dir_filter = File.method(:directory?)
+      directories = files.select(&dir_filter)
 
       if directories.any?
         files -= directories
         files |= directories.flat_map { |dir| Dir["#{dir}/**/*.rb"] }
         files.uniq!
       end
-      files
+      files.reject(&dir_filter)
     end
 
     # Extracts a node pattern expression from a given node supressing identifiers and primitive types.

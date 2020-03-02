@@ -567,6 +567,16 @@ RSpec.describe Fast do
     it 'captures spec files from specs directory' do
       expect(described_class.ruby_files_from('spec')).to include('spec/spec_helper.rb', 'spec/fast_spec.rb')
     end
+
+    context 'with directories .rb' do
+      before { Dir.mkdir('create-directory-with-ruby-extension.rb') }
+
+      after { Dir.rmdir('create-directory-with-ruby-extension.rb') }
+
+      it 'ignores the folder' do
+        expect(described_class.ruby_files_from('.')).not_to include('create-directory-with-ruby-extension.rb')
+      end
+    end
   end
 
   describe 'Fast.expression_from' do
