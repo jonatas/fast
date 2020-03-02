@@ -36,7 +36,7 @@
     
     
       
-        <title>Videos - Fast</title>
+        <title>Ideas - Fast</title>
       
     
     
@@ -98,7 +98,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="../#videos" tabindex="1" class="md-skip">
+      <a href="../#ideas-i-want-to-build-with-fast" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -124,7 +124,7 @@
                 Fast
               </span>
               <span class="md-header-nav__topic">
-                Videos
+                Ideas
               </span>
             
           
@@ -347,18 +347,6 @@
       
       
 
-
-  <li class="md-nav__item">
-    <a href="../ideas/" title="Ideas" class="md-nav__link">
-      Ideas
-    </a>
-  </li>
-
-    
-      
-      
-      
-
   
 
 
@@ -369,10 +357,86 @@
       
     
     
-    <a href="./" title="Videos" class="md-nav__link md-nav__link--active">
-      Videos
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Ideas
+      </label>
+    
+    <a href="./" title="Ideas" class="md-nav__link md-nav__link--active">
+      Ideas
     </a>
     
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inline-target-code" title="Inline target code" class="md-nav__link">
+    Inline target code
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neo4j-adapter" title="Neo4J adapter" class="md-nav__link">
+    Neo4J adapter
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#git-adapter" title="Git adapter" class="md-nav__link">
+    Git adapter
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ast-diff" title="Ast Diff" class="md-nav__link">
+    Ast Diff
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transition-synapses" title="Transition synapses" class="md-nav__link">
+    Transition synapses
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fast-rewriter-with-pure-strings" title="Fast Rewriter with pure strings" class="md-nav__link">
+    Fast Rewriter with pure strings
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../videos/" title="Videos" class="md-nav__link">
+      Videos
+    </a>
   </li>
 
     
@@ -393,6 +457,57 @@
     
   
   
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inline-target-code" title="Inline target code" class="md-nav__link">
+    Inline target code
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neo4j-adapter" title="Neo4J adapter" class="md-nav__link">
+    Neo4J adapter
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#git-adapter" title="Git adapter" class="md-nav__link">
+    Git adapter
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ast-diff" title="Ast Diff" class="md-nav__link">
+    Ast Diff
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#transition-synapses" title="Transition synapses" class="md-nav__link">
+    Transition synapses
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fast-rewriter-with-pure-strings" title="Fast Rewriter with pure strings" class="md-nav__link">
+    Fast Rewriter with pure strings
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -403,27 +518,65 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/jonatas/fast/edit/master/docs/videos.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/jonatas/fast/edit/master/docs/ideas.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="videos">Videos<a class="headerlink" href="#videos" title="Permanent link">&para;</a></h1>
+                <h1 id="ideas-i-want-to-build-with-fast">Ideas I want to build with Fast<a class="headerlink" href="#ideas-i-want-to-build-with-fast" title="Permanent link">&para;</a></h1>
+<p>I don't have all the time I need to develop all the ideas I have to build
+around this tool, so here is a dump of a few brainstormings:</p>
+<h2 id="inline-target-code">Inline target code<a class="headerlink" href="#inline-target-code" title="Permanent link">&para;</a></h2>
+<p>I started <a href="https://github.com/jonatas/fast-inline">fast-inline</a> that can be
+useful to try to see how much every library is used in a project.</p>
+<p>My idea is try to inline some specific method call to understand if it makes
+sense to have an entire library in the stock.</p>
+<p>Understanding dependencies and how the code works can be a first step to get an
+"algorithm as a service". Instead of loading everything from the library, it
+would facilitate the cherry pick of only the proper dependencies necessaries to
+run the code you have and not the code that is overloading the project.</p>
+<h2 id="neo4j-adapter">Neo4J adapter<a class="headerlink" href="#neo4j-adapter" title="Permanent link">&para;</a></h2>
+<p>Easy pipe fast results to Neo4J. It would facilitate to explore more complex
+scenarios and combine data from other sources.</p>
+<h2 id="git-adapter">Git adapter<a class="headerlink" href="#git-adapter" title="Permanent link">&para;</a></h2>
+<p>Add extra tags to nodes with information from Git.</p>
 <ul>
-<li>
-<p>Grepping Ruby code like a boss: <a href="https://www.eventials.com/locaweb/jonatas-paganini-live-coding-grepping-ruby-code-like-a-boss/#_=_">RubyConf Brazil 2019 (Portuguese)</a></p>
-</li>
-<li>
-<p>Introduction to <a href="https://www.youtube.com/watch?v=KQXglNLUv7o">inline code</a>.
-<iframe width="560" height="315" src="https://www.youtube.com/embed/KQXglNLUv7o" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></p>
-</li>
-<li>
-<p><a href="https://www.youtube.com/watch?v=JD44nhegCRs">Making local variables inline</a>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/YN0s9kV1A2A" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></p>
-</li>
-<li>
-<p><a href="https://www.youtube.com/watch?v=JD44nhegCRs">Making methods inline</a>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/YN0s9kV1A2A" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></p>
-</li>
+<li>Revision</li>
+<li>Author</li>
+<li>Date</li>
 </ul>
+<p>Tag every node with the proper author.</p>
+<h2 id="ast-diff">Ast Diff<a class="headerlink" href="#ast-diff" title="Permanent link">&para;</a></h2>
+<p>Allow to compare and return a summary of differences between two trees.</p>
+<p>It would be useful to identify renamings or other small changes, like only
+changes in comments that does not affect the file and possibly be ignored for
+some operations like run or not run tests.</p>
+<h2 id="transition-synapses">Transition synapses<a class="headerlink" href="#transition-synapses" title="Permanent link">&para;</a></h2>
+<p>Following the previous idea, it would be great if we can understand the
+transition synapses and make it easily available to catch up with previous
+learnings.</p>
+<p>https://github.com/jonatas/chewy-diff/blob/master/lib/chewy/diff.rb</p>
+<p>This example, shows adds and removals from specific node targets between two
+different files.</p>
+<p>If we start tracking AST transition synapses and associating with "Fixes" or
+"Reverts" we can predict introduction of new bugs by inpecting if the
+introduction of new patterns that can be possibly reverted or improved.</p>
+<h2 id="fast-rewriter-with-pure-strings">Fast Rewriter with pure strings<a class="headerlink" href="#fast-rewriter-with-pure-strings" title="Permanent link">&para;</a></h2>
+<p>As the AST rewriter adopts a custom block that needs to implement ruby code,
+we can expand the a query language for rewriting files without need to take the
+custom Ruby block.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">gsub_expression</span><span class="p">(</span><span class="s1">&#39;remove(@expression)&#39;</span><span class="p">)</span> <span class="c1"># (node) =&gt; { remove(node.location.expression) }</span>
+</pre></div>
+
+
+<p>And later we can bind it in the command line to allow implement custom
+replacements without need to write a ruby file.</p>
+<div class="codehilite"><pre><span></span>fast (def my_target_method) lib spec --rewrite &quot;remove(@expression)&quot;
+</pre></div>
+
+
+<p>or</p>
+<div class="codehilite"><pre><span></span>fast (def my_target_method) lib spec --rewrite &quot;replace(@name, &#39;renamed_method&#39;)&quot;
+</pre></div>
                 
                   
                 
@@ -444,7 +597,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../ideas/" title="Ideas" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../research/" title="Research" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -453,11 +606,25 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Ideas
+                Research
               </span>
             </div>
           </a>
         
+        
+          <a href="../videos/" title="Videos" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Videos
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
         
       </nav>
     </div>
