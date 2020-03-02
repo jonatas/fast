@@ -473,6 +473,18 @@
 
 
   <li class="md-nav__item">
+    <a href="research/" title="Research" class="md-nav__link">
+      Research
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
     <a href="videos/" title="Videos" class="md-nav__link">
       Videos
     </a>
@@ -841,6 +853,11 @@ the expression. It also returns captures if they exist.</p>
 
 <p>If you use captures, it returns the node and the captures respectively:</p>
 <div class="codehilite"><pre><span></span><span class="no">Fast</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">&#39;(int $_)&#39;</span><span class="p">,</span> <span class="no">Fast</span><span class="o">.</span><span class="n">ast</span><span class="p">(</span><span class="s1">&#39;a = 1&#39;</span><span class="p">))</span> <span class="c1"># =&gt; [s(:int, 1), 1]</span>
+</pre></div>
+
+
+<p>You can also bind external parameters in the search using extra arguments:</p>
+<div class="codehilite"><pre><span></span>    <span class="no">Fast</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">&#39;(int %1)&#39;</span><span class="p">,</span> <span class="no">Fast</span><span class="o">.</span><span class="n">ast</span><span class="p">(</span><span class="s1">&#39;a = 1&#39;</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span> <span class="c1"># =&gt; [s(:int, 1)]</span>
 </pre></div>
 
 
