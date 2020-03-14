@@ -14,7 +14,7 @@ RSpec.describe Fast do
   let(:code) { ->(string) { described_class.ast(string) } }
 
   def s(type, *children)
-    Astrolabe::Node.new(type, children)
+    Fast::Node.new(type, children)
   end
 
   describe '.expression' do
