@@ -11,6 +11,70 @@ first param is not a shortcut. It should start with `.`.
 I'm building several researches and I'll make the examples open here to show
 several interesting cases in action.
 
+## List your fast shortcuts
+
+As the interface is very rudimentar, let's build a shortcut to print what
+shortcuts are available. This is a good one to your `$HOME/Fastfile`:
+
+```ruby
+# List all shortcut with comments
+Fast.shortcut :shortcuts do
+  fast_files.each do |file|
+    lines = File.readlines(file).map{|line|line.chomp.gsub(/\s*#/,'').strip}
+    result = capture_file('(send ... shortcut $(sym _', file)
+    result = [result] unless result.is_a?Array
+    result.each do |capture|
+      target = capture.loc.expression
+      puts "fast .#{target.source[1..-1].ljust(30)} # #{lines[target.line-2]}"
+    end
+  end
+end
+```
+
+And using it on `fast` project that loads both `~/Fastfile` and the Fastfile from the project:
+
+```
+fast .version       # Let's say you'd like to show the version that is over the version file
+fast .parser        # Simple shortcut that I used often to show how the expression parser works
+fast .bump_version  # Use `fast .bump_version` to rewrite the version file
+fast .shortcuts     # List all shortcut with comments
+```
+
+## Search for references
+
+I always miss bringing something simple as `grep keyword` where I can leave a simple string and it can
+search in all types of nodes and report interesting things about it.
+
+Let's consider a very flexible search that can target any code related to some
+keyword. Considering that we're talking about code indentifiers:
+
+
+```ruby
+# Search all references about some keyword or regular expression
+Fast.shortcut(:ref) do
+  require 'fast/cli'
+  Kernel.class_eval do
+    def matches_args? identifier
+      search = ARGV.last
+      regex = Regexp.new(search, Regexp::IGNORECASE)
+      case identifier
+      when Symbol, String
+        regex.match?(identifier) || identifier.to_s.include?(search)
+      when Astrolabe::Node
+        regex.match?(identifier.to_sexp)
+      end
+    end
+  end
+  pattern = <<~FAST
+    {
+      ({class def sym str} #matches_args?)'
+      ({const send} nil #matches_args?)'
+    }
+  FAST
+  Fast::Cli.run!([pattern, '.'])
+end
+```
+
 ## Rails: Show validations from models
 
 If the shortcut does not define a block, it works as a holder for arguments from
@@ -71,35 +135,6 @@ module Fast
 -  VERSION = '0.1.6'
 +  VERSION = '0.1.7'
 end
-```
-
-## List Shortcuts
-
-As the interface is very rudimentar, let's build a shortcut to print what
-shortcuts are available. This is a good one to your `$HOME/Fastfile`:
-
-```ruby
-# List all shortcut with comments
-Fast.shortcut :shortcuts do
-  fast_files.each do |file|
-    lines = File.readlines(file).map{|line|line.chomp.gsub(/\s*#/,'').strip}
-    result = capture_file('(send ... shortcut $(sym _', file)
-    result = [result] unless result.is_a?Array
-    result.each do |capture|
-      target = capture.loc.expression
-      puts "fast .#{target.source[1..-1].ljust(30)} # #{lines[target.line-2]}"
-    end
-  end
-end
-```
-
-And using it on `fast` project that loads both `~/Fastfile` and the Fastfile from the project:
-
-```
-fast .version       # Let's say you'd like to show the version that is over the version file
-fast .parser        # Simple shortcut that I used often to show how the expression parser works
-fast .bump_version  # Use `fast .bump_version` to rewrite the version file
-fast .shortcuts     # List all shortcut with comments
 ```
 
 ## RSpec: Find unused shared contexts
