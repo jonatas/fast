@@ -71,7 +71,7 @@ Fast.shortcut(:ref) do
       ({const send} nil #matches_args?)'
     }
   FAST
-  Fast::Cli.run!([pattern, '.'])
+  Fast::Cli.run!([pattern, '.', '--parallel'])
 end
 ```
 
