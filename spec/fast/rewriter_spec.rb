@@ -51,12 +51,9 @@ RSpec.describe Fast do
 
     context 'with rename constant example' do
       let(:rename_const) do
-        described_class.replace_file('({casgn const} nil AUTHOR )', 'sample.rb') do |node|
-          if node.type == :const
-            replace(node.location.expression, 'CREATOR')
-          else
-            replace(node.location.name, 'CREATOR')
-          end
+        described_class.replace_file('{(const nil? :AUTHOR) (casgn nil? :AUTHOR ...)}', 'sample.rb') do |node|
+          target = node.const_type? ? node.loc.expression : node.loc.name
+          replace(target, 'CREATOR')
         end
       end
 
@@ -88,13 +85,13 @@ RSpec.describe Fast do
 
     context 'when inline local variable example' do
       let(:inline_var) do
-        described_class.replace_file('({lvar lvasgn } message )', 'sample.rb') do |node, _|
-          if node.type == :lvasgn
+        described_class.replace_file('{(lvasgn :message _) (lvar :message)}', 'sample.rb') do |node|
+          if node.lvasgn_type?
             @assignment = node.children.last
-            remove(node.location.expression)
+            remove(node.loc.expression)
           else
-            replace(node.location.expression,
-                    @assignment.location.expression.source) # rubocop:disable RSpec/InstanceVariable
+            replace(node.loc.expression,
+                    @assignment.source) # rubocop:disable RSpec/InstanceVariable
           end
         end
       end
@@ -138,7 +135,7 @@ RSpec.describe Fast do
 
     context 'with the method with a `delegate` call' do
       let(:example) { Fast.ast 'def name; person.name end' }
-      let(:expression) { '(def $_ (_) (send (send nil $_) \1))' }
+      let(:expression) { '(def $_ (_) (send (send nil? $_) _))' }
       let(:replacement) do
         lambda do |node, captures|
           new_source = "delegate :#{captures[0]}, to: :#{captures[1]}"
@@ -151,7 +148,7 @@ RSpec.describe Fast do
 
     context 'when call !a.empty?` with `a.any?`' do
       let(:example) { Fast.ast '!a.empty?' }
-      let(:expression) { '(send (send (send nil $_ ) :empty?) !)' }
+      let(:expression) { '(send (send (send nil? $_ ) :empty?) :!)' }
       let(:replacement) { ->(node, captures) { replace(node.location.expression, "#{captures[0]}.any?") } }
 
       it { is_expected.to eq('a.any?') }
@@ -159,23 +156,10 @@ RSpec.describe Fast do
 
     context 'when use `match_index` to filter an specific occurence' do
       let(:example) { Fast.ast 'create(:a, :b, :c);create(:b, :c, :d)' }
-      let(:expression) { '(send nil :create)' }
+      let(:expression) { '(send nil? :create ...)' }
       let(:replacement) { ->(node, _captures) { replace(node.location.selector, 'build_stubbed') if match_index == 2 } }
 
       it { is_expected.to eq('create(:a, :b, :c);build_stubbed(:b, :c, :d)') }
-    end
-
-    context 'when use &:method shortcut instead of blocks' do
-      let(:example) { Fast.ast '(1..100).map { |i| i.to_s }' }
-      let(:expression) { '(block ... (args (arg $_) ) (send (lvar \1) $_))' }
-      let(:replacement) do
-        lambda do |node, captures|
-          replacement = node.children[0].location.expression.source + "(&:#{captures.last})"
-          replace(node.location.expression, replacement)
-        end
-      end
-
-      it { is_expected.to eq('(1..100).map(&:to_s)') }
     end
   end
 

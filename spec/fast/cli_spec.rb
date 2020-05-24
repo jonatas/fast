@@ -135,10 +135,10 @@ RSpec.describe Fast::Cli do
 
         before do
           Fast.shortcuts.delete :show_version
-          Fast.shortcut(:show_version, '(casgn nil _ (str _))', 'lib/fast/version.rb')
+          Fast.shortcut(:show_version, '(casgn nil? _ (str _))', 'lib/fast/version.rb')
         end
 
-        its(:pattern) { is_expected.to eq('(casgn nil _ (str _))') }
+        its(:pattern) { is_expected.to eq('(casgn nil? _ (str _))') }
 
         it 'uses the predefined values from the shortcut' do
           expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
@@ -149,7 +149,7 @@ RSpec.describe Fast::Cli do
       end
 
       context 'with args --headless --captures' do
-        let(:args) { ['(casgn nil _ (str $_))', 'lib/fast/version.rb', '--captures', '--headless'] }
+        let(:args) { ['(casgn nil? _ (str $_))', 'lib/fast/version.rb', '--captures', '--headless'] }
 
         it 'prints only captured scope' do
           expect { cli.run! }.to output(highlight(Fast::VERSION) + "\n").to_stdout
