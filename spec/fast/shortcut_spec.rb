@@ -6,10 +6,10 @@ require 'fast/shortcut'
 describe Fast::Shortcut do
   context 'when the params are arguments' do
     subject(:shortcut) do
-      Fast.shortcut(:match_methods, '(def match?)', 'lib/fast.rb')
+      Fast.shortcut(:match_methods, '(def :match?)', 'lib/fast.rb')
     end
 
-    its(:args) { is_expected.to eq(['(def match?)', 'lib/fast.rb']) }
+    its(:args) { is_expected.to eq(['(def :match?)', 'lib/fast.rb']) }
 
     it 'records the search with right params in the #shortcuts' do
       is_expected.to be_an(described_class)
@@ -34,7 +34,7 @@ describe Fast::Shortcut do
   context 'when a block is given' do
     subject(:bump) do
       Fast.shortcut :bump_version do
-        rewrite_file('(casgn nil VERSION (str _)', 'sample_version.rb') do |node|
+        rewrite_file('(casgn nil? :VERSION (str _))', 'sample_version.rb') do |node|
           target = node.children.last.loc.expression
           replace(target, '0.0.2'.inspect)
         end

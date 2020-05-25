@@ -18,8 +18,8 @@ module Fast
   # @param colorize [Boolean] skips `CodeRay` processing when false.
   def highlight(node, show_sexp: false, colorize: true)
     output =
-      if node.respond_to?(:loc) && !show_sexp
-        node.loc.expression.source
+      if node.respond_to?(:source) && !show_sexp
+        node.source
       else
         node
       end
@@ -145,7 +145,7 @@ module Fast
     # Create fast expression from node pattern using the command line
     # @return [Array<Fast::Find>] with the expression from string.
     def expression
-      Fast.expression(@pattern)
+      @pattern
     end
 
     # Search for each file independent.

@@ -8,7 +8,7 @@ RSpec.describe Fast::Experiment do
   subject(:experiment) do
     Fast.experiment('RSpec/ReplaceCreateWithBuildStubbed') do
       lookup 'some_spec.rb'
-      search '(send nil create)'
+      search '(send nil? :create ...)'
       edit { |node| replace(node.loc.selector, 'build_stubbed') }
       policy { |new_file| system("bin/spring rspec --fail-fast #{new_file}") }
     end
