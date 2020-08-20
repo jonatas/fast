@@ -290,7 +290,7 @@ module Fast
       Fast.search(experiment.expression, @ast) || []
     end
 
-    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:disable Metrics/MethodLength
     #
     # Execute partial replacements generating new file with the
     # content replaced.
@@ -312,7 +312,6 @@ module Fast
       new_content
     end
 
-    # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/MethodLength
 
     # Write new file name depending on the combination

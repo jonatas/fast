@@ -406,7 +406,7 @@ RSpec.describe Fast do
   describe '#search' do
     subject(:search) { described_class.search(pattern, node, *args) }
 
-    let 'with extra args' do
+    context 'with extra args' do
       let(:args) { [:int, 1] }
       let(:node) { code['1'] }
       let(:pattern) { '(%1 %2)' }

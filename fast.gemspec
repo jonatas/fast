@@ -7,7 +7,7 @@ require 'fast/version'
 Gem::Specification.new do |spec|
   spec.name          = 'ffast'
   spec.version       = Fast::VERSION
-  spec.required_ruby_version = '>= 2.3'
+  spec.required_ruby_version = '>= 2.6'
   spec.authors       = ['Jônatas Davi Paganini']
   spec.email         = ['jonatasdp@gmail.com']
   spec.homepage      = 'https://jonatas.github.io/fast/'

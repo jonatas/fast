@@ -116,12 +116,12 @@ module Fast
     end
 
     def replace_args_with_shortcut(args)
-      shortcut = find_shortcut args.first[1..-1]
+      shortcut = find_shortcut args.first[1..]
       if shortcut.single_run_with_block?
         shortcut.run
         exit
       else
-        args.one? ? shortcut.args : shortcut.merge_args(args[1..-1])
+        args.one? ? shortcut.args : shortcut.merge_args(args[1..])
       end
     end
 

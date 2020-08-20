@@ -250,7 +250,7 @@ module Fast
       case node
       when Parser::AST::Node
         children_expression = node.children.map(&method(:expression_from)).join(' ')
-        "(#{node.type}#{' ' + children_expression if node.children.any?})"
+        "(#{node.type}#{" #{children_expression}" if node.children.any?})"
       when nil, 'nil'
         'nil'
       when Symbol, String, Numeric
@@ -305,14 +305,14 @@ module Fast
       when '{' then Any.new(parse_until_peek('}'))
       when '[' then All.new(parse_until_peek(']'))
       when /^"/ then FindString.new(token[1..-2])
-      when /^#\w/ then MethodCall.new(token[1..-1])
-      when /^\.\w[\w\d_]+\?/ then InstanceMethodCall.new(token[1..-1])
+      when /^#\w/ then MethodCall.new(token[1..])
+      when /^\.\w[\w\d_]+\?/ then InstanceMethodCall.new(token[1..])
       when '$' then Capture.new(parse)
       when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
       when '^' then Parent.new(parse)
       when '\\' then FindWithCapture.new(parse)
-      when /^%\d/ then FindFromArgument.new(token[1..-1])
+      when /^%\d/ then FindFromArgument.new(token[1..])
       else Find.new(token)
       end
     end

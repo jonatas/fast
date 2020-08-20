@@ -87,7 +87,7 @@ RSpec.describe Fast::Cli do
       let(:args) { %w[--version] }
 
       it do
-        expect { cli.run! }.to output(Fast::VERSION.to_s + "\n").to_stdout
+        expect { cli.run! }.to output("#{Fast::VERSION}\n").to_stdout
           .and raise_error SystemExit
       end
     end
@@ -152,7 +152,7 @@ RSpec.describe Fast::Cli do
         let(:args) { ['(casgn nil _ (str $_))', 'lib/fast/version.rb', '--captures', '--headless'] }
 
         it 'prints only captured scope' do
-          expect { cli.run! }.to output(highlight(Fast::VERSION) + "\n").to_stdout
+          expect { cli.run! }.to output("#{highlight(Fast::VERSION)}\n").to_stdout
         end
       end
     end
