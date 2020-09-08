@@ -32,7 +32,7 @@ The current version of Fast covers the following token elements:
     to build custom rules.
 - `.<method-name>` - will call `<method-name>` from the `node`
 
-The syntax is inspired by the [RuboCop Node Pattern](https://github.com/bbatsov/rubocop/blob/master/lib/rubocop/node_pattern.rb).
+The syntax is inspired by the [RuboCop Node Pattern](https://github.com/rubocop-hq/rubocop-ast/blob/master/lib/rubocop/ast/node_pattern.rb).
 
 ## Installation
 
