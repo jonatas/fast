@@ -316,6 +316,20 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#list-your-fast-shortcuts" title="List your fast shortcuts" class="md-nav__link">
+    List your fast shortcuts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-for-references" title="Search for references" class="md-nav__link">
+    Search for references
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rails-show-validations-from-models" title="Rails: Show validations from models" class="md-nav__link">
     Rails: Show validations from models
   </a>
@@ -325,13 +339,6 @@
         <li class="md-nav__item">
   <a href="#automated-refactor-bump-version" title="Automated Refactor: Bump version" class="md-nav__link">
     Automated Refactor: Bump version
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#list-shortcuts" title="List Shortcuts" class="md-nav__link">
-    List Shortcuts
   </a>
   
 </li>
@@ -489,6 +496,20 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#list-your-fast-shortcuts" title="List your fast shortcuts" class="md-nav__link">
+    List your fast shortcuts
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#search-for-references" title="Search for references" class="md-nav__link">
+    Search for references
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rails-show-validations-from-models" title="Rails: Show validations from models" class="md-nav__link">
     Rails: Show validations from models
   </a>
@@ -498,13 +519,6 @@
         <li class="md-nav__item">
   <a href="#automated-refactor-bump-version" title="Automated Refactor: Bump version" class="md-nav__link">
     Automated Refactor: Bump version
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#list-shortcuts" title="List Shortcuts" class="md-nav__link">
-    List Shortcuts
   </a>
   
 </li>
@@ -587,6 +601,63 @@
 first param is not a shortcut. It should start with <code>.</code>.</p>
 <p>I'm building several researches and I'll make the examples open here to show
 several interesting cases in action.</p>
+<h2 id="list-your-fast-shortcuts">List your fast shortcuts<a class="headerlink" href="#list-your-fast-shortcuts" title="Permanent link">&para;</a></h2>
+<p>As the interface is very rudimentar, let's build a shortcut to print what
+shortcuts are available. This is a good one to your <code>$HOME/Fastfile</code>:</p>
+<div class="codehilite"><pre><span></span><span class="c1"># List all shortcut with comments</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span> <span class="ss">:shortcuts</span> <span class="k">do</span>
+  <span class="n">fast_files</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">file</span><span class="o">|</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">readlines</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">{</span><span class="o">|</span><span class="n">line</span><span class="o">|</span><span class="n">line</span><span class="o">.</span><span class="n">chomp</span><span class="o">.</span><span class="n">gsub</span><span class="p">(</span><span class="sr">/\s*#/</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">capture_file</span><span class="p">(</span><span class="s1">&#39;(send ... shortcut $(sym _&#39;</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="o">[</span><span class="n">result</span><span class="o">]</span> <span class="k">unless</span> <span class="n">result</span><span class="o">.</span><span class="n">is_a?</span><span class="nb">Array</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">capture</span><span class="o">|</span>
+      <span class="n">target</span> <span class="o">=</span> <span class="n">capture</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span>
+      <span class="nb">puts</span> <span class="s2">&quot;fast .</span><span class="si">#{</span><span class="n">target</span><span class="o">.</span><span class="n">source</span><span class="o">[</span><span class="mi">1</span><span class="o">..-</span><span class="mi">1</span><span class="o">].</span><span class="n">ljust</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span><span class="si">}</span><span class="s2"> # </span><span class="si">#{</span><span class="n">lines</span><span class="o">[</span><span class="n">target</span><span class="o">.</span><span class="n">line</span><span class="o">-</span><span class="mi">2</span><span class="o">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+
+<p>And using it on <code>fast</code> project that loads both <code>~/Fastfile</code> and the Fastfile from the project:</p>
+<div class="codehilite"><pre><span></span>fast .version       # Let&#39;s say you&#39;d like to show the version that is over the version file
+fast .parser        # Simple shortcut that I used often to show how the expression parser works
+fast .bump_version  # Use `fast .bump_version` to rewrite the version file
+fast .shortcuts     # List all shortcut with comments
+</pre></div>
+
+
+<h2 id="search-for-references">Search for references<a class="headerlink" href="#search-for-references" title="Permanent link">&para;</a></h2>
+<p>I always miss bringing something simple as <code>grep keyword</code> where I can leave a simple string and it can
+search in all types of nodes and report interesting things about it.</p>
+<p>Let's consider a very flexible search that can target any code related to some
+keyword. Considering that we're talking about code indentifiers:</p>
+<div class="codehilite"><pre><span></span><span class="c1"># Search all references about some keyword or regular expression</span>
+<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="p">(</span><span class="ss">:ref</span><span class="p">)</span> <span class="k">do</span>
+  <span class="nb">require</span> <span class="s1">&#39;fast/cli&#39;</span>
+  <span class="no">Kernel</span><span class="o">.</span><span class="n">class_eval</span> <span class="k">do</span>
+    <span class="k">def</span> <span class="nf">matches_args?</span> <span class="n">identifier</span>
+      <span class="n">search</span> <span class="o">=</span> <span class="no">ARGV</span><span class="o">.</span><span class="n">last</span>
+      <span class="n">regex</span> <span class="o">=</span> <span class="no">Regexp</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">search</span><span class="p">,</span> <span class="no">Regexp</span><span class="o">::</span><span class="no">IGNORECASE</span><span class="p">)</span>
+      <span class="k">case</span> <span class="n">identifier</span>
+      <span class="k">when</span> <span class="no">Symbol</span><span class="p">,</span> <span class="nb">String</span>
+        <span class="n">regex</span><span class="o">.</span><span class="n">match?</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span> <span class="o">||</span> <span class="n">identifier</span><span class="o">.</span><span class="n">to_s</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="n">search</span><span class="p">)</span>
+      <span class="k">when</span> <span class="no">Astrolabe</span><span class="o">::</span><span class="no">Node</span>
+        <span class="n">regex</span><span class="o">.</span><span class="n">match?</span><span class="p">(</span><span class="n">identifier</span><span class="o">.</span><span class="n">to_sexp</span><span class="p">)</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+  <span class="n">pattern</span> <span class="o">=</span> <span class="o">&lt;&lt;~</span><span class="no">FAST</span>
+    <span class="p">{</span>
+      <span class="p">({</span><span class="k">class</span> <span class="k">def</span> <span class="nf">sym</span> <span class="n">str</span><span class="p">}</span> <span class="c1">#matches_args?)&#39;</span>
+      <span class="p">({</span><span class="n">const</span> <span class="nb">send</span><span class="p">}</span> <span class="kp">nil</span> <span class="c1">#matches_args?)&#39;</span>
+    <span class="p">}</span>
+  <span class="no">FAST</span>
+  <span class="no">Fast</span><span class="o">::</span><span class="no">Cli</span><span class="o">.</span><span class="n">run!</span><span class="p">(</span><span class="o">[</span><span class="n">pattern</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;--parallel&#39;</span><span class="o">]</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+
 <h2 id="rails-show-validations-from-models">Rails: Show validations from models<a class="headerlink" href="#rails-show-validations-from-models" title="Permanent link">&para;</a></h2>
 <p>If the shortcut does not define a block, it works as a holder for arguments from
 the command line.</p>
@@ -641,32 +712,6 @@ to bump a new version of the gem.</p>
 <span class="gd">-  VERSION = &#39;0.1.6&#39;</span>
 <span class="gi">+  VERSION = &#39;0.1.7&#39;</span>
 end
-</pre></div>
-
-
-<h2 id="list-shortcuts">List Shortcuts<a class="headerlink" href="#list-shortcuts" title="Permanent link">&para;</a></h2>
-<p>As the interface is very rudimentar, let's build a shortcut to print what
-shortcuts are available. This is a good one to your <code>$HOME/Fastfile</code>:</p>
-<div class="codehilite"><pre><span></span><span class="c1"># List all shortcut with comments</span>
-<span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span> <span class="ss">:shortcuts</span> <span class="k">do</span>
-  <span class="n">fast_files</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">file</span><span class="o">|</span>
-    <span class="n">lines</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">readlines</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">{</span><span class="o">|</span><span class="n">line</span><span class="o">|</span><span class="n">line</span><span class="o">.</span><span class="n">chomp</span><span class="o">.</span><span class="n">gsub</span><span class="p">(</span><span class="sr">/\s*#/</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">}</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">capture_file</span><span class="p">(</span><span class="s1">&#39;(send ... shortcut $(sym _&#39;</span><span class="p">,</span> <span class="n">file</span><span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="o">[</span><span class="n">result</span><span class="o">]</span> <span class="k">unless</span> <span class="n">result</span><span class="o">.</span><span class="n">is_a?</span><span class="nb">Array</span>
-    <span class="n">result</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">capture</span><span class="o">|</span>
-      <span class="n">target</span> <span class="o">=</span> <span class="n">capture</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span>
-      <span class="nb">puts</span> <span class="s2">&quot;fast .</span><span class="si">#{</span><span class="n">target</span><span class="o">.</span><span class="n">source</span><span class="o">[</span><span class="mi">1</span><span class="o">..-</span><span class="mi">1</span><span class="o">].</span><span class="n">ljust</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span><span class="si">}</span><span class="s2"> # </span><span class="si">#{</span><span class="n">lines</span><span class="o">[</span><span class="n">target</span><span class="o">.</span><span class="n">line</span><span class="o">-</span><span class="mi">2</span><span class="o">]</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">end</span>
-  <span class="k">end</span>
-<span class="k">end</span>
-</pre></div>
-
-
-<p>And using it on <code>fast</code> project that loads both <code>~/Fastfile</code> and the Fastfile from the project:</p>
-<div class="codehilite"><pre><span></span>fast .version       # Let&#39;s say you&#39;d like to show the version that is over the version file
-fast .parser        # Simple shortcut that I used often to show how the expression parser works
-fast .bump_version  # Use `fast .bump_version` to rewrite the version file
-fast .shortcuts     # List all shortcut with comments
 </pre></div>
 
 
