@@ -60,7 +60,7 @@ module Fast
 
 
     # @return
-    def gh_line_range
+    def line_range
       lines.map { |l| "L#{l}" }.join('-')
     end
     # @return [Array] with lines range
@@ -89,12 +89,12 @@ module Fast
 
     # @return [String] with formmatted Github link
     def github_link
-      "#{project_url}/blob/master/#{buffer_name}##{gh_line_range}"
+      "#{project_url}/blob/master/#{buffer_name}##{line_range}"
     end
 
     # @return [String] with permanent link to the actual commit
     def permalink
-      "#{project_url}/blob/#{sha}/#{buffer_name}##{gh_line_range}"
+      "#{project_url}/blob/#{sha}/#{buffer_name}##{line_range}"
     end
   end
 end

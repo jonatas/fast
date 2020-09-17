@@ -35,12 +35,23 @@ RSpec.describe Fast::Node do
     end
   end
 
-  describe 'git extensions' do
-    it 'allows to use git from AST directly' do
-      unless ENV['TRAVIS']
+  unless ENV['TRAVIS']
+    describe 'git extensions' do
+      it 'allows to use git from AST nodes directly' do
         expect(node.git_blob).to be_an(Git::Object::Blob)
         expect(node.git_log).to be_an(Git::Log)
         expect(node.last_commit).to be_an(Git::Object::Commit)
+      end
+
+      it 'provides methods to get links from code' do
+        expect(node.github_link)
+          .to match(%r{https://github.com/jonatas/fast/blob/master/lib/fast.rb#L\d+-L\d+})
+
+        expect(node.permalink)
+          .to match(%r{https://github.com/jonatas/fast/blob/[0-9a-f]{40}/lib/fast.rb#L\d+-L\d+})
+
+        expect(node.capture("(class $_ (const nil Find))").first.md_link)
+          .to match(%r{\[FindString\]\(https://github.com/jonatas/fast/blob/master/lib/fast.rb#L\d+\)})
       end
     end
   end
