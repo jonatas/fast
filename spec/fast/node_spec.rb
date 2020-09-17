@@ -50,7 +50,7 @@ RSpec.describe Fast::Node do
         expect(node.permalink)
           .to match(%r{https://github.com/jonatas/fast/blob/[0-9a-f]{40}/lib/fast.rb#L\d+-L\d+})
 
-        expect(node.capture("(class $_ (const nil Find))").first.md_link)
+        expect(node.capture('(class $_ (const nil Find))').first.md_link)
           .to match(%r{\[FindString\]\(https://github.com/jonatas/fast/blob/master/lib/fast.rb#L\d+\)})
       end
     end

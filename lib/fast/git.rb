@@ -46,23 +46,23 @@ module Fast
     # Given #remote_url is "git@github.com:namespace/project.git"
     # @return [String] "https://github.com/namespace/project"
     def project_url
-      return remote_url if remote_url.start_with?("https")
+      return remote_url if remote_url.start_with?('https')
+
       remote_url
-        .gsub("git@","https://")
-        .gsub(/:(\w)/,"/\\1")
-        .gsub(/\.git$/,'')
+        .gsub('git@', 'https://')
+        .gsub(/:(\w)/, '/\\1')
+        .gsub(/\.git$/, '')
     end
 
     def file
-      buffer_name.gsub(Dir.pwd + '/', '')
+      buffer_name.gsub("#{Dir.pwd}/", '')
     end
-
-
 
     # @return
     def line_range
       lines.map { |l| "L#{l}" }.join('-')
     end
+
     # @return [Array] with lines range
     def lines
       exp = loc.expression
