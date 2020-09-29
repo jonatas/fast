@@ -230,8 +230,10 @@ module Fast
     # @param name [String]
     # @return [Fast::Shortcut]
     def find_shortcut(name)
-      require 'fast/shortcut'
-      Fast.load_fast_files!
+      unless defined? Fast::Shortcut
+        require 'fast/shortcut'
+        Fast.load_fast_files!
+      end
 
       shortcut = Fast.shortcuts[name] || Fast.shortcuts[name.to_sym]
       shortcut || exit_shortcut_not_found(name)
