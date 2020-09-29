@@ -21,9 +21,6 @@ describe Fast::Shortcut do
   context 'when params include options' do
     subject(:shortcut) { Fast.shortcut(:match_methods, '-c', 'match?', 'lib/fast.rb') }
 
-    its(:options) { is_expected.to eq(['-c']) }
-    its(:params) { is_expected.to eq(['match?', 'lib/fast.rb']) }
-
     describe '#merge_args' do
       it 'mix args replacing the params' do
         expect(shortcut.merge_args(['lib'])).to eq(%w[match? -c lib])

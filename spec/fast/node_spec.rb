@@ -44,7 +44,7 @@ RSpec.describe Fast::Node do
       end
 
       it 'provides methods to get links from code' do
-        expect(node.github_link)
+        expect(node.link)
           .to match(%r{https://github.com/jonatas/fast/blob/master/lib/fast.rb#L\d+-L\d+})
 
         expect(node.permalink)

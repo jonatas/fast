@@ -44,9 +44,10 @@ module Fast
     end
 
     # Given #remote_url is "git@github.com:namespace/project.git"
+    # Or #remote_url is "https://github.com/namespace/project.git"
     # @return [String] "https://github.com/namespace/project"
     def project_url
-      return remote_url if remote_url.start_with?('https')
+      return remote_url.gsub(/\.git$/, '') if remote_url.start_with?('https')
 
       remote_url
         .gsub('git@', 'https://')
@@ -76,9 +77,9 @@ module Fast
       lines.last - lines.first + 1
     end
 
-    # @return [String] a markdown link with #md_link_description and #github_link
+    # @return [String] a markdown link with #md_link_description and #link
     def md_link(text = md_link_description)
-      "[#{text}](#{github_link})"
+      "[#{text}](#{link})"
     end
 
     # @return [String] with the source cutting arguments from method calls to be
@@ -87,8 +88,8 @@ module Fast
       source[/([^\r\(]+)\(/, 1] || source
     end
 
-    # @return [String] with formmatted Github link
-    def github_link
+    # @return [String] with formatted repositorym link
+    def link
       "#{project_url}/blob/master/#{buffer_name}##{line_range}"
     end
 
