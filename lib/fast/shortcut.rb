@@ -54,19 +54,16 @@ module Fast
       @block && @args.nil?
     end
 
-    def options
-      @args.select { |arg| arg.start_with? '-' }
-    end
-
-    def params
-      @args - options
-    end
-
     # Merge extra arguments from input returning a new arguments array keeping
     # the options from previous alias and replacing the files with the
     # @param [Array] extra_args
     def merge_args(extra_args)
-      [params[0], *options, *extra_args.select(&File.method(:exists?))]
+      all_args = (@args + extra_args).uniq
+      options = all_args.select { |arg| arg.start_with? '-' }
+      files = extra_args.select(&File.method(:exists?))
+      command = (@args - options - files).first
+
+      [command, *options, *files]
     end
 
     # If the shortcut was defined with a single block and no extra arguments, it

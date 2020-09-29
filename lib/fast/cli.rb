@@ -36,12 +36,16 @@ module Fast
   # @param headless [Boolean] Skip printing the file name and line before content
   # @example
   #   Fast.highlight(Fast.search(...))
-  def report(result, show_sexp: false, file: nil, headless: false, colorize: true)
+  def report(result, show_link: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true) # rubocop:disable Metrics/ParameterLists
     if file
       line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
-      puts(highlight("# #{file}:#{line}", colorize: colorize)) unless headless
+      if show_link
+        puts(result.link)
+      elsif !headless
+        puts(highlight("# #{file}:#{line}", colorize: colorize))
+      end
     end
-    puts highlight(result, show_sexp: show_sexp, colorize: colorize)
+    puts(highlight(result, show_sexp: show_sexp, colorize: colorize)) unless bodyless
   end
 
   # Command Line Interface for Fast
@@ -69,6 +73,11 @@ module Fast
           @show_sexp = true
         end
 
+        opts.on('--link', 'Print link to repository URL instead of code') do
+          require 'fast/git'
+          @show_link = true
+        end
+
         opts.on('-p', '--parallel', 'Paralelize search') do
           @parallel = true
         end
@@ -79,6 +88,10 @@ module Fast
 
         opts.on('--headless', 'Print results without the file name in the header') do
           @headless = true
+        end
+
+        opts.on('--bodyless', 'Print results without the code details') do
+          @bodyless = true
         end
 
         opts.on('--pry', 'Jump into a pry session with results') do
@@ -117,6 +130,7 @@ module Fast
 
     def replace_args_with_shortcut(args)
       shortcut = find_shortcut args.first[1..]
+
       if shortcut.single_run_with_block?
         shortcut.run
         exit
@@ -195,7 +209,13 @@ module Fast
     # Report results using the actual options binded from command line.
     # @see Fast.report
     def report(file, result)
-      Fast.report(result, file: file, show_sexp: @show_sexp, headless: @headless, colorize: @colorize)
+      Fast.report(result,
+                  file: file,
+                  show_link: @show_link,
+                  show_sexp: @show_sexp,
+                  headless: @headless,
+                  bodyless: @bodyless,
+                  colorize: @colorize)
     end
 
     # Find shortcut by name. Preloads all `Fastfiles` before start.
@@ -206,7 +226,6 @@ module Fast
       Fast.load_fast_files!
 
       shortcut = Fast.shortcuts[name] || Fast.shortcuts[name.to_sym]
-
       shortcut || exit_shortcut_not_found(name)
     end
 

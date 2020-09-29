@@ -67,18 +67,86 @@ module Fast
     %\d                   # bind extra arguments to the expression
   /x.freeze
 
+  # Set some convention methods from file.
+  class Node < Astrolabe::Node
+    # @return [String] with path of the file or simply buffer name.
+    def buffer_name
+      expression.source_buffer.name
+    end
+
+    # @return [Parser::Source::Range] from the expression
+    def expression
+      location.expression
+    end
+
+    # @return [String] with the content of the #expression
+    def source
+      expression.source
+    end
+
+    # @return [Boolean] true if a file exists with the #buffer_name
+    def from_file?
+      File.exist?(buffer_name)
+    end
+
+    # @return [Array<String>] with authors from the current expression range
+    def blame_authors
+      `git blame -L #{expression.first_line},#{expression.last_line} #{buffer_name}`.lines.map do |line|
+        line.split('(')[1].split(/\d+/).first.strip
+      end
+    end
+
+    # @return [String] with the first element from #blame_authors
+    def author
+      blame_authors.first
+    end
+
+    # Search recursively into a node and its children using a pattern.
+    # @param [String] pattern
+    # @param [Array] *args extra arguments to interpolate in the pattern.
+    # @return [Array<Fast::Node>>] with files and results
+    def search(pattern, *args)
+      Fast.search(pattern, self, *args)
+    end
+
+    # Captures elements from search recursively
+    # @param [String] pattern
+    # @param [Array] *args extra arguments to interpolate in the pattern.
+    # @return [Array<Fast::Node>>] with files and results
+    def capture(pattern, *args)
+      Fast.capture(pattern, self, *args)
+    end
+  end
+
+  # Custom builder allow us to set a buffer name for each Node
+  class Builder < Astrolabe::Builder
+    attr_writer :buffer_name
+    # Generates {Node} from the given information.
+    #
+    # @return [Node] the generated node
+    def n(type, children, source_map)
+      Node.new(type, children, location: source_map, buffer_name: @buffer_name)
+    end
+  end
+
   class << self
-    # @return [Astrolabe::Node] from the parsed content
+    # @return [Fast::Node] from the parsed content
     # @example
     #   Fast.ast("1") # => s(:int, 1)
     #   Fast.ast("a.b") # => s(:send, s(:send, nil, :a), :b)
     def ast(content, buffer_name: '(string)')
       buffer = Parser::Source::Buffer.new(buffer_name)
       buffer.source = content
-      Parser::CurrentRuby.new(Astrolabe::Builder.new).parse(buffer)
+      Parser::CurrentRuby.new(builder_for(buffer_name)).parse(buffer)
     end
 
-    # @return [Astrolabe::Node] parsed from file content
+    def builder_for(buffer_name)
+      builder = Builder.new
+      builder.buffer_name = buffer_name
+      builder
+    end
+
+    # @return [Fast::Node] parsed from file content
     # caches the content based on the filename.
     # @example
     #   Fast.ast_from_file("example.rb") # => s(...)
@@ -96,7 +164,7 @@ module Fast
     end
 
     # Search with pattern directly on file
-    # @return [Array<Astrolabe::Node>] that matches the pattern
+    # @return [Array<Fast::Node>] that matches the pattern
     def search_file(pattern, file)
       node = ast_from_file(file)
       return [] unless node
@@ -107,7 +175,7 @@ module Fast
     # Search with pattern on a directory or multiple files
     # @param [String] pattern
     # @param [Array<String>] *locations where to search. Default is '.'
-    # @return [Hash<String,Array<Astrolabe::Node>>] with files and results
+    # @return [Hash<String,Array<Fast::Node>>] with files and results
     def search_all(pattern, locations = ['.'], parallel: true, on_result: nil)
       group_results(build_grouped_search(:search_file, pattern, on_result),
                     locations, parallel: parallel)
@@ -241,7 +309,7 @@ module Fast
     # Useful to index abstract patterns or similar code structure.
     # @see https://jonatas.github.io/fast/similarity_tutorial/
     # @return [String] with an pattern to search from it.
-    # @param node [Astrolabe::Node]
+    # @param node [Fast::Node]
     # @example
     #   Fast.expression_from(Fast.ast('1')) # => '(int _)'
     #   Fast.expression_from(Fast.ast('a = 1')) # => '(lvasgn _ (int _))'
