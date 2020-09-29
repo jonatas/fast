@@ -26,7 +26,6 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'astrolabe'
   spec.add_dependency 'coderay'
-  spec.add_dependency 'git'
   spec.add_dependency 'parallel'
   spec.add_dependency 'parser'
 
@@ -35,6 +34,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'guard-livereload'
   spec.add_development_dependency 'guard-rspec'
   spec.add_development_dependency 'pry'
+  spec.add_development_dependency 'git'
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'rspec-its', '~> 1.2'
