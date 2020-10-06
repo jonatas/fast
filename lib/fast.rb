@@ -2,6 +2,7 @@
 
 require 'fileutils'
 require 'astrolabe/builder'
+require 'ruby_jard'
 require_relative 'fast/rewriter'
 
 # suppress output to avoid parser gem warnings'
@@ -422,6 +423,8 @@ module Fast
       when Symbol then compare_symbol_or_head(expression, node)
       when Enumerable
         expression.each_with_index.all? do |exp, i|
+
+          jard
           match_recursive(exp, i.zero? ? node : node.children[i - 1])
         end
       else
