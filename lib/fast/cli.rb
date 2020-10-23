@@ -36,11 +36,13 @@ module Fast
   # @param headless [Boolean] Skip printing the file name and line before content
   # @example
   #   Fast.highlight(Fast.search(...))
-  def report(result, show_link: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true) # rubocop:disable Metrics/ParameterLists
+  def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true) # rubocop:disable Metrics/ParameterLists
     if file
       line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
       if show_link
         puts(result.link)
+      elsif show_permalink
+        puts(result.permalink)
       elsif !headless
         puts(highlight("# #{file}:#{line}", colorize: colorize))
       end
@@ -73,9 +75,14 @@ module Fast
           @show_sexp = true
         end
 
-        opts.on('--link', 'Print link to repository URL instead of code') do
+        opts.on('--link', 'Print link to repository URL') do
           require 'fast/git'
           @show_link = true
+        end
+
+        opts.on('--permalink', 'Print permalink to repository URL') do
+          require 'fast/git'
+          @show_permalink = true
         end
 
         opts.on('-p', '--parallel', 'Paralelize search') do
@@ -212,6 +219,7 @@ module Fast
       Fast.report(result,
                   file: file,
                   show_link: @show_link,
+                  show_permalink: @show_permalink,
                   show_sexp: @show_sexp,
                   headless: @headless,
                   bodyless: @bodyless,
