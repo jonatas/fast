@@ -98,7 +98,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="../#git-adapter" tabindex="1" class="md-skip">
+      <a href="../#git-require" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -324,8 +324,29 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#git-adapter" title="Git adapter" class="md-nav__link">
-    Git adapter
+  <a href="#git-require" title="Git require" class="md-nav__link">
+    Git require
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log" title="Log" class="md-nav__link">
+    Log
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markdown-link" title="Markdown link" class="md-nav__link">
+    Markdown link
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permalink" title="Permalink" class="md-nav__link">
+    Permalink
   </a>
   
 </li>
@@ -432,8 +453,29 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#git-adapter" title="Git adapter" class="md-nav__link">
-    Git adapter
+  <a href="#git-require" title="Git require" class="md-nav__link">
+    Git require
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#log" title="Log" class="md-nav__link">
+    Log
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#markdown-link" title="Markdown link" class="md-nav__link">
+    Markdown link
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permalink" title="Permalink" class="md-nav__link">
+    Permalink
   </a>
   
 </li>
@@ -459,15 +501,22 @@
                 
                   <h1>Git Integration</h1>
                 
-                <h2 id="git-adapter">Git adapter<a class="headerlink" href="#git-adapter" title="Permanent link">&para;</a></h2>
-<p>You can overload the AST node with extra methods to get information from Git.</p>
+                <p>You can overload the AST node with extra methods to get information from Git.</p>
 <p>Let's start with some basic setup to reuse in the next examples:</p>
+<h2 id="git-require">Git require<a class="headerlink" href="#git-require" title="Permanent link">&para;</a></h2>
+<p>By default, this extension is not loaded in the fast environment, so you should
+require it.</p>
 <div class="codehilite"><pre><span></span><span class="nb">require</span> <span class="s1">&#39;fast/git&#39;</span>
-<span class="n">ast</span> <span class="o">=</span> <span class="no">Fast</span><span class="o">.</span><span class="n">ast_from_file</span><span class="p">(</span><span class="s1">&#39;lib/fast.rb&#39;</span><span class="p">)</span>
 </pre></div>
 
 
-<p>Getting first commit from git:</p>
+<p>Then it will work with any AST node.</p>
+<div class="codehilite"><pre><span></span><span class="n">ast</span> <span class="o">=</span> <span class="no">Fast</span><span class="o">.</span><span class="n">ast_from_file</span><span class="p">(</span><span class="s1">&#39;lib/fast.rb&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<h2 id="log">Log<a class="headerlink" href="#log" title="Permanent link">&para;</a></h2>
+<p>First commit from git:</p>
 <div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">git_log</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">name</span> <span class="c1"># =&gt; &quot;Jonatas Davi Paganini&quot;</span>
 </pre></div>
 
@@ -490,7 +539,7 @@ methods are available:</p>
 </pre></div>
 
 
-<p>Getting last commit message:</p>
+<p>Selecting last commit message:</p>
 <div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">last_commit</span><span class="o">.</span><span class="n">message</span> <span class="c1"># =&gt; &quot;Add node extensions for extracting info from git (#21)&quot;</span>
 </pre></div>
 
@@ -501,18 +550,47 @@ methods are available:</p>
 </pre></div>
 
 
-<p>Getting <code>sha</code> from last commit:</p>
+<p>The <code>sha</code> from last commit:</p>
 <div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">sha</span> <span class="c1"># =&gt; &quot;cd1c036b55ec1d41e5769ad73b282dd6429a90a6&quot;</span>
 </pre></div>
 
 
-<p>Getting link to master version:</p>
+<p>Pick a link from the files to master version:</p>
 <div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">link</span> <span class="c1"># =&gt; &quot;https://github.com/jonatas/fast/blob/master/lib/fast.rb#L3-L776&quot;</span>
 </pre></div>
 
 
 <p>Getting permalink from current commit:</p>
 <div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">permalink</span> <span class="c1"># =&gt; &quot;https://github.com/jonatas/fast/blob/cd1c036b55ec1d41e5769ad73b282dd6429a90a6/lib/fast.rb#L3-L776&quot;</span>
+</pre></div>
+
+
+<h2 id="markdown-link">Markdown link<a class="headerlink" href="#markdown-link" title="Permanent link">&para;</a></h2>
+<p>Let's say you'd like to capture a list of class names that inherits the <code>Find</code>
+class:</p>
+<div class="codehilite"><pre><span></span><span class="nb">puts</span> <span class="n">ast</span><span class="o">.</span><span class="n">capture</span><span class="p">(</span><span class="s2">&quot;(class $(const nil _) (const nil Find)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:md_link</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">* &quot;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>It will output the following links:</p>
+<ul>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L485">FindString</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L496">MethodCall</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L507">InstanceMethodCall</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L524">FindWithCapture</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L551">FindFromArgument</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L598">Capture</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L622">Parent</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L636">Any</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L647">All</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L659">Not</a></li>
+<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L667">Maybe</a></li>
+</ul>
+<h2 id="permalink">Permalink<a class="headerlink" href="#permalink" title="Permanent link">&para;</a></h2>
+<p>If you need to get a permanent link to the code, use the <code>permalink</code> method:</p>
+<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;(class (const nil _) (const nil Find)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:permalink</span><span class="p">)</span>
+<span class="c1"># =&gt; [&quot;https://github.com/jonatas/fast/blob/cd1c036b55ec1d41e5769ad73b282dd6429a90a6/lib/fast.rb#L524-L541&quot;,</span>
+<span class="c1">#     &quot;https://github.com/jonatas/fast/blob/cd1c036b55ec1d41e5769ad73b282dd6429a90a6/lib/fast.rb#L551-L571&quot;, ...]</span>
 </pre></div>
                 
                   
