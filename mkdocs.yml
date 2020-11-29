@@ -19,6 +19,7 @@ nav:
   - Command Line: command_line.md
   - Experiments: experiments.md
   - Shortcuts: shortcuts.md
+  - Git Integration: git.md
   - Code Similarity: similarity_tutorial.md
   - Pry Integration: pry-integration.md
   - Editors' Integration: editors-integration.md

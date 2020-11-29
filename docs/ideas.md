@@ -21,16 +21,6 @@ run the code you have and not the code that is overloading the project.
 Easy pipe fast results to Neo4J. It would facilitate to explore more complex
 scenarios and combine data from other sources.
 
-## Git adapter
-
-Add extra tags to nodes with information from Git.
-
-* Revision
-* Author
-* Date
-
-Tag every node with the proper author.
-
 ## Ast Diff
 
 Allow to compare and return a summary of differences between two trees.
