@@ -7,7 +7,12 @@ module Fast
     # 1. Current directory that the command is being runned
     # 2. Home folder
     # 3. Using the `FAST_FILE_DIR` variable to set an extra folder
-    LOOKUP_FAST_FILES_DIRECTORIES = [Dir.pwd, ENV['HOME'], ENV['FAST_FILE_DIR']].freeze
+    LOOKUP_FAST_FILES_DIRECTORIES = [
+      Dir.pwd,
+      ENV['HOME'],
+      ENV['FAST_FILE_DIR'],
+      File.join(File.dirname(__FILE__), '..', '..')
+    ].compact.map(&File.method(:expand_path)).uniq.freeze
 
     # Store predefined searches with default paths through shortcuts.
     # define your Fastfile in you root folder or

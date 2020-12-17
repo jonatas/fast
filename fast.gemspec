@@ -20,6 +20,24 @@ Gem::Specification.new do |spec|
     f.match(%r{^(test|spec|features)/})
   end
 
+  spec.post_install_message = <<~THANKS
+
+    ==========================================================
+    Yay! Thanks for installing
+
+       ___       __  ___
+      |__   /\  /__`  |
+      |    /~~\ .__/  |
+
+    To interactive learn about the gem in the terminal use:
+
+    fast .intro
+
+    More docs at: https://jonatas.github.io/fast/
+    ==========================================================
+
+  THANKS
+
   spec.bindir        = 'bin'
   spec.executables   = %w[fast fast-experiment]
   spec.require_paths = %w[lib experiments]
