@@ -36,7 +36,7 @@
     
     
       
-        <title>Git Integration - Fast</title>
+        <title>Walkthrough - Fast</title>
       
     
     
@@ -98,7 +98,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="../#git-require" tabindex="1" class="md-skip">
+      <a href="../#fast-walkthrough" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -124,7 +124,7 @@
                 Fast
               </span>
               <span class="md-header-nav__topic">
-                Git Integration
+                Walkthrough
               </span>
             
           
@@ -251,11 +251,56 @@
       
       
 
+  
 
-  <li class="md-nav__item">
-    <a href="../walkthrough/" title="Walkthrough" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Walkthrough
+      </label>
+    
+    <a href="./" title="Walkthrough" class="md-nav__link md-nav__link--active">
       Walkthrough
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-automate-refactor-using-ast" title="How to automate refactor using AST" class="md-nav__link">
+    How to automate refactor using AST
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#that-is-all-for-now" title="That is all for now!" class="md-nav__link">
+    That is all for now!
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
     
@@ -311,66 +356,11 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Git Integration
-      </label>
-    
-    <a href="./" title="Git Integration" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../git/" title="Git Integration" class="md-nav__link">
       Git Integration
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#git-require" title="Git require" class="md-nav__link">
-    Git require
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#log" title="Log" class="md-nav__link">
-    Log
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#markdown-link" title="Markdown link" class="md-nav__link">
-    Markdown link
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#permalink" title="Permalink" class="md-nav__link">
-    Permalink
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
     
@@ -460,34 +450,22 @@
 <nav class="md-nav md-nav--secondary">
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">Table of contents</label>
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#git-require" title="Git require" class="md-nav__link">
-    Git require
+  <a href="#how-to-automate-refactor-using-ast" title="How to automate refactor using AST" class="md-nav__link">
+    How to automate refactor using AST
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#log" title="Log" class="md-nav__link">
-    Log
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#markdown-link" title="Markdown link" class="md-nav__link">
-    Markdown link
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#permalink" title="Permalink" class="md-nav__link">
-    Permalink
+  <a href="#that-is-all-for-now" title="That is all for now!" class="md-nav__link">
+    That is all for now!
   </a>
   
 </li>
@@ -508,102 +486,118 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/jonatas/fast/edit/master/docs/git.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/jonatas/fast/edit/master/docs/walkthrough.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                  <h1>Git Integration</h1>
-                
-                <p>You can overload the AST node with extra methods to get information from Git.</p>
-<p>Let's start with some basic setup to reuse in the next examples:</p>
-<h2 id="git-require">Git require<a class="headerlink" href="#git-require" title="Permanent link">&para;</a></h2>
-<p>By default, this extension is not loaded in the fast environment, so you should
-require it.</p>
-<div class="codehilite"><pre><span></span><span class="nb">require</span> <span class="s1">&#39;fast/git&#39;</span>
+                <h1 id="fast-walkthrough">Fast walkthrough<a class="headerlink" href="#fast-walkthrough" title="Permanent link">&para;</a></h1>
+<div class="admonition note">
+<p class="admonition-title">This is the main interactive tutorial we have on <code>fast</code>. If you're reading it on the web, please consider also try it in the command line: <code>fast .intro</code> in the terminal to get a rapid pace on reading and testing on your own computer.</p>
+</div>
+<p>The objective here is give you some insights about how to use <code>ffast</code> gem in the
+command line.</p>
+<p>Let's start finding the main <code>fast.rb</code> file for the fast library:</p>
+<div class="codehilite"><pre><span></span>$ gem which fast
 </pre></div>
 
 
-<p>Then it will work with any AST node.</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span> <span class="o">=</span> <span class="no">Fast</span><span class="o">.</span><span class="n">ast_from_file</span><span class="p">(</span><span class="s1">&#39;lib/fast.rb&#39;</span><span class="p">)</span>
+<p>And now, let's combine the previous expression that returns the path to the file
+and take a quick look into the methods <code>match?</code> in the file using a regular grep:</p>
+<div class="codehilite"><pre><span></span>$ grep &quot;def match\?&quot; $(gem which fast)
 </pre></div>
 
 
-<h2 id="log">Log<a class="headerlink" href="#log" title="Permanent link">&para;</a></h2>
-<p>First commit from git:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">git_log</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">name</span> <span class="c1"># =&gt; &quot;Jonatas Davi Paganini&quot;</span>
+<p>Boring results, no? The code here is not easy to digest because we just see a
+fragment of the code block that we want.
+Let's make it a bit more advanced with <code>grep -rn</code> to file name and line number:</p>
+<div class="codehilite"><pre><span></span>$ grep -rn &quot;def match\?&quot; $(gem which fast)
 </pre></div>
 
 
-<p>It uses <a href="https://github.com/ruby-git/ruby-git#examples">ruby-git</a> gem, so all
-methods are available:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">git_log</span><span class="o">.</span><span class="n">since</span><span class="p">(</span><span class="no">Time</span><span class="o">.</span><span class="n">mktime</span><span class="p">(</span><span class="mi">2019</span><span class="p">))</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:message</span><span class="p">)</span>
+<p>Still hard to understand the scope of the search.</p>
+<p>That's why fast exists! Now, let's take a look on how a method like this looks
+like from the AST perspective. Let's use <code>ruby-parse</code> for it:</p>
+<div class="codehilite"><pre><span></span>$ ruby-parse -e &quot;def match?(node); end&quot;
 </pre></div>
 
 
-<p>Counting commits per year:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">git_log</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">group_by</span><span class="p">{</span><span class="o">|</span><span class="n">t</span><span class="o">|</span><span class="n">t</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">year</span><span class="p">}</span><span class="o">.</span><span class="n">transform_values</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:size</span><span class="p">)</span>
-<span class="c1"># =&gt; {2020=&gt;4, 2019=&gt;22, 2018=&gt;4}</span>
+<p>Now, let's make the same search with <code>fast</code> node pattern:</p>
+<div class="codehilite"><pre><span></span>fast &quot;(def match?)&quot; $(gem which fast)
 </pre></div>
 
 
-<p>Counting commits per contributor:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">git_log</span><span class="o">.</span><span class="n">entries</span><span class="o">.</span><span class="n">group_by</span><span class="p">{</span><span class="o">|</span><span class="n">t</span><span class="o">|</span><span class="n">t</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">name</span><span class="p">}</span><span class="o">.</span><span class="n">transform_values</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:size</span><span class="p">)</span>
-<span class="c1"># =&gt; {&quot;Jônatas Davi Paganini&quot;=&gt;29, ...}</span>
+<p>Wow! in this case you got all the <code>match?</code> methods, but you'd like to go one level upper
+and understand the classes that implements the method with a single node as
+argument. Let's first use <code>^</code> to jump into the parent:</p>
+<div class="codehilite"><pre><span></span>fast &quot;^(def match?)&quot; $(gem which fast)
 </pre></div>
 
 
-<p>Selecting last commit message:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">last_commit</span><span class="o">.</span><span class="n">message</span> <span class="c1"># =&gt; &quot;Add node extensions for extracting info from git (#21)&quot;</span>
+<p>As you can see it still prints some <code>match?</code> methods that are not the ones that
+we want, so, let's add a filter by the argument node <code>(args (arg node))</code>:</p>
+<div class="codehilite"><pre><span></span>fast &quot;(def match? (args (arg node)))&quot; $(gem which fast)
 </pre></div>
 
 
-<p>Remote git URL:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">remote_url</span>  <span class="c1"># =&gt; &quot;git@github.com:jonatas/fast.git&quot;</span>
-<span class="n">ast</span><span class="o">.</span><span class="n">project_url</span> <span class="c1"># =&gt; &quot;https://github.com/jonatas/fast&quot;</span>
+<p>Now, it looks closer to have some understanding of the scope, filtering only
+methods that have the name <code>match?</code> and receive <code>node</code> as a parameter.</p>
+<p>Now, let's do something different and find all methods that receives a <code>node</code> as
+an argument:</p>
+<div class="codehilite"><pre><span></span>fast &quot;(def _ (args (arg node)))&quot; $(gem which fast)
 </pre></div>
 
 
-<p>The <code>sha</code> from last commit:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">sha</span> <span class="c1"># =&gt; &quot;cd1c036b55ec1d41e5769ad73b282dd6429a90a6&quot;</span>
+<p>Looks like almost all of them are the <code>match?</code> and we can also skip the <code>match?</code>
+methods negating the expression prefixing with <code>!</code>:</p>
+<div class="codehilite"><pre><span></span>fast &quot;(def !match? (args (arg node)))&quot; $(gem which fast)
 </pre></div>
 
 
-<p>Pick a link from the files to master version:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">link</span> <span class="c1"># =&gt; &quot;https://github.com/jonatas/fast/blob/master/lib/fast.rb#L3-L776&quot;</span>
+<p>Let's move on and learn more about node pattern with the RuboCop project:</p>
+<div class="codehilite"><pre><span></span>$ VISUAL=echo gem open rubocop
 </pre></div>
 
 
-<p>Getting permalink from current commit:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">permalink</span> <span class="c1"># =&gt; &quot;https://github.com/jonatas/fast/blob/cd1c036b55ec1d41e5769ad73b282dd6429a90a6/lib/fast.rb#L3-L776&quot;</span>
+<p>RuboCop contains <code>def_node_matcher</code> and <code>def_node_search</code>. Let's make a search
+for both method names wrapping the query with <code>{}</code> selector:</p>
+<div class="codehilite"><pre><span></span>fast &quot;(send nil {def_node_matcher def_node_search})&quot; $(VISUAL=echo gem open rubocop)
 </pre></div>
 
 
-<h2 id="markdown-link">Markdown link<a class="headerlink" href="#markdown-link" title="Permanent link">&para;</a></h2>
-<p>Let's say you'd like to capture a list of class names that inherits the <code>Find</code>
-class:</p>
-<div class="codehilite"><pre><span></span><span class="nb">puts</span> <span class="n">ast</span><span class="o">.</span><span class="n">capture</span><span class="p">(</span><span class="s2">&quot;(class $(const nil _) (const nil Find)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:md_link</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">* &quot;</span><span class="p">)</span>
+<p>As you can see, node pattern is widely adopted in the cops to target code.
+Rubocop contains a few projects with dedicated cops that can help you learn
+more.</p>
+<h2 id="how-to-automate-refactor-using-ast">How to automate refactor using AST<a class="headerlink" href="#how-to-automate-refactor-using-ast" title="Permanent link">&para;</a></h2>
+<p>Moving towards to the code automation, the next step after finding some target code
+is refactor and change the code behavior.</p>
+<p>Let's imagine that we already found some code that we want to edit or remove. If
+we get the AST we can also cherry-pick any fragment of the expression to be
+replaced. As you can imagine, RuboCop also benefits from automatic refactoring
+offering the <code>--autocorrect</code> option.</p>
+<p>All the hardcore algorithms are in the <a href="https://github.com/whitequark/parser">parser</a>
+rewriter, but we can find a lot of great examples on RuboCop project searching
+for the <code>autocorrect</code> method.</p>
+<div class="codehilite"><pre><span></span>fast &quot;(def autocorrect)&quot; $(VISUAL=echo gem open rubocop)
 </pre></div>
 
 
-<p>It will output the following links:</p>
-<ul>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L485">FindString</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L496">MethodCall</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L507">InstanceMethodCall</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L524">FindWithCapture</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L551">FindFromArgument</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L598">Capture</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L622">Parent</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L636">Any</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L647">All</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L659">Not</a></li>
-<li><a href="https://github.com/jonatas/fast/blob/master/lib/fast.rb#L667">Maybe</a></li>
-</ul>
-<h2 id="permalink">Permalink<a class="headerlink" href="#permalink" title="Permanent link">&para;</a></h2>
-<p>If you need to get a permanent link to the code, use the <code>permalink</code> method:</p>
-<div class="codehilite"><pre><span></span><span class="n">ast</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;(class (const nil _) (const nil Find)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:permalink</span><span class="p">)</span>
-<span class="c1"># =&gt; [&quot;https://github.com/jonatas/fast/blob/cd1c036b55ec1d41e5769ad73b282dd6429a90a6/lib/fast.rb#L524-L541&quot;,</span>
-<span class="c1">#     &quot;https://github.com/jonatas/fast/blob/cd1c036b55ec1d41e5769ad73b282dd6429a90a6/lib/fast.rb#L551-L571&quot;, ...]</span>
+<p>Look that most part of the methods are just returning a lambda with a
+corrector. Now, let's use the <code>--ast</code> to get familiar with the tree details for the
+implementation:</p>
+<div class="codehilite"><pre><span></span>fast --ast &quot;(def autocorrect)&quot; $(VISUAL=echo gem open rubocop)/lib/rubocop/cop/style
 </pre></div>
+
+
+<p>As we can see, we have a <code>(send (lvar corrector))</code> that is the interface that we
+can get the most interesting calls to overwrite files:</p>
+<div class="codehilite"><pre><span></span>fast &quot;(send (lvar corrector)&quot; $(VISUAL=echo gem open rubocop)
+</pre></div>
+
+
+<h2 id="that-is-all-for-now">That is all for now!<a class="headerlink" href="#that-is-all-for-now" title="Permanent link">&para;</a></h2>
+<p>I hope you enjoyed to learn by example searching with fast. If you like it,
+please <a href="https://github.com/jonatas/fast/">star the project</a>!</p>
+<p>You can also build your own tutorials simply using markdown files like I did
+here, you can find this tutorial <a href="https://github.com/jonatas/fast/tree/master/docs/walkthrough.md">here</a>.</p>
                 
                   
                 
@@ -624,7 +618,7 @@ class:</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../shortcuts/" title="Shortcuts" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href=".." title="Introduction" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -633,19 +627,19 @@ class:</p>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Shortcuts
+                Introduction
               </span>
             </div>
           </a>
         
         
-          <a href="../similarity_tutorial/" title="Code Similarity" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../syntax/" title="Syntax" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Code Similarity
+                Syntax
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
