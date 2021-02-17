@@ -58,7 +58,8 @@ Fast.shortcut :intro do
 end
 
 # Useful for `fast .walk file.md` but not required by the library.
-private def require_or_install_tty_md
+private
+def require_or_install_tty_md
   require 'tty-markdown'
 rescue LoadError
   puts 'Installing tty-markdown gem to better engage you :)'
@@ -83,7 +84,8 @@ Fast.shortcut :walk do
     when /^\$ /
       walk[line]
       execute[line[2..]]
-    when /^!{3}\s/ # Skip warnings that are only for web tutorials
+    when /^!{3}\s/
+      # Skip warnings that are only for web tutorials
     else
       walk[TTY::Markdown.parse(line)]
     end
