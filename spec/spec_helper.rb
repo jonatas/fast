@@ -15,4 +15,12 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  config.around(:example, only: :local) do |example|
+    if ENV['TRAVIS']
+      example.skip
+    else
+      example.run
+    end
+  end
 end

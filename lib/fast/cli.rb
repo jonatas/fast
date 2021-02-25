@@ -19,13 +19,41 @@ module Fast
   def highlight(node, show_sexp: false, colorize: true)
     output =
       if node.respond_to?(:loc) && !show_sexp
-        node.loc.expression.source
+        wrap_source_range(node).source
       else
         node
       end
     return output unless colorize
 
     CodeRay.scan(output, :ruby).term
+  end
+
+  # Fixes initial spaces to print the line since the beginning
+  # and fixes end of the expression including heredoc strings.
+  def wrap_source_range(node)
+    expression = node.loc.expression
+    Parser::Source::Range.new(
+      expression.source_buffer,
+      first_position_from_expression(node),
+      last_position_from_expression(node) || expression.end_pos
+    )
+  end
+
+  # If a method call contains a heredoc, it should print the STR around it too.
+  def last_position_from_expression(node)
+    internal_heredoc = node.each_descendant(:str).select { |n| n.loc.respond_to?(:heredoc_end) }
+    internal_heredoc.map { |n| n.loc.heredoc_end.end_pos }.max if internal_heredoc.any?
+  end
+
+  # If a node is the first on it's line, print since the beginning of the line
+  # to show the proper whitespaces for identing the next lines of the code.
+  def first_position_from_expression(node)
+    expression = node.loc.expression
+    if node.parent && node.parent.loc.expression.line != expression.line
+      expression.begin_pos - expression.column
+    else
+      expression.begin_pos
+    end
   end
 
   # Combines {.highlight} with files printing file name in the head with the

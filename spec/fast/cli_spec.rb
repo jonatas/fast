@@ -114,8 +114,20 @@ RSpec.describe Fast::Cli do
       it 'prints file with line number' do
         expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
           # lib/fast/version.rb:4
-          VERSION = '#{Fast::VERSION}'
+          \s\sVERSION = '#{Fast::VERSION}'
         RUBY
+      end
+
+      context 'when the code is not from the beginning of the line' do
+        let(:args) { %w[str lib/fast/version.rb] }
+
+        it 'prints fragment of line' do
+          cli.run!
+          expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+            # lib/fast/version.rb:4
+            '#{Fast::VERSION}'
+          RUBY
+        end
       end
 
       context 'with args to print ast' do
@@ -143,7 +155,7 @@ RSpec.describe Fast::Cli do
         it 'uses the predefined values from the shortcut' do
           expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
             # lib/fast/version.rb:4
-            VERSION = '#{Fast::VERSION}'
+              VERSION = '#{Fast::VERSION}'
           RUBY
         end
       end
