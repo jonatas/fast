@@ -33,7 +33,7 @@ RSpec.describe Fast::Experiment do
       it { expect(experiment_file.experimental_filename(1)).to include('experiment_1') }
     end
 
-    describe '#replace' do
+    describe '#replace', only: :local do
       it 'replace only first case' do
         expect(experiment_file.partial_replace(1)).to eq(<<~RUBY)
           let(:user) { build_stubbed(:user) }
