@@ -1,8 +1,8 @@
 # Videos
 
-- [Ruby Kaigi TakeOut 2020: Grepping Ruby code like a boss](https://www.youtube.com/watch?v=YzcYXB4L2so&amp;feature=youtu.be&amp;t=11855)
+- [Ruby Kaigi TakeOut 2020: Grepping Ruby code like a boss](https://www.youtube.com/watch?v=YczrZQC9aP8&amp;feature=youtu.be&amp)
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/YzcYXB4L2so?start=11855" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/YczrZQC9aP8?" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Also, similar livecoding session at [RubyConf Brazil 2019 (Portuguese)](https://www.eventials.com/locaweb/jonatas-paganini-live-coding-grepping-ruby-code-like-a-boss/#_=_).
 
