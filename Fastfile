@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-
 # Fastfile is loaded when you start an expression with a dot.
 #
 # You can introduce shortcuts or methods that can be embedded during your
 # command line interactions with fast.
 #
 # Let's say you'd like to show the version that is over the version file
-Fast.shortcut(:version, '(casgn nil VERSION (str _))', 'lib/fast/version.rb')
+version_file = Dir['lib/*/version.rb'].first
+Fast.shortcut(:version, '(casgn nil VERSION (str _))', version_file)
 
 # Show all classes that inherits Fast::Find
 Fast.shortcut(:finders, '(class ... (const nil Find)', 'lib')
@@ -21,7 +21,7 @@ Fast.shortcut(:parser, '(class (const nil ExpressionParser)', 'lib/fast.rb')
 
 # Use `fast .bump_version` to rewrite the version file
 Fast.shortcut :bump_version do
-  rewrite_file('(casgn nil VERSION (str _)', 'lib/fast/version.rb') do |node|
+  rewrite_file('(casgn nil VERSION (str _)', version_file) do |node|
     target = node.children.last.loc.expression
     pieces = target.source.split('.').map(&:to_i)
     pieces.reverse.each_with_index do |fragment, i|
