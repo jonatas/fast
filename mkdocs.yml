@@ -1,7 +1,8 @@
 site_name: Fast
 repo_url: https://github.com/jonatas/fast
 edit_uri: edit/master/docs/
-google_analytics: ['UA-125089529-1', 'auto']
+google_analytics: ['G-YKZDZDNRG2', 'auto']
+
 theme:
   name: material
   palette:
