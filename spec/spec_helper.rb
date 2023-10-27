@@ -6,6 +6,7 @@ require 'simplecov'
 SimpleCov.start
 
 require 'fast'
+require 'fast/sql'
 require 'rspec/its'
 
 RSpec.configure do |config|
@@ -15,6 +16,14 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  helpers = Module.new do
+    def s(type, *children)
+      Fast::Node.new(type, children, buffer_name: respond_to?(:buffer_name) ? buffer_name : "sql")
+    end
+  end
+
+  config.include(helpers)
 
   config.around(:example, only: :local) do |example|
     if ENV['TRAVIS']

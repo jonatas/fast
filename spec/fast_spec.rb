@@ -13,10 +13,6 @@ RSpec.describe Fast do
   let(:defined_proc) { described_class::LITERAL }
   let(:code) { ->(string) { described_class.ast(string) } }
 
-  def s(type, *children)
-    Fast::Node.new(type, children)
-  end
-
   describe '.expression' do
     it 'parses ... as Find' do
       expect(described_class.expression('...')).to be_a(Fast::Find)
