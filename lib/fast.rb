@@ -116,28 +116,6 @@ module Fast
     def capture(pattern, *args)
       Fast.capture(pattern, self, *args)
     end
-
-    class << self
-      def from_sql_statement(stmt, buffer_name: "sql")
-        case stmt.node
-        when :select_stmt
-          if (s=stmt.select_stmt)
-            children = s.target_list.map{|t|Fast::Node.from_sql_statement(t, buffer_name:  buffer_name)}
-            Node.new(:select, children, location: nil, buffer_name: buffer_name)
-          end
-        when :res_target
-          if (target=stmt.res_target)
-            children = Fast::Node.from_sql_statement(target, , buffer_name:  buffer_name)}
-            Node.new(:select, children, location: nil, buffer_name: buffer_name)
-          end
-        when :a_const
-          v = stmt.a_const.val
-          if type=v.node
-            Node.new(type, v.public_send(type).ival, buffer_name: buffer_name)
-          end
-        end
-      end
-    end
   end
 
   # Custom builder allow us to set a buffer name for each Node

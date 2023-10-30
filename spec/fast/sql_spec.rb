@@ -31,7 +31,7 @@ RSpec.describe Fast do
       describe "array" do
         let(:sql) { "select array[1,2,3]" }
         it do
-          expect(ast).to eq(s(:select, s(:float, 1.0)))
+          expect(ast).to eq(s(:select, s(:array, [s(:integer, 1), s(:integer, 2), s(:integer, 3)])))
         end
       end
     end

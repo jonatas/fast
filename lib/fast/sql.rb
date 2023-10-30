@@ -2,63 +2,48 @@ require 'pg_query'
 
 module Fast
   module_function
+
   def parse_sql(statement)
     return [] if statement.nil?
-    ast = PgQuery.parse(statement)
-    threes = ast.tree.stmts.map(&:stmt).map do |stmt|
-      from_sql_statement(stmt)
-    end.flatten
-    threes.one? ? threes.first : threes
+    stmts = sql_to_h(statement).values.map do |v|
+      to_sql_ast(v)
+    end
+    stmts.one? ? stmts.first : stmts
   end
 
-  def from_sql_statement(stmt, buffer_name: "sql")
-    case stmt
-    when PgQuery::ResTarget then
-      tuple = 
-        case stmt.val.node
-        when :a_const
-          stmt.val.a_const.val.to_h.compact
-        when :a_array_expr
-          stmt.val.send(stmt.val.node).elements.map do |e|
-            from_sql_statement(e)
-          end
-        end
+  # Transform a sql statement into a hash
+  def sql_to_h(statement)
+    tree = PgQuery.parse(statement).tree
+    clean_structure(tree.to_h)
+  end
 
-      return tuple.map do |k,v|
-        case v
-        when Hash, Array
-          v = v.compact
-          if v.one?
-            v = v.values.first
-          end
-        end
-
-        if k == :float
-          v = v.to_f
-        end
-        require 'pry'
-        binding.pry if v.nil?
-        Node.new(k, [*v], buffer_name: buffer_name)
-      end
+  # Clean up the hash structure returned by PgQuery
+  def clean_structure(hash)
+    hash.delete(:version)
+    res_hash = hash.map do |key, value|
+      value = clean_structure(value) if value.is_a?(Hash)
+      value = value.map(&Fast.method(:clean_structure)) if value.is_a?(Array)
+      value = nil if [{}, [], "", :SETOP_NONE, :LIMIT_OPTION_DEFAULT, false].include?(value)
+      [key, value]
     end
-    case stmt.node
-    when :select_stmt
-      if (s=stmt.select_stmt)
-        s.target_list.map{|t|from_sql_statement(t, buffer_name:  buffer_name)}.flatten
-      end
-    when :res_target
-      children = 
-        if (target=stmt.res_target)
-          from_sql_statement(target, buffer_name:  buffer_name)
-        end
-      Node.new(:select, children, location: nil, buffer_name: buffer_name)
-    when :a_const
-      if v = stmt.a_const.val
-        type = v.node
-        Node.new(type, [v.public_send(type).ival], buffer_name: buffer_name)
+    res_hash.to_h.compact
+  end
+
+  def to_sql_ast(obj)
+    case obj
+    when Array
+      obj.map(&Fast.method(:to_sql_ast))
+    when Hash
+      hash.map do |key, value|
+        children = 
+          case value
+          when Hash
+            hash[key] = to_sql_ast(value)
+          end
+        Node.new(key, *[children])
       end
     else
-      require "pry";binding.pry 
+      obj
     end
   end
 end
