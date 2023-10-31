@@ -108,3 +108,15 @@ Fast.capture(cols_and_from, ast)
 # => [s(:string,
 #     s(:str, "name")), s(:relname, "customer")]
 ```
+
+## Search inside
+
+```ruby
+Fast.parse_sql('select name from customer').search('relname')
+```
+
+## Location
+
+```ruby
+Fast.parse_sql('select name from customer').search('relname')[0].location
+```
