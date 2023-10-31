@@ -3,7 +3,7 @@
 
 require 'bundler/setup'
 require 'fast'
-require 'fast/pg_query'
+require 'fast/sql'
 
 def s(type, *children)
   Parser::AST::Node.new(type, children)
@@ -11,6 +11,10 @@ end
 
 def code(string)
   Fast.ast(string)
+end
+
+def sql(string)
+  Fast.parse_sql(string)
 end
 
 def reload!
