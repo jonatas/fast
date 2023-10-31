@@ -24,6 +24,7 @@ module Fast
       value = value.map(&Fast.method(:clean_structure)) if value.is_a?(Array)
       value = nil if key.to_s =~ /_(location|len)$/ || key == :location
       value = nil if [{}, [], "", :SETOP_NONE, :LIMIT_OPTION_DEFAULT, false].include?(value)
+      key = key.to_s.tr('-','_').to_sym
       [key, value]
     end
     res_hash.to_h.compact

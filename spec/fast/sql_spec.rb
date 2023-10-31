@@ -172,4 +172,38 @@ RSpec.describe Fast do
       end
     end
   end
+
+  describe ".match?" do
+    let(:sql) { described_class.method(:parse_sql) }
+
+    context "matches sql nodes" do
+      specify "match Node Pattern" do
+        expect(described_class).to be_match('(select_stmt ...)', sql['select 1'])
+        expect(described_class).to be_match('(select_stmt (target_list (res_target (val (a_const (val (integer (ival 1))))))))',
+                                             sql['select 1'])
+      end
+
+      specify "captures nodes" do
+        expect(described_class.match?('(select_stmt (target_list (res_target (val (a_const (val (integer $(ival 1))))))))',
+                                     sql['select 1']))
+          .to eq([s(:ival, 1)])
+      end
+
+      specify "captures multiple nodes" do
+        columns_and_table = <<~PATTERN
+            (select_stmt
+              (target_list (res_target (val (column_ref (fields $...)))))
+              (from_clause (range_var $(relname _))))
+          PATTERN
+
+        expect(
+          described_class.capture(
+            columns_and_table,
+            sql['select name from customer']
+          )).to eq([
+            s(:string, s(:str, "name")),
+            s(:relname, "customer")])
+      end
+    end
+  end
 end
