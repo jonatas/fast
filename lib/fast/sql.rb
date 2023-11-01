@@ -1,4 +1,5 @@
 require 'pg_query'
+require_relative 'sql_rewriter'
 
 module Fast
 
@@ -14,8 +15,11 @@ module Fast
   def parse_sql(statement)
     return [] if statement.nil?
     source_buffer = SQLSourceBuffer.new("(sql)", source: statement)
+    first, *, last = source_buffer.tokens
+    expression = Parser::Source::Range.new(source_buffer, first.start, last.end)
+    source_map = Parser::Source::Map.new(expression)
     stmts = sql_to_h(statement).map do |v|
-      sql_tree_to_ast(v, source_buffer: source_buffer)
+      sql_tree_to_ast(v, source_buffer: source_buffer, source_map: source_map)
     end.flatten
     stmts.one? ? stmts.first : stmts
   end

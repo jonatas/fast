@@ -208,15 +208,36 @@ RSpec.describe Fast do
 
     describe "location" do
       specify "loads source from expression range" do
-        ast = described_class.parse_sql('select name, address from customer')
+        ast = described_class.parse_sql(sql='select name, address from customer')
         range_from = -> (element){ ast.search(element).map{|e|e.location.expression }}
         source_from = -> (element){ ast.search(element).map{|e|e.location.expression.source}}
 
+        expect(source_from["select_stmt"]).to eq([sql])
         expect(source_from["relname"]).to eq(["customer"])
         expect(range_from["relname"].map(&:to_range)).to eq([26...34])
         expect(source_from["fields"]).to eq(["name", "address"])
         expect(range_from["fields"].map(&:to_range)).to eq([7...11, 13...20])
       end
+    end
+  end
+
+  describe '.replace_sql' do
+    subject { described_class.replace_sql(expression, example, &replacement) }
+
+    context 'with ival' do
+     let(:expression) {'(ival _)'}
+      let(:example) { Fast.parse_sql('select 1') }
+      let(:replacement) { ->(node) { replace(node.location.expression, '2') } }
+
+      it { is_expected.to eq 'select 2' }
+    end
+
+    context 'with relname' do
+     let(:expression) {'(relname _)'}
+      let(:example) { Fast.parse_sql('select * from wrong_table') }
+      let(:replacement) { ->(node) { replace(node.location.expression, 'right_table') } }
+
+      it { is_expected.to eq 'select * from right_table' }
     end
   end
 end
