@@ -205,5 +205,18 @@ RSpec.describe Fast do
             s(:relname, "customer")])
       end
     end
+
+    describe "location" do
+      specify "loads source from expression range" do
+        ast = described_class.parse_sql('select name, address from customer')
+        range_from = -> (element){ ast.search(element).map{|e|e.location.expression }}
+        source_from = -> (element){ ast.search(element).map{|e|e.location.expression.source}}
+
+        expect(source_from["relname"]).to eq(["customer"])
+        expect(range_from["relname"].map(&:to_range)).to eq([26...34])
+        expect(source_from["fields"]).to eq(["name", "address"])
+        expect(range_from["fields"].map(&:to_range)).to eq([7...11, 13...20])
+      end
+    end
   end
 end

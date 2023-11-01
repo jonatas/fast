@@ -47,26 +47,25 @@ module Fast
     res_hash.to_h.compact
   end
 
-  # Transform a sql tree into an AST
+  # Transform a sql tree into an AST.
+  # Populates the location of the AST nodes with the source map.
   # @arg [Hash] obj the hash representation of the sql statement
   # @return [Array] the AST representation of the sql statement
-  def sql_tree_to_ast(obj, source_buffer: nil, source_map: {})
+  def sql_tree_to_ast(obj, source_buffer: nil, source_map: nil)
+    recursive = -> (e) { sql_tree_to_ast(e, source_buffer: source_buffer, source_map: source_map.dup) }
     case obj
     when Array
-      obj.map{|e|sql_tree_to_ast(e, source_buffer: source_buffer, source_map: source_map)}.flatten.compact
+      obj.map(&recursive).flatten.compact
     when Hash
+      if (start = obj.delete(:location))
+        if (token = source_buffer.tokens.find{|e|e.start == start})
+          expression = Parser::Source::Range.new(source_buffer, token.start, token.end)
+          source_map = Parser::Source::Map.new(expression)
+        end
+      end
       obj.map do |key, value|
-        if key == :location || key =~ /_(location|len)$/
-          source_map[key] = value
-          next
-        end
-        if source_map[:location]
-          from = source_map[:location]
-          to = source_map[:stmt_len] ? from + source_map[:stmt_len] : source_buffer.tokens.find{|e|e.start >= from}&.end
-          expression = Parser::Source::Range.new(source_buffer, from, to)
-          parser_map = Parser::Source::Map.new(expression)
-        end
-        Node.new(key, [*sql_tree_to_ast(value, source_buffer: source_buffer, source_map: source_map)], location: parser_map)
+        children  = [*recursive.call(value)]
+        Node.new(key, children, location: source_map)
       end.compact
     else
       obj
