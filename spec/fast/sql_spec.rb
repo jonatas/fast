@@ -240,4 +240,49 @@ RSpec.describe Fast do
       it { is_expected.to eq 'select * from right_table' }
     end
   end
+
+  describe '.replace_file' do
+    let(:sql) { 'select * from my_table' }
+    let(:file) { 'tmp.sql'}
+    before :each do
+      File.open(file, 'w') { |f| f.write(sql) }
+    end
+    after :each do
+      File.delete(file) if File.exist?(file)
+    end
+
+    context 'when update from statement' do
+      let(:pattern) {'relname'}
+      let(:replacement) { ->(node) { replace(node.location.expression, 'other_table') } }
+
+      specify do
+        expect { described_class.replace_sql_file('relname', file, &replacement) }
+          .to change { IO.read(file) }
+          .from("select * from my_table")
+          .to("select * from other_table")
+      end
+    end
+
+    context 'when update from statement in middle of comments' do
+      let(:sql) { <<~SQL }
+      -- comment
+      select * from my_table
+      -- comment 2
+      SQL
+
+      let(:pattern) {'relname'}
+      let(:replacement) { ->(node) { replace(node.location.expression, 'other_table') } }
+
+      specify do
+        expect { described_class.replace_sql_file('relname', file, &replacement) }
+          .to change { IO.read(file) }
+          .from(sql)
+          .to(<<~SQL.chomp)
+            -- comment
+            select * from other_table
+            -- comment 2
+            SQL
+      end
+    end
+  end
 end
