@@ -5,6 +5,12 @@ module Fast
 
   module_function
 
+  
+  # @return [Fast::Node] the AST representation of the sql statements from a file
+  def parse_sql_file(file)
+    SQL.parse_file(file)
+  end
+
   # @return [Fast::SQLRewriter] which can be used to rewrite the SQL
   # @see Fast::SQLRewriter
   def sql_rewriter_for(pattern, ast, &replacement)

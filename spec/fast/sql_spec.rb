@@ -231,18 +231,6 @@ RSpec.describe Fast do
       end
     end
   end
-  describe '.parse_file' do
-    include_context :with_sql_file
-
-    subject { described_class.parse_file(file) }
-
-    specify do
-      is_expected.to be Fast.parse_sql(sql)
-      is_expected.to be_a Fast::Node
-      is_expected.to be_match('(select_stmt ...)')
-    end
-
-  end
 
   describe '.replace_sql' do
     subject { described_class.replace_sql(expression, ast, &replacement) }
@@ -264,6 +252,16 @@ RSpec.describe Fast do
     end
   end
 
+  describe '.parse_sql_file' do
+    include_context :with_sql_file
+
+    subject(:ast) { described_class.parse_sql_file(file) }
+
+    specify do
+      expect(ast).to be_a Fast::Node
+      expect(ast.type).to eq(:select_stmt)
+    end
+  end
 
   describe '.replace_file' do
     include_context :with_sql_file
