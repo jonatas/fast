@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-RSpec.shared_context :sql_file do
+RSpec.shared_context :with_sql_file do
   let(:sql) { 'select * from my_table' }
   let(:file) { 'tmp.sql'}
   before :each do
@@ -232,9 +232,15 @@ RSpec.describe Fast do
     end
   end
   describe '.parse_file' do
-    include_context :sql_file
+    include_context :with_sql_file
 
     subject { described_class.parse_file(file) }
+
+    specify do
+      is_expected.to be Fast.parse_sql(sql)
+      is_expected.to be_a Fast::Node
+      is_expected.to be_match('(select_stmt ...)')
+    end
 
   end
 
@@ -260,7 +266,7 @@ RSpec.describe Fast do
 
 
   describe '.replace_file' do
-    include_context :sql_file
+    include_context :with_sql_file
 
     context 'when update from statement' do
       let(:pattern) {'relname'}

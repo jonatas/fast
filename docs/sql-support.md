@@ -152,7 +152,43 @@ The tokens are useful to find the proper node location during the build but
 they're not available for all the nodes, so, it can be very handy as an extra
 reference.
 
-
 ## Replace
 
+Replace fragments of your SQL based on AST can also be done with all the work
+inherited from Parser::TreeRewriter components.
 
+```ruby
+Fast.replace_sql('ival',
+  Fast.parse_sql('select 1'),
+  &->(node){ replace(node.location.expression, '2') }
+) # => "select 2"
+```
+
+The last argument is a proc that runs on the [parser tree rewriter](https://www.rubydoc.info/gems/parser/Parser/TreeRewriter
+) scope.
+
+Let's break down the previous tree:
+
+```ruby
+ast = Fast.parse_sql("select 1")
+#  => s(:select_stmt,
+#    s(:target_list,
+#      s(:res_target,
+#        s(:val,
+#          s(:a_const,
+#            s(:val,
+#              s(:integer,
+#                s(:ival, 1))))))))
+```
+
+The pattern is simply matching node type that is `ival` but it could be a complex expression
+like `(val (a_const (val (integer (ival _)))))`.
+
+Completing the example:
+
+```ruby
+ Fast.replace_sql("ival", ast, &-> (n) { replace(n.loc.expression, "3") })
+ # => "select 3"
+```
+
+`loc` is a shortcut for `location` attribute.
