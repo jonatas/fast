@@ -1,5 +1,16 @@
 require 'spec_helper'
 
+RSpec.shared_context :sql_file do
+  let(:sql) { 'select * from my_table' }
+  let(:file) { 'tmp.sql'}
+  before :each do
+    File.open(file, 'w') { |f| f.write(sql) }
+  end
+  after :each do
+    File.delete(file) if File.exist?(file)
+  end
+end
+
 RSpec.describe Fast do
   describe ".parse_sql" do
     let(:ast) { described_class.parse_sql(sql) }
@@ -220,13 +231,19 @@ RSpec.describe Fast do
       end
     end
   end
+  describe '.parse_file' do
+    include_context :sql_file
+
+    subject { described_class.parse_file(file) }
+
+  end
 
   describe '.replace_sql' do
-    subject { described_class.replace_sql(expression, example, &replacement) }
+    subject { described_class.replace_sql(expression, ast, &replacement) }
 
     context 'with ival' do
      let(:expression) {'(ival _)'}
-      let(:example) { Fast.parse_sql('select 1') }
+      let(:ast) { Fast.parse_sql('select 1') }
       let(:replacement) { ->(node) { replace(node.location.expression, '2') } }
 
       it { is_expected.to eq 'select 2' }
@@ -234,22 +251,16 @@ RSpec.describe Fast do
 
     context 'with relname' do
      let(:expression) {'(relname _)'}
-      let(:example) { Fast.parse_sql('select * from wrong_table') }
+      let(:ast) { Fast.parse_sql('select * from wrong_table') }
       let(:replacement) { ->(node) { replace(node.location.expression, 'right_table') } }
 
       it { is_expected.to eq 'select * from right_table' }
     end
   end
 
+
   describe '.replace_file' do
-    let(:sql) { 'select * from my_table' }
-    let(:file) { 'tmp.sql'}
-    before :each do
-      File.open(file, 'w') { |f| f.write(sql) }
-    end
-    after :each do
-      File.delete(file) if File.exist?(file)
-    end
+    include_context :sql_file
 
     context 'when update from statement' do
       let(:pattern) {'relname'}

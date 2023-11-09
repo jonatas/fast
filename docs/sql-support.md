@@ -112,11 +112,47 @@ Fast.capture(cols_and_from, ast)
 ## Search inside
 
 ```ruby
-Fast.parse_sql('select name from customer').search('relname')
+relname = Fast.parse_sql('select name from customer').search('relname').first
+# => s(:relname, "customer")
 ```
 
-## Location
+Find the location of a node.
 
 ```ruby
-Fast.parse_sql('select name from customer').search('relname')[0].location
+relname.location # => #<Parser::Source::Map:0x00007fd3bcb0b7f0
+#  @expression=#<Parser::Source::Range (sql) 17...25>,
+#  @node=s(:relname, "customer")>
 ```
+
+The location can be useful to allow you to do refactorings and find specific
+delimitations of objects in the string.
+
+The attribute `expression` gives access to the source range.
+
+```ruby
+relname.location.expression
+# => #<Parser::Source::Range (sql) 17...25>
+```
+
+The `source_buffer` is shared and can be accessed through the expression.
+
+```ruby
+relname.location.expression.source_buffer
+# => #<Fast::SQL::SourceBuffer:0x00007fd3bc2a6420
+#    @name="(sql)",
+#    @source="select name from customer",
+#    @tokens=
+#     [<PgQuery::ScanToken: start: 0, end: 6, token: :SELECT, keyword_kind: :RESERVED_KEYWORD>,
+#      <PgQuery::ScanToken: start: 7, end: 11, token: :NAME_P, keyword_kind: :UNRESERVED_KEYWORD>,
+#      <PgQuery::ScanToken: start: 12, end: 16, token: :FROM, keyword_kind: :RESERVED_KEYWORD>,
+#      <PgQuery::ScanToken: start: 17, end: 25, token: :IDENT, keyword_kind: :NO_KEYWORD>]>
+```
+
+The tokens are useful to find the proper node location during the build but
+they're not available for all the nodes, so, it can be very handy as an extra
+reference.
+
+
+## Replace
+
+
