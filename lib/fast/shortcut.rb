@@ -34,7 +34,7 @@ module Fast
     def fast_files
       @fast_files ||= LOOKUP_FAST_FILES_DIRECTORIES.compact
         .map { |dir| File.join(dir, 'Fastfile') }
-        .select(&File.method(:exists?))
+        .select(&File.method(:exist?))
     end
 
     # Loads `Fastfiles` from {.fast_files} list
