@@ -1,6 +1,8 @@
+# SQL Support
 Fast is partially supporting SQL syntax. Behind the scenes it parses SQL using
 [pg_query](https://github.com/pganalyze/pg_query) and simplifies it to AST Nodes
-using the same Ruby interface.
+using the same Ruby interface. It's using Postgresql parser behind the scenes,
+but probably could be useful for other SQL similar diallects .
 
 The plan is that Fast would auto-detect file extensions and choose the sql path
 in case the file relates to sql.
@@ -167,7 +169,7 @@ Fast.replace_sql('ival',
 The last argument is a proc that runs on the [parser tree rewriter](https://www.rubydoc.info/gems/parser/Parser/TreeRewriter
 ) scope.
 
-Let's break down the previous tree:
+Let's break down the previous code:
 
 ```ruby
 ast = Fast.parse_sql("select 1")

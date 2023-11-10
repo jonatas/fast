@@ -7,6 +7,11 @@ theme:
   palette:
     primary: indigo
     accent: pink
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+extra_css:
+  - stylesheets/custom.css
+
 markdown_extensions:
   - admonition
   - codehilite:

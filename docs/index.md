@@ -1,5 +1,7 @@
 # Fast
 
+<center>![](assets/logo-small.png)</center>
+
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
 Ruby allow us to do the same thing in a few ways then it's hard to check
