@@ -160,6 +160,12 @@ Replace fragments of your SQL based on AST can also be done with all the work
 inherited from Parser::TreeRewriter components.
 
 ```ruby
+Fast.parse_sql('select 1').replace('ival', '2') # => "select 2"
+```
+
+The previous example is a syntax sugar for the following code:
+
+```ruby
 Fast.replace_sql('ival',
   Fast.parse_sql('select 1'),
   &->(node){ replace(node.location.expression, '2') }
@@ -194,3 +200,5 @@ Completing the example:
 ```
 
 `loc` is a shortcut for `location` attribute.
+
+
