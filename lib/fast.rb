@@ -148,11 +148,18 @@ module Fast
 
     # @return [Fast::Node] parsed from file content
     # caches the content based on the filename.
+    # Also, it can parse SQL files.
     # @example
     #   Fast.ast_from_file("example.rb") # => s(...)
     def ast_from_file(file)
       @cache ||= {}
-      @cache[file] ||= ast(IO.read(file), buffer_name: file)
+      @cache[file] ||= 
+        if file.end_with?('.sql')
+          require_relative 'fast/sql' unless respond_to?(:parse_sql)
+          parse_sql(IO.read(file), buffer_name: file)
+        else
+          ast(content, buffer_name: file)
+        end
     end
 
     # Verify if a given AST matches with a specific pattern
@@ -169,7 +176,12 @@ module Fast
       node = ast_from_file(file)
       return [] unless node
 
-      search pattern, node
+      case node
+      when Array
+        node.map { |n| search(pattern, n) }.flatten.compact
+      else
+        search pattern, node
+      end
     end
 
     # Search with pattern on a directory or multiple files
@@ -228,8 +240,12 @@ module Fast
     def capture_file(pattern, file)
       node = ast_from_file(file)
       return [] unless node
-
-      capture pattern, node
+      case node
+      when Array
+        node.map { |n| capture(pattern, n) }.flatten.compact
+      else
+        capture pattern, node
+      end
     end
 
     # Search recursively into a node and its children.
