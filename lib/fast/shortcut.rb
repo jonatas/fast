@@ -65,7 +65,7 @@ module Fast
     def merge_args(extra_args)
       all_args = (@args + extra_args).uniq
       options = all_args.select { |arg| arg.start_with? '-' }
-      files = extra_args.select(&File.method(:exists?))
+      files = extra_args.select(&File.method(:exist?))
       command = (@args - options - files).first
 
       [command, *options, *files]

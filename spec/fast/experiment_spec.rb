@@ -45,7 +45,7 @@ RSpec.describe Fast::Experiment do
       end
 
       it 'replace only second case' do
-        expect(File).to be_exists(spec)
+        expect(File).to be_exist(spec)
         expect(experiment_file.partial_replace(2)).to eq(<<~RUBY)
           let(:user) { create(:user) }
           let(:address) { build_stubbed(:address) }

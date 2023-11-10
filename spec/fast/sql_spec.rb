@@ -20,14 +20,13 @@ RSpec.describe Fast do
         let(:sql) { "select 1" }
         it do
           expect(ast).to eq(
-              s(:select_stmt,
-                s(:target_list,
-                  s(:res_target,
-                    s(:val,
-                      s(:a_const,
-                        s(:val,
-                          s(:integer,
-                            s(:ival, 1)))))))))
+            s(:select_stmt,
+              s(:target_list,
+                s(:res_target,
+                  s(:val,
+                    s(:a_const,
+                      s(:ival,
+                        s(:ival, 1))))))))
         end
       end
     end
@@ -41,9 +40,8 @@ RSpec.describe Fast do
                                  s(:res_target,
                                    s(:val,
                                      s(:a_const,
-                                       s(:val,
-                                         s(:integer,
-                                           s(:ival, 1)))))))))
+                                       s(:ival,
+                                         s(:ival, 1))))))))
         end
       end
       describe "string" do
@@ -55,9 +53,8 @@ RSpec.describe Fast do
                 s(:res_target,
                   s(:val,
                     s(:a_const,
-                      s(:val,
-                        s(:string,
-                          s(:str, "hello")))))))))
+                      s(:sval,
+                        s(:sval, "hello"))))))))
         end
       end
       describe "float" do
@@ -69,34 +66,8 @@ RSpec.describe Fast do
                 s(:res_target,
                   s(:val,
                     s(:a_const,
-                      s(:val,
-                        s(:float,
-                          s(:str, "1.0")))))))))
-        end
-      end
-
-      describe "array" do
-        let(:sql) { "select array[1,2,3]" }
-        it do
-          expect(ast).to eq(
-            s(:select_stmt,
-              s(:target_list,
-                s(:res_target,
-                  s(:val,
-                    s(:a_array_expr,
-                      s(:elements,
-                        s(:a_const,
-                          s(:val,
-                            s(:integer,
-                              s(:ival, 1)))),
-                        s(:a_const,
-                          s(:val,
-                            s(:integer,
-                              s(:ival, 2)))),
-                        s(:a_const,
-                          s(:val,
-                            s(:integer,
-                              s(:ival, 3)))))))))))
+                      s(:fval,
+                        s(:fval, "1.0"))))))))
         end
       end
     end
@@ -104,38 +75,21 @@ RSpec.describe Fast do
     context "when multiple queries are assigned" do
       let(:sql) { "select 1; select 2;" }
       specify do
-        expect(ast).to eq([
-          s(:select_stmt,
-            s(:target_list,
-              s(:res_target,
-                s(:val,
-                  s(:a_const,
-                    s(:val,
-                      s(:integer,
-                        s(:ival, 1)))))))),
-          s(:select_stmt,
-            s(:target_list,
-              s(:res_target,
-                s(:val,
-                  s(:a_const,
-                    s(:val,
-                      s(:integer,
-                        s(:ival, 2))))))))])
+        expect(ast).to eq([Fast.parse_sql("select 1"), Fast.parse_sql("select 2")])
       end
     end
     context "when use alias" do
       let(:sql) { "select 1 as a" }
       specify do
         expect(ast).to eq(
-           s(:select_stmt,
-         s(:target_list,
-           s(:res_target,
-             s(:name, "a"),
-             s(:val,
+         s(:select_stmt,
+           s(:target_list,
+             s(:res_target,
+               s(:name, "a"),
+               s(:val,
                s(:a_const,
-                 s(:val,
-                   s(:integer,
-                     s(:ival, 1)))))))))
+                 s(:ival,
+                   s(:ival, 1))))))))
       end
     end
     context "when use from" do
@@ -147,9 +101,8 @@ RSpec.describe Fast do
               s(:res_target,
                 s(:val,
                   s(:a_const,
-                    s(:val,
-                      s(:integer,
-                        s(:ival, 1))))))),
+                    s(:ival,
+                      s(:ival, 1)))))),
             s(:from_clause,
               s(:range_var,
                 s(:relname, "a"),
@@ -167,9 +120,8 @@ RSpec.describe Fast do
               s(:res_target,
                 s(:val,
                   s(:a_const,
-                    s(:val,
-                      s(:integer,
-                        s(:ival, 1))))))),
+                    s(:ival,
+                      s(:ival, 1)))))),
           s(:from_clause,
             s(:range_var,
               s(:relname, "a"),
@@ -177,9 +129,8 @@ RSpec.describe Fast do
               s(:relpersistence, "p"))),
           s(:group_clause,
             s(:a_const,
-              s(:val,
-                s(:integer,
-                  s(:ival, 1)))))))
+              s(:ival,
+                s(:ival, 1))))))
       end
     end
   end
@@ -190,14 +141,10 @@ RSpec.describe Fast do
     context "matches sql nodes" do
       specify "match Node Pattern" do
         expect(described_class).to be_match('(select_stmt ...)', sql['select 1'])
-        expect(described_class).to be_match('(select_stmt (target_list (res_target (val (a_const (val (integer (ival 1))))))))',
-                                             sql['select 1'])
       end
 
       specify "captures nodes" do
-        expect(described_class.match?('(select_stmt (target_list (res_target (val (a_const (val (integer $(ival 1))))))))',
-                                     sql['select 1']))
-          .to eq([s(:ival, 1)])
+        expect(described_class.match?('(select_stmt (target_list (res_target (val (a_const (ival (ival $_))))))))', sql['select 1'])).to eq([1])
       end
 
       specify "captures multiple nodes" do
@@ -212,7 +159,7 @@ RSpec.describe Fast do
             columns_and_table,
             sql['select name from customer']
           )).to eq([
-            s(:string, s(:str, "name")),
+            s(:string, s(:sval, "name")),
             s(:relname, "customer")])
       end
     end
@@ -229,6 +176,19 @@ RSpec.describe Fast do
         expect(source_from["fields"]).to eq(["name", "address"])
         expect(range_from["fields"].map(&:to_range)).to eq([7...11, 13...20])
       end
+    end
+  end
+
+  describe "node replacement" do
+    let(:ast) { Fast.parse_sql('select 1')}
+
+    it "works with string replacement searching for a pattern" do
+      expect(ast.replace("ival", "2")).to eq('select 2')
+    end
+
+    it "works with replacement" do
+      add_comment = ->{insert_before(_1.loc.expression,"-- my query\n")}
+      expect(ast.replace('target_list', &add_comment)).to eq("-- my query\nselect 1")
     end
   end
 

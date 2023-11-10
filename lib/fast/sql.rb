@@ -79,6 +79,20 @@ module Fast
 
     # The SQL node is an AST node with additional tokenization info
     class Node < Fast::Node
+
+      def first(pattern)
+        search(pattern).first
+      end
+
+      def replace(pattern, with=nil, &replacement)
+        replacement ||= -> (n) { replace(n.loc.expression, with) }
+        if root?
+          SQL.replace(pattern, self, &replacement)
+        else
+          parent.replace(pattern, &replacement)
+        end
+      end
+
       def token
         tokens.find{|e|e.start == location.begin}
       end
