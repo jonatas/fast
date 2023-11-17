@@ -1,22 +1,28 @@
 # SQL Support
+
 Fast is partially supporting SQL syntax. Behind the scenes it parses SQL using
 [pg_query](https://github.com/pganalyze/pg_query) and simplifies it to AST Nodes
-using the same Ruby interface. It's using Postgresql parser behind the scenes,
-but probably could be useful for other SQL similar diallects .
+using the same interface. It's using Postgresql parser behind the scenes,
+but probably could be useful for other SQL similar diallects.
 
-The plan is that Fast would auto-detect file extensions and choose the sql path
-in case the file relates to sql.
 
-By default, this module is not included into the main library as it still very
-experimental.
+!!! info "fast auto detects SQL files in the command line"
 
-```ruby
-require 'fast/sql'
-```
+    By default, this module is not included into the main library.
+    Fast can auto-detect file extensions and choose the sql path in case the
+    file relates to sql.
+
+    Use `fast --sql` in case you want to force the usage of the SQL parser.
+
+    ```
+
+    ```
+
 
 # Parsing a sql content
 
 ```ruby
+require 'fast/sql'
 ast = Fast.parse_sql('select 1')
 # => s(:select_stmt,
 #     s(:target_list,
@@ -27,6 +33,27 @@ ast = Fast.parse_sql('select 1')
 #               s(:integer,
 #                 s(:ival, 1))))))))
 ```
+
+## Why it's interesting to use AST for SQL?
+
+Both SQL are available and do the same thing:
+```sql
+select * from customers
+```
+or
+```sql
+table customers
+```
+
+they have exactly the same objective but written down in very different syntax.
+
+Give a try:
+
+```ruby
+Fast.parse_sql("select * from customers") == Fast.parse_sql("table customers") # => true
+```
+
+## Match
 
 Use `match?` with your node pattern to traverse the abstract syntax tree.
 
@@ -68,12 +95,35 @@ Fast.match?("(select_stmt (_ (_ (val ($...)))))", ast)
 #         s(:ival, 1))))]
 ```
 
-# Examples
+## Search directly from the AST
 
-## Capturing fields and where clause
+You can also search directly from nodes and keep digging:
+
+```ruby
+ast = Fast.parse_sql('select 1');
+ast.search('ival') # => [s(:ival, s(:ival, 1))]
+```
+
+Use first to return the node directly:
+
+```ruby
+ast.first('(ival (ival _))')  #=> s(:ival, s(:ival, 1))
+```
+
+Combine the `capture` method with `$`:
+
+```ruby
+ast.capture('(ival (ival $_))') # => [1]
+```
+
+
+# Examples
 
 Let's dive into a more complex example capturing fields and from clause of a
 condition. Let's start parsing the sql:
+
+## Capturing fields and where clause
+
 
 ```ruby
 ast = Fast.parse_sql('select name from customer')
@@ -184,13 +234,12 @@ ast = Fast.parse_sql("select 1")
 #      s(:res_target,
 #        s(:val,
 #          s(:a_const,
-#            s(:val,
-#              s(:integer,
-#                s(:ival, 1))))))))
+#            s(:ival,
+#              s(:ival, 1)))))))
 ```
 
 The pattern is simply matching node type that is `ival` but it could be a complex expression
-like `(val (a_const (val (integer (ival _)))))`.
+like `(val (a_const (val (ival (ival _)))))`.
 
 Completing the example:
 

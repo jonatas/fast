@@ -1,16 +1,5 @@
 require 'spec_helper'
 
-RSpec.shared_context :with_sql_file do
-  let(:sql) { 'select * from my_table' }
-  let(:file) { 'tmp.sql'}
-  before :each do
-    File.open(file, 'w') { |f| f.write(sql) }
-  end
-  after :each do
-    File.delete(file) if File.exist?(file)
-  end
-end
-
 RSpec.describe Fast do
   describe ".parse_sql" do
     let(:ast) { described_class.parse_sql(sql) }

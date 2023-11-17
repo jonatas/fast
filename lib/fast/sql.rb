@@ -5,7 +5,8 @@ module Fast
 
   module_function
 
-  
+  # Shortcut to parse a sql file
+  # @example Fast.parse_sql_file('spec/fixtures/sql/select.sql')
   # @return [Fast::Node] the AST representation of the sql statements from a file
   def parse_sql_file(file)
     SQL.parse_file(file)
@@ -109,35 +110,27 @@ module Fast
     def parse(statement, buffer_name: "(sql)")
       return [] if statement.nil?
       source_buffer = SQL::SourceBuffer.new(buffer_name, source: statement)
-      first, *, last = source_buffer.tokens
-      expression = Parser::Source::Range.new(source_buffer, first.start, last.end)
-      source_map = Parser::Source::Map.new(expression)
-      stmts = sql_to_h(statement).map do |v|
+      tree = PgQuery.parse(statement).tree
+      stmts = tree.stmts.map do |stmt|
+        v = clean_structure(stmt.stmt.to_h)
+        inner_stmt = statement[stmt.stmt_location, stmt.stmt_len]
+        first, *, last = source_buffer.tokens
+        from = stmt.stmt_location
+        to = from.zero? ? last.end : from + stmt.stmt_len
+        expression = Parser::Source::Range.new(source_buffer, from, to)
+        source_map = Parser::Source::Map.new(expression)
         sql_tree_to_ast(v, source_buffer: source_buffer, source_map: source_map)
       end.flatten
       stmts.one? ? stmts.first : stmts
     end
 
-    # Transform a sql statement into a hash
     # Clean up the hash structure returned by PgQuery
-    # @return [Hash] the hash representation of the sql statement
-    def sql_to_h(statement)
-      tree = PgQuery.parse(statement).tree
-      tree.to_h[:stmts].map{|e|clean_structure(e[:stmt])}
-    end
-
-    # Clean up the hash structure returned by PgQuery
-    # Skip location if not needed.
     # @arg [Hash] hash the hash representation of the sql statement
-    # @arg [Boolean] include_location whether to include location or not
     # @return [Hash] the hash representation of the sql statement
-    def clean_structure(hash, include_location: true)
-      res_hash = hash.map do |key, value|
+    def clean_structure(stmt)
+      res_hash = stmt.map do |key, value|
         value = clean_structure(value) if value.is_a?(Hash)
         value = value.map(&Fast::SQL.method(:clean_structure)) if value.is_a?(Array)
-        unless include_location
-          value = nil if key.to_s =~ /_(location|len)$/ || key == :location
-        end
         value = nil if [{}, [], "", :SETOP_NONE, :LIMIT_OPTION_DEFAULT, false].include?(value)
         key = key.to_s.tr('-','_').to_sym
         [key, value]

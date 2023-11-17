@@ -9,6 +9,17 @@ require 'fast'
 require 'fast/sql'
 require 'rspec/its'
 
+RSpec.shared_context :with_sql_file do
+  let(:sql) { 'select * from my_table' }
+  let(:file) { 'tmp.sql'}
+  before :each do
+    File.open(file, 'w') { |f| f.write(sql) }
+  end
+  after :each do
+    File.delete(file) if File.exist?(file)
+  end
+end
+
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = '.rspec_status'

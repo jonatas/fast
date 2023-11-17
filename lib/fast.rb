@@ -153,12 +153,16 @@ module Fast
     #   Fast.ast_from_file("example.rb") # => s(...)
     def ast_from_file(file)
       @cache ||= {}
-      @cache[file] ||= 
-        if file.end_with?('.sql')
-          require_relative 'fast/sql' unless respond_to?(:parse_sql)
-          parse_sql(IO.read(file), buffer_name: file)
-        else
-          ast(content, buffer_name: file)
+      @cache[file] ||=
+        begin
+          method =
+            if file.end_with?('.sql')
+              require_relative 'fast/sql' unless respond_to?(:parse_sql)
+              :parse_sql
+            else
+              :ast
+            end
+          Fast.public_send(method, IO.read(file), buffer_name: file)
         end
     end
 
@@ -257,9 +261,14 @@ module Fast
         yield node, match if block_given?
         match != true ? [node, match] : [node]
       else
-        node.each_child_node
-          .flat_map { |child| search(pattern, child, *args) }
-          .compact.flatten
+        case node
+        when Array
+          node.flat_map { |child| search(pattern, child, *args) }
+        else
+          node.each_child_node
+            .flat_map { |child| search(pattern, child, *args) }
+            .compact.flatten
+        end
       end
     end
 
@@ -451,6 +460,10 @@ module Fast
         node.type == expression.to_sym
       when String
         node == expression.to_s
+      when TrueClass
+        expression == :true
+      when FalseClass
+        expression == :false
       else
         node == expression
       end
