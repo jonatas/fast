@@ -8,6 +8,11 @@ theme:
   palette:
     primary: indigo
     accent: pink
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+extra_css:
+  - stylesheets/custom.css
+
 markdown_extensions:
   - admonition
   - codehilite:
@@ -28,3 +33,4 @@ nav:
   - Research: research.md
   - Ideas: ideas.md
   - Videos: videos.md
+  - SQL Support: sql-support.md

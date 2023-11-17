@@ -6,7 +6,19 @@ require 'simplecov'
 SimpleCov.start
 
 require 'fast'
+require 'fast/sql'
 require 'rspec/its'
+
+RSpec.shared_context :with_sql_file do
+  let(:sql) { 'select * from my_table' }
+  let(:file) { 'tmp.sql'}
+  before :each do
+    File.open(file, 'w') { |f| f.write(sql) }
+  end
+  after :each do
+    File.delete(file) if File.exist?(file)
+  end
+end
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
@@ -15,6 +27,14 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  helpers = Module.new do
+    def s(type, *children)
+      Fast::Node.new(type, children, buffer_name: respond_to?(:buffer_name) ? buffer_name : "sql")
+    end
+  end
+
+  config.include(helpers)
 
   config.around(:example, only: :local) do |example|
     if ENV['TRAVIS']

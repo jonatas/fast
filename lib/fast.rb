@@ -148,11 +148,22 @@ module Fast
 
     # @return [Fast::Node] parsed from file content
     # caches the content based on the filename.
+    # Also, it can parse SQL files.
     # @example
     #   Fast.ast_from_file("example.rb") # => s(...)
     def ast_from_file(file)
       @cache ||= {}
-      @cache[file] ||= ast(IO.read(file), buffer_name: file)
+      @cache[file] ||=
+        begin
+          method =
+            if file.end_with?('.sql')
+              require_relative 'fast/sql' unless respond_to?(:parse_sql)
+              :parse_sql
+            else
+              :ast
+            end
+          Fast.public_send(method, IO.read(file), buffer_name: file)
+        end
     end
 
     # Verify if a given AST matches with a specific pattern
@@ -169,7 +180,12 @@ module Fast
       node = ast_from_file(file)
       return [] unless node
 
-      search pattern, node
+      case node
+      when Array
+        node.map { |n| search(pattern, n) }.flatten.compact
+      else
+        search pattern, node
+      end
     end
 
     # Search with pattern on a directory or multiple files
@@ -228,8 +244,12 @@ module Fast
     def capture_file(pattern, file)
       node = ast_from_file(file)
       return [] unless node
-
-      capture pattern, node
+      case node
+      when Array
+        node.map { |n| capture(pattern, n) }.flatten.compact
+      else
+        capture pattern, node
+      end
     end
 
     # Search recursively into a node and its children.
@@ -241,9 +261,14 @@ module Fast
         yield node, match if block_given?
         match != true ? [node, match] : [node]
       else
-        node.each_child_node
-          .flat_map { |child| search(pattern, child, *args) }
-          .compact.flatten
+        case node
+        when Array
+          node.flat_map { |child| search(pattern, child, *args) }
+        else
+          node.each_child_node
+            .flat_map { |child| search(pattern, child, *args) }
+            .compact.flatten
+        end
       end
     end
 
@@ -435,6 +460,10 @@ module Fast
         node.type == expression.to_sym
       when String
         node == expression.to_s
+      when TrueClass
+        expression == :true
+      when FalseClass
+        expression == :false
       else
         node == expression
       end

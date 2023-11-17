@@ -24,11 +24,28 @@ RSpec.describe Fast::Cli do
       its(:pattern) { is_expected.to eq('def') }
     end
 
-    context 'with -c to search from code and file' do
-      let(:args) { %w[match? lib/fast.rb -c] }
+    context "with --sql to search from sql" do
+     include_context :with_sql_file
+     let(:sql) { 'SELECT * FROM customers' }
+     let(:args) { ["--no-color", "--sql", "(relname 'customers')", file] }
 
-      its(:pattern) { is_expected.to eq('(send nil :match?)') }
-      its(:from_code) { is_expected.to be_truthy }
+      specify do
+         expect { cli.run! }.to output(<<~OUT).to_stdout
+            # tmp.sql:1
+            customers
+            OUT
+      end
+
+      context 'with --sql --from-code' do
+        let(:args) { %w[--no-color  --sql --from-code] + ["table customers", file] }
+
+        specify do
+          expect { cli.run! }.to output(<<~OUT).to_stdout
+            # tmp.sql:1
+            SELECT * FROM customers
+          OUT
+        end
+      end
     end
 
     context 'with --pry' do
@@ -64,10 +81,12 @@ RSpec.describe Fast::Cli do
     end
 
     context 'with --similar' do
-      let(:args) { %w[1.1 --similar] }
-
+      let(:args) { %w[--ast --similar 1.1] }
       its(:similar) { is_expected.to be_truthy }
-      its(:pattern) { is_expected.to eq('(float _)') }
+      specify do
+        cli.run!
+        expect(cli.pattern).to eq('(float _)')
+      end
     end
 
     context 'with --ast' do
@@ -76,12 +95,14 @@ RSpec.describe Fast::Cli do
       its(:show_sexp) { is_expected.to be_truthy }
     end
 
-    context 'with --code' do
-      let(:args) { %w[1.1 --code] }
+    context 'with --ast --from-code ' do
+      let(:args) { %w[--no-color --ast --from-code match?] }
 
-      its(:from_code) { is_expected.to be_truthy }
-      its(:pattern) { is_expected.to eq('(float 1.1)') }
+      specify do
+        expect { cli.run! }.to output(/(send nil :match?)/).to_stdout
+      end
     end
+
 
     context 'with --version' do
       let(:args) { %w[--version] }

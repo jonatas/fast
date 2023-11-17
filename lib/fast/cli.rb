@@ -2,6 +2,7 @@
 
 require 'fast'
 require 'fast/version'
+require 'fast/sql'
 require 'coderay'
 require 'optparse'
 require 'ostruct'
@@ -16,7 +17,7 @@ module Fast
   # Useful for printing code with syntax highlight.
   # @param show_sexp [Boolean] prints node expression instead of code
   # @param colorize [Boolean] skips `CodeRay` processing when false.
-  def highlight(node, show_sexp: false, colorize: true)
+  def highlight(node, show_sexp: false, colorize: true, sql: false)
     output =
       if node.respond_to?(:loc) && !show_sexp
         wrap_source_range(node).source
@@ -25,7 +26,7 @@ module Fast
       end
     return output unless colorize
 
-    CodeRay.scan(output, :ruby).term
+    CodeRay.scan(output, sql ? :sql : :ruby).term
   end
 
   # Fixes initial spaces to print the line since the beginning
@@ -63,7 +64,7 @@ module Fast
   # @param file [String] Show the file name and result line before content
   # @param headless [Boolean] Skip printing the file name and line before content
   # @example
-  #   Fast.highlight(Fast.search(...))
+  #   Fast.report(result, file: 'file.rb')
   def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true) # rubocop:disable Metrics/ParameterLists
     if file
       line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
@@ -90,6 +91,9 @@ module Fast
       option_parser.parse! args
 
       @files = [*@files].reject { |arg| arg.start_with?('-') }
+      @sql ||= @files.any? && @files.all? { |file| file.end_with?('.sql') }
+
+      require 'fast/sql' if @sql
     end
 
     def option_parser # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
@@ -117,6 +121,10 @@ module Fast
           @parallel = true
         end
 
+        opts.on("--sql", "Use SQL instead of Ruby") do
+          @sql = true
+        end
+
         opts.on('--captures', 'Print only captures of the patterns and skip node results') do
           @captures = true
         end
@@ -134,22 +142,16 @@ module Fast
           require 'pry'
         end
 
-        opts.on('-c', '--code', 'Create a pattern from code example') do
-          if @pattern
-            @from_code = true
-            @pattern = Fast.ast(@pattern).to_sexp
-            debug 'Expression from AST:', @pattern
-          end
-        end
-
         opts.on('-s', '--similar', 'Search for similar code.') do
           @similar = true
-          @pattern = Fast.expression_from(Fast.ast(@pattern))
-          debug "Looking for code similar to #{@pattern}"
         end
 
         opts.on('--no-color', 'Disable color output') do
           @colorize = false
+        end
+
+        opts.on('--from-code', 'From code') do
+          @from_code = true
         end
 
         opts.on_tail('--version', 'Show version') do
@@ -186,6 +188,25 @@ module Fast
 
       if @help || @files.empty? && @pattern.nil?
         puts option_parser.help
+        return
+      end
+
+      if @similar
+        ast = Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
+        @pattern = Fast.expression_from(ast)
+        debug "Search similar to #{@pattern}"
+      elsif @from_code
+        ast = Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
+        @pattern = ast.to_sexp
+        if @sql
+          @pattern.gsub!(/\b-\b/,'_')
+        end
+        debug "Search from code to #{@pattern}"
+      end
+
+      if @files.empty?
+        ast ||= Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
+        puts Fast.highlight(ast, show_sexp: @show_sexp, colorize: @colorize, sql: @sql)
       else
         search
       end
@@ -216,7 +237,7 @@ module Fast
     # @yieldparam [String, Array] with file and respective search results
     def execute_search(&on_result)
       Fast.public_send(search_method_name,
-                       expression,
+                       @pattern,
                        @files,
                        parallel: parallel?,
                        on_result: on_result)

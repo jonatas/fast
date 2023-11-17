@@ -1,5 +1,7 @@
 # Experiments
 
+<center>![](assets/logo.png)</center>
+
 Experiments allow us to play with AST and do some code transformation, execute
 some code and continue combining successful transformations.
 

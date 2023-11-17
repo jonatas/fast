@@ -34,7 +34,7 @@ module Fast
     def fast_files
       @fast_files ||= LOOKUP_FAST_FILES_DIRECTORIES.compact
         .map { |dir| File.join(dir, 'Fastfile') }
-        .select(&File.method(:exists?))
+        .select(&File.method(:exist?))
     end
 
     # Loads `Fastfiles` from {.fast_files} list
@@ -65,7 +65,7 @@ module Fast
     def merge_args(extra_args)
       all_args = (@args + extra_args).uniq
       options = all_args.select { |arg| arg.start_with? '-' }
-      files = extra_args.select(&File.method(:exists?))
+      files = extra_args.select(&File.method(:exist?))
       command = (@args - options - files).first
 
       [command, *options, *files]
