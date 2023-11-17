@@ -458,17 +458,20 @@
 <h1 id="sql-support">SQL Support<a class="headerlink" href="#sql-support" title="Permanent link">&para;</a></h1>
 <p>Fast is partially supporting SQL syntax. Behind the scenes it parses SQL using
 <a href="https://github.com/pganalyze/pg_query">pg_query</a> and simplifies it to AST Nodes
-using the same Ruby interface. It's using Postgresql parser behind the scenes,
-but probably could be useful for other SQL similar diallects .</p>
-<p>The plan is that Fast would auto-detect file extensions and choose the sql path
-in case the file relates to sql.</p>
-<p>By default, this module is not included into the main library as it still very
-experimental.</p>
-<div class="codehilite"><pre><span></span><code><span class="nb">require</span><span class="w"> </span><span class="s1">&#39;fast/sql&#39;</span>
-</code></pre></div>
-
+using the same interface. It's using Postgresql parser behind the scenes,
+but probably could be useful for other SQL similar diallects.</p>
+<div class="admonition info">
+<p class="admonition-title">fast auto detects SQL files in the command line</p>
+<p>By default, this module is not included into the main library.
+Fast can auto-detect file extensions and choose the sql path in case the
+file relates to sql.</p>
+<p>Use <code>fast --sql</code> in case you want to force the usage of the SQL parser.</p>
+<p>```</p>
+<p>```</p>
+</div>
 <h1 id="parsing-a-sql-content">Parsing a sql content<a class="headerlink" href="#parsing-a-sql-content" title="Permanent link">&para;</a></h1>
-<div class="codehilite"><pre><span></span><code><span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s1">&#39;select 1&#39;</span><span class="p">)</span>
+<div class="codehilite"><pre><span></span><code><span class="nb">require</span><span class="w"> </span><span class="s1">&#39;fast/sql&#39;</span>
+<span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s1">&#39;select 1&#39;</span><span class="p">)</span>
 <span class="c1"># =&gt; s(:select_stmt,</span>
 <span class="c1">#     s(:target_list,</span>
 <span class="c1">#       s(:res_target,</span>
@@ -479,6 +482,21 @@ experimental.</p>
 <span class="c1">#                 s(:ival, 1))))))))</span>
 </code></pre></div>
 
+<h2 id="why-its-interesting-to-use-ast-for-sql">Why it's interesting to use AST for SQL?<a class="headerlink" href="#why-its-interesting-to-use-ast-for-sql" title="Permanent link">&para;</a></h2>
+<p>Both SQL are available and do the same thing:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">select</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">customers</span>
+</code></pre></div>
+
+<p>or</p>
+<div class="codehilite"><pre><span></span><code><span class="k">table</span><span class="w"> </span><span class="n">customers</span>
+</code></pre></div>
+
+<p>they have exactly the same objective but written down in very different syntax.</p>
+<p>Give a try:</p>
+<div class="codehilite"><pre><span></span><code><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s2">&quot;select * from customers&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s2">&quot;table customers&quot;</span><span class="p">)</span><span class="w"> </span><span class="c1"># =&gt; true</span>
+</code></pre></div>
+
+<h2 id="match">Match<a class="headerlink" href="#match" title="Permanent link">&para;</a></h2>
 <p>Use <code>match?</code> with your node pattern to traverse the abstract syntax tree.</p>
 <div class="codehilite"><pre><span></span><code><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">match?</span><span class="p">(</span><span class="s2">&quot;(select_stmt ...)&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ast</span><span class="p">)</span><span class="w"> </span><span class="c1"># =&gt; true</span>
 </code></pre></div>
@@ -510,10 +528,24 @@ experimental.</p>
 <span class="c1">#         s(:ival, 1))))]</span>
 </code></pre></div>
 
+<h2 id="search-directly-from-the-ast">Search directly from the AST<a class="headerlink" href="#search-directly-from-the-ast" title="Permanent link">&para;</a></h2>
+<p>You can also search directly from nodes and keep digging:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s1">&#39;select 1&#39;</span><span class="p">);</span>
+<span class="n">ast</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s1">&#39;ival&#39;</span><span class="p">)</span><span class="w"> </span><span class="c1"># =&gt; [s(:ival, s(:ival, 1))]</span>
+</code></pre></div>
+
+<p>Use first to return the node directly:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">ast</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="s1">&#39;(ival (ival _))&#39;</span><span class="p">)</span><span class="w">  </span><span class="c1">#=&gt; s(:ival, s(:ival, 1))</span>
+</code></pre></div>
+
+<p>Combine the <code>capture</code> method with <code>$</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">ast</span><span class="o">.</span><span class="n">capture</span><span class="p">(</span><span class="s1">&#39;(ival (ival $_))&#39;</span><span class="p">)</span><span class="w"> </span><span class="c1"># =&gt; [1]</span>
+</code></pre></div>
+
 <h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h1>
-<h2 id="capturing-fields-and-where-clause">Capturing fields and where clause<a class="headerlink" href="#capturing-fields-and-where-clause" title="Permanent link">&para;</a></h2>
 <p>Let's dive into a more complex example capturing fields and from clause of a
 condition. Let's start parsing the sql:</p>
+<h2 id="capturing-fields-and-where-clause">Capturing fields and where clause<a class="headerlink" href="#capturing-fields-and-where-clause" title="Permanent link">&para;</a></h2>
 <div class="codehilite"><pre><span></span><code><span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s1">&#39;select name from customer&#39;</span><span class="p">)</span>
 <span class="c1">#   =&gt; s(:select_stmt,</span>
 <span class="c1">#     s(:target_list,</span>
@@ -599,13 +631,12 @@ inherited from Parser::TreeRewriter components.</p>
 <span class="c1">#      s(:res_target,</span>
 <span class="c1">#        s(:val,</span>
 <span class="c1">#          s(:a_const,</span>
-<span class="c1">#            s(:val,</span>
-<span class="c1">#              s(:integer,</span>
-<span class="c1">#                s(:ival, 1))))))))</span>
+<span class="c1">#            s(:ival,</span>
+<span class="c1">#              s(:ival, 1)))))))</span>
 </code></pre></div>
 
 <p>The pattern is simply matching node type that is <code>ival</code> but it could be a complex expression
-like <code>(val (a_const (val (integer (ival _)))))</code>.</p>
+like <code>(val (a_const (val (ival (ival _)))))</code>.</p>
 <p>Completing the example:</p>
 <div class="codehilite"><pre><span></span><code><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">replace_sql</span><span class="p">(</span><span class="s2">&quot;ival&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">ast</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">replace</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;3&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">})</span>
 <span class="w"> </span><span class="c1"># =&gt; &quot;select 3&quot;</span>
