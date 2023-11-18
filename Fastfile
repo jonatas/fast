@@ -91,3 +91,24 @@ Fast.shortcut :walk do
     end
   end
 end
+
+# Format SQL
+Fast.shortcut :format_sql do
+  require 'fast/sql'
+  file = ARGV.last
+  method = File.exist?(file) ? :parse_sql_file : :parse_sql
+  ast = Fast.public_send(method, file)
+  ast = ast.first if ast.is_a? Array
+
+  output = Fast::SQL.replace('_', ast) do |root|
+    sb = root.loc.expression.source_buffer
+    sb.tokens.each do |token|
+      if token.keyword_kind == :RESERVED_KEYWORD
+        range = Parser::Source::Range.new(sb, token.start, token.end)
+        replace(range, range.source.upcase)
+      end
+    end
+  end
+  require 'fast/cli'
+  puts Fast.highlight(output, sql: true)
+end

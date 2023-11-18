@@ -4,12 +4,12 @@ module Fast
       # @see Fast::SQLRewriter
       # @return string with the content updated in case the pattern matches.
       def replace(pattern, ast, &replacement)
-        sql_rewriter_for(pattern, ast, &replacement).rewrite!
+        rewriter_for(pattern, ast, &replacement).rewrite!
       end
 
       # @return [Fast::SQL::Rewriter]
       # @see Fast::Rewriter
-      def sql_rewriter_for(pattern, ast, &replacement)
+      def rewriter_for(pattern, ast, &replacement)
         rewriter = Rewriter.new
         rewriter.ast = ast
         rewriter.search = pattern
@@ -41,9 +41,37 @@ module Fast
     # @see Fast::Rewriter
     class Rewriter < Fast::Rewriter
 
+      def rewrite!
+        replace_on(*types)
+        case ast
+        when Array
+          rewrite(buffer, ast.first)
+        else
+          rewrite(buffer, ast)
+        end
+      end
+
+      def source
+        super ||
+          begin
+            case ast
+            when Array
+              ast.first
+            else
+              ast
+            end.location.expression.source_buffer.source
+          end
+      end
       # @return [Array<Symbol>] with all types that matches
       def types
-        ast.type
+        case ast
+        when Array
+          ast.map(&:type)
+        when NilClass
+          []
+        else
+          ast.type
+        end
       end
 
       # Generate methods for all affected types.
@@ -53,12 +81,12 @@ module Fast
       def replace_on(*types)
         types.map do |type|
           self.instance_exec do
-            self.class.define_method :"on_#{ast.type}" do |node|
+            self.class.define_method :"on_#{type}" do |node|
               # SQL nodes are not being automatically invoked by the rewriter,
               # so we need to match the root node and invoke on matching inner elements.
               node.search(search).each_with_index do |node, i|
                 @match_index += 1
-                execute_replacement(node, nil)
+                execute_replacement(node, i)
               end
             end
           end

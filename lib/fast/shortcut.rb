@@ -12,14 +12,13 @@ module Fast
       ENV['HOME'],
       ENV['FAST_FILE_DIR'],
       File.join(File.dirname(__FILE__), '..', '..')
-    ].compact.map(&File.method(:expand_path)).uniq.freeze
+    ].reverse.compact.map(&File.method(:expand_path)).uniq.freeze
 
     # Store predefined searches with default paths through shortcuts.
     # define your Fastfile in you root folder or
     # @example Shortcut for finding validations in rails models
     #   Fast.shortcut(:validations, "(send nil {validate validates})", "app/models")
     def shortcut(identifier, *args, &block)
-      puts "identifier #{identifier.inspect} will be override" if shortcuts.key?(identifier)
       shortcuts[identifier] = Shortcut.new(*args, &block)
     end
 

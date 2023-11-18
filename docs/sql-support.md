@@ -1,23 +1,19 @@
 # SQL Support
 
-Fast is partially supporting SQL syntax. Behind the scenes it parses SQL using
-[pg_query](https://github.com/pganalyze/pg_query) and simplifies it to AST Nodes
-using the same interface. It's using Postgresql parser behind the scenes,
-but probably could be useful for other SQL similar diallects.
+Fast supports SQL through
+[pg_query](https://github.com/pganalyze/pg_query) 
+which is a Ruby wrapper for the Postgresql SQL parser.
 
+By default, this module is not included into the main library.
 
-!!! info "fast auto detects SQL files in the command line"
+Fast can auto-detect file extensions and choose the sql path in case the
+file relates to sql. You can also use `--sql` in the command line to 
+force the decision for the SQL parser.
 
-    By default, this module is not included into the main library.
-    Fast can auto-detect file extensions and choose the sql path in case the
-    file relates to sql.
+    fast --sql select_stmt /path/to/my-file
 
-    Use `fast --sql` in case you want to force the usage of the SQL parser.
-
-    ```
-
-    ```
-
+The command line tool should be compatible with most of the commands. Let's dive
+into all parsing steps.
 
 # Parsing a sql content
 
@@ -250,4 +246,100 @@ Completing the example:
 
 `loc` is a shortcut for `location` attribute.
 
+
+# Mastering on command line
+
+Installing the gem ffast will allow you to use the `fast` utility in the command
+line.
+
+## Force sql
+
+Fast can guess that `fast ... *.sql` is looking for SQL stuff. But, if your file
+extension is not available or you want test something inline, use `--sql`.
+
+    fast --sql --debug --similar "drop view _"
+
+It will output
+
+    Search similar to (drop_stmt (objects (list (items (string (sval _))))) (remove_type _) (behavior _))
+
+## Similar
+
+Generalize identifiers with `--similar`. It can be very useful to build the expression from SQL and
+look for similar expressions.
+
+    fast --sql --similar "select * from _" *.sql
+
+You can also use `--debug` to check the expression
+
+    fast --debug --sql --similar "select * from _"
+
+Outputs:
+
+```
+Search similar to (select_stmt (target_list (res_target (val (column_ref (fields))))) (from_clause (range_var (relname _) (inh ) (relpersistence _))))
+```
+
+## From code
+
+If you don't know the AST but wants an exact match from code, use `--from-code`
+and it will build an expression that matches exactly the same tree.
+
+```bash
+fast --sql --from-code "select * from my_table" *.sql
+```
+
+# Shortcuts
+
+The `fast` CLI also supports shortcuts which are mapping expressions starting
+with `.`.
+
+Shortcuts can keep your abstract scripts organized. Let's say you
+want to create your own format sql and you'll run it very often. You can create
+a shortcut for it and just reuse as you need.
+
+## Format SQL
+
+Let's say you want to format some sql, so, here are some possible syntax to get
+some formatted version of an inline code:
+
+```
+fast .format_sql "select * from tbl"
+```
+
+It should return "SELECT * FROM tbl" with all reserved keywords upcased. Even
+it's not mandatory, it makes it much clear to scan the text.
+
+The second option is with a sql file.
+
+```
+fast .format_sql /path/to/my_file.sql
+```
+Both cases will just output in the command line and further commands can be
+combined to send it to another file.
+
+
+Add the following script to your `Fastfile` to just get started:
+
+```ruby
+Fast.shortcut :format_sql do
+  require 'fast/sql'
+  content = ARGV.last
+  method = File.exist?(content) ? :parse_sql_file : :parse_sql
+  ast = Fast.public_send(method, content)
+  ast = ast.first if ast.is_a? Array
+
+  output = Fast::SQL.replace('_', ast) do |root|
+    sb = root.loc.expression.source_buffer
+    sb.tokens.each do |token|
+      if token.keyword_kind == :RESERVED_KEYWORD
+        range = Parser::Source::Range.new(sb, token.start, token.end)
+        replace(range, range.source.upcase)
+      end
+    end
+  end
+  require 'fast/cli'
+  puts Fast.highlight(output, sql: true)
+end
+```
 

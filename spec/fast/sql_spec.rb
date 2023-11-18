@@ -165,6 +165,11 @@ RSpec.describe Fast do
         expect(source_from["fields"]).to eq(["name", "address"])
         expect(range_from["fields"].map(&:to_range)).to eq([7...11, 13...20])
       end
+
+      specify "multiple statements" do
+        ast = described_class.parse_sql(sql='drop table a;drop table b;drop table c;')
+        expect(Fast.search("drop_stmt", ast).map(&:source)).to eq(["drop table a","drop table b","drop table c"])
+      end
     end
   end
 
@@ -241,10 +246,29 @@ RSpec.describe Fast do
         expect { described_class.replace_sql_file('relname', file, &replacement) }
           .to change { IO.read(file) }
           .from(sql)
-          .to(<<~SQL.chomp)
+          .to(<<~SQL)
             -- comment
             select * from other_table
             -- comment 2
+            SQL
+      end
+    end
+    context 'when has multiple statements' do
+      let(:sql) { <<~SQL }
+      select * from a;
+      select * from b;
+      SQL
+
+      let(:pattern) {'(relname "a")'}
+      let(:replacement) { ->(node, i) { replace(node.location.expression, 'c') } }
+
+      specify do
+        expect { described_class.replace_sql_file('relname', file, &replacement) }
+          .to change { IO.read(file) }
+          .from(sql)
+          .to(<<~SQL)
+            select * from c;
+            select * from b;
             SQL
       end
     end
