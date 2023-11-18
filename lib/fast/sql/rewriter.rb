@@ -4,12 +4,12 @@ module Fast
       # @see Fast::SQLRewriter
       # @return string with the content updated in case the pattern matches.
       def replace(pattern, ast, &replacement)
-        sql_rewriter_for(pattern, ast, &replacement).rewrite!
+        rewriter_for(pattern, ast, &replacement).rewrite!
       end
 
       # @return [Fast::SQL::Rewriter]
       # @see Fast::Rewriter
-      def sql_rewriter_for(pattern, ast, &replacement)
+      def rewriter_for(pattern, ast, &replacement)
         rewriter = Rewriter.new
         rewriter.ast = ast
         rewriter.search = pattern
