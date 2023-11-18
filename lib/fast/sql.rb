@@ -111,15 +111,13 @@ module Fast
       return [] if statement.nil?
       source_buffer = SQL::SourceBuffer.new(buffer_name, source: statement)
       tree = PgQuery.parse(statement).tree
+      first, *, last = source_buffer.tokens
       stmts = tree.stmts.map do |stmt|
-        v = clean_structure(stmt.stmt.to_h)
-        inner_stmt = statement[stmt.stmt_location, stmt.stmt_len]
-        first, *, last = source_buffer.tokens
         from = stmt.stmt_location
-        to = from.zero? ? last.end : from + stmt.stmt_len
+        to = stmt.stmt_len.zero? ? last.end : from + stmt.stmt_len
         expression = Parser::Source::Range.new(source_buffer, from, to)
         source_map = Parser::Source::Map.new(expression)
-        sql_tree_to_ast(v, source_buffer: source_buffer, source_map: source_map)
+        sql_tree_to_ast(clean_structure(stmt.stmt.to_h), source_buffer: source_buffer, source_map: source_map)
       end.flatten
       stmts.one? ? stmts.first : stmts
     end

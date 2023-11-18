@@ -165,6 +165,11 @@ RSpec.describe Fast do
         expect(source_from["fields"]).to eq(["name", "address"])
         expect(range_from["fields"].map(&:to_range)).to eq([7...11, 13...20])
       end
+
+      specify "multiple statements" do
+        ast = described_class.parse_sql(sql='drop table a;drop table b;drop table c;')
+        expect(Fast.search("drop_stmt", ast).map(&:source)).to eq(["drop table a","drop table b","drop table c"])
+      end
     end
   end
 
