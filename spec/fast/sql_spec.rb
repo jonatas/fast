@@ -241,10 +241,29 @@ RSpec.describe Fast do
         expect { described_class.replace_sql_file('relname', file, &replacement) }
           .to change { IO.read(file) }
           .from(sql)
-          .to(<<~SQL.chomp)
+          .to(<<~SQL)
             -- comment
             select * from other_table
             -- comment 2
+            SQL
+      end
+    end
+    context 'when has multiple statements' do
+      let(:sql) { <<~SQL }
+      select * from a;
+      select * from b;
+      SQL
+
+      let(:pattern) {'(relname "a")'}
+      let(:replacement) { ->(node, i) { replace(node.location.expression, 'c') } }
+
+      specify do
+        expect { described_class.replace_sql_file('relname', file, &replacement) }
+          .to change { IO.read(file) }
+          .from(sql)
+          .to(<<~SQL)
+            select * from c;
+            select * from b;
             SQL
       end
     end
