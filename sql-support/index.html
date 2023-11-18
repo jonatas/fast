@@ -456,19 +456,18 @@
 
 
 <h1 id="sql-support">SQL Support<a class="headerlink" href="#sql-support" title="Permanent link">&para;</a></h1>
-<p>Fast is partially supporting SQL syntax. Behind the scenes it parses SQL using
-<a href="https://github.com/pganalyze/pg_query">pg_query</a> and simplifies it to AST Nodes
-using the same interface. It's using Postgresql parser behind the scenes,
-but probably could be useful for other SQL similar diallects.</p>
-<div class="admonition info">
-<p class="admonition-title">fast auto detects SQL files in the command line</p>
-<p>By default, this module is not included into the main library.
-Fast can auto-detect file extensions and choose the sql path in case the
-file relates to sql.</p>
-<p>Use <code>fast --sql</code> in case you want to force the usage of the SQL parser.</p>
-<p>```</p>
-<p>```</p>
-</div>
+<p>Fast supports SQL through
+<a href="https://github.com/pganalyze/pg_query">pg_query</a> 
+which is a Ruby wrapper for the Postgresql SQL parser.</p>
+<p>By default, this module is not included into the main library.</p>
+<p>Fast can auto-detect file extensions and choose the sql path in case the
+file relates to sql. You can also use <code>--sql</code> in the command line to 
+force the decision for the SQL parser.</p>
+<div class="codehilite"><pre><span></span><code>fast --sql select_stmt /path/to/my-file
+</code></pre></div>
+
+<p>The command line tool should be compatible with most of the commands. Let's dive
+into all parsing steps.</p>
 <h1 id="parsing-a-sql-content">Parsing a sql content<a class="headerlink" href="#parsing-a-sql-content" title="Permanent link">&para;</a></h1>
 <div class="codehilite"><pre><span></span><code><span class="nb">require</span><span class="w"> </span><span class="s1">&#39;fast/sql&#39;</span>
 <span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s1">&#39;select 1&#39;</span><span class="p">)</span>
@@ -643,6 +642,80 @@ like <code>(val (a_const (val (ival (ival _)))))</code>.</p>
 </code></pre></div>
 
 <p><code>loc</code> is a shortcut for <code>location</code> attribute.</p>
+<h1 id="mastering-on-command-line">Mastering on command line<a class="headerlink" href="#mastering-on-command-line" title="Permanent link">&para;</a></h1>
+<p>Installing the gem ffast will allow you to use the <code>fast</code> utility in the command
+line.</p>
+<h2 id="force-sql">Force sql<a class="headerlink" href="#force-sql" title="Permanent link">&para;</a></h2>
+<p>Fast can guess that <code>fast ... *.sql</code> is looking for SQL stuff. But, if your file
+extension is not available or you want test something inline, use <code>--sql</code>.</p>
+<div class="codehilite"><pre><span></span><code>fast --sql --debug --similar &quot;drop view _&quot;
+</code></pre></div>
+
+<p>It will output</p>
+<div class="codehilite"><pre><span></span><code>Search similar to (drop_stmt (objects (list (items (string (sval _))))) (remove_type _) (behavior _))
+</code></pre></div>
+
+<h2 id="similar">Similar<a class="headerlink" href="#similar" title="Permanent link">&para;</a></h2>
+<p>Generalize identifiers with <code>--similar</code>. It can be very useful to build the expression from SQL and
+look for similar expressions.</p>
+<div class="codehilite"><pre><span></span><code>fast --sql --similar &quot;select * from _&quot; *.sql
+</code></pre></div>
+
+<p>You can also use <code>--debug</code> to check the expression</p>
+<div class="codehilite"><pre><span></span><code>fast --debug --sql --similar &quot;select * from _&quot;
+</code></pre></div>
+
+<p>Outputs:</p>
+<div class="codehilite"><pre><span></span><code>Search similar to (select_stmt (target_list (res_target (val (column_ref (fields))))) (from_clause (range_var (relname _) (inh ) (relpersistence _))))
+</code></pre></div>
+
+<h2 id="from-code">From code<a class="headerlink" href="#from-code" title="Permanent link">&para;</a></h2>
+<p>If you don't know the AST but wants an exact match from code, use <code>--from-code</code>
+and it will build an expression that matches exactly the same tree.</p>
+<div class="codehilite"><pre><span></span><code>fast<span class="w"> </span>--sql<span class="w"> </span>--from-code<span class="w"> </span><span class="s2">&quot;select * from my_table&quot;</span><span class="w"> </span>*.sql
+</code></pre></div>
+
+<h1 id="shortcuts">Shortcuts<a class="headerlink" href="#shortcuts" title="Permanent link">&para;</a></h1>
+<p>The <code>fast</code> CLI also supports shortcuts which are mapping expressions starting
+with <code>.</code>.</p>
+<p>Shortcuts can keep your abstract scripts organized. Let's say you
+want to create your own format sql and you'll run it very often. You can create
+a shortcut for it and just reuse as you need.</p>
+<h2 id="format-sql">Format SQL<a class="headerlink" href="#format-sql" title="Permanent link">&para;</a></h2>
+<p>Let's say you want to format some sql, so, here are some possible syntax to get
+some formatted version of an inline code:</p>
+<div class="codehilite"><pre><span></span><code>fast .format_sql &quot;select * from tbl&quot;
+</code></pre></div>
+
+<p>It should return "SELECT * FROM tbl" with all reserved keywords upcased. Even
+it's not mandatory, it makes it much clear to scan the text.</p>
+<p>The second option is with a sql file.</p>
+<div class="codehilite"><pre><span></span><code>fast .format_sql /path/to/my_file.sql
+</code></pre></div>
+
+<p>Both cases will just output in the command line and further commands can be
+combined to send it to another file.</p>
+<p>Add the following script to your <code>Fastfile</code> to just get started:</p>
+<div class="codehilite"><pre><span></span><code><span class="no">Fast</span><span class="o">.</span><span class="n">shortcut</span><span class="w"> </span><span class="ss">:format_sql</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nb">require</span><span class="w"> </span><span class="s1">&#39;fast/sql&#39;</span>
+<span class="w">  </span><span class="n">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">ARGV</span><span class="o">.</span><span class="n">last</span>
+<span class="w">  </span><span class="nb">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">File</span><span class="o">.</span><span class="n">exist?</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="p">?</span><span class="w"> </span><span class="ss">:parse_sql_file</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="ss">:parse_sql</span>
+<span class="w">  </span><span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">public_send</span><span class="p">(</span><span class="nb">method</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
+<span class="w">  </span><span class="n">ast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ast</span><span class="o">.</span><span class="n">first</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">ast</span><span class="o">.</span><span class="n">is_a?</span><span class="w"> </span><span class="nb">Array</span>
+
+<span class="w">  </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Fast</span><span class="o">::</span><span class="no">SQL</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">ast</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">root</span><span class="o">|</span>
+<span class="w">    </span><span class="n">sb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">root</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">expression</span><span class="o">.</span><span class="n">source_buffer</span>
+<span class="w">    </span><span class="n">sb</span><span class="o">.</span><span class="n">tokens</span><span class="o">.</span><span class="n">each</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="o">|</span><span class="n">token</span><span class="o">|</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="n">token</span><span class="o">.</span><span class="n">keyword_kind</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="ss">:RESERVED_KEYWORD</span>
+<span class="w">        </span><span class="n">range</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="no">Parser</span><span class="o">::</span><span class="no">Source</span><span class="o">::</span><span class="no">Range</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">sb</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="o">.</span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="n">token</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+<span class="w">        </span><span class="n">replace</span><span class="p">(</span><span class="n">range</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">upcase</span><span class="p">)</span>
+<span class="w">      </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="w">  </span><span class="nb">require</span><span class="w"> </span><span class="s1">&#39;fast/cli&#39;</span>
+<span class="w">  </span><span class="nb">puts</span><span class="w"> </span><span class="no">Fast</span><span class="o">.</span><span class="n">highlight</span><span class="p">(</span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="ss">sql</span><span class="p">:</span><span class="w"> </span><span class="kp">true</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
               
             </article>
