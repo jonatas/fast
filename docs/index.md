@@ -4,6 +4,10 @@
 
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
+
+??? "🍿Watch my talk at Ruby Kaigi: Grepping Ruby code like a boss" 
+    <iframe width="1280" height="720" src="https://www.youtube.com/embed/YczrZQC9aP8" frameborder="0" allowfullscreen></iframe>
+
 Ruby allow us to do the same thing in a few ways then it's hard to check
 how the code is written.
 
@@ -403,7 +407,7 @@ Fast.search_all("(def _)", '../other-folder')
 ```
 
 
-!!! tip "Use Fast with SQL"
+!!! abstract "Use Fast with SQL"
 
     Did you like the Ruby AST?
 
