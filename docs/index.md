@@ -402,3 +402,21 @@ You can also override the second param and pass target files or folders:
 Fast.search_all("(def _)", '../other-folder')
 ```
 
+
+!!! tip "Use Fast with SQL"
+
+    Did you like the Ruby AST?
+
+    Check out the [SQL Support](/sql-support).
+
+    You can do things like:
+
+    ```ruby
+    Fast.parse_sql('select 1').replace('ival', '2') # => "select 2"
+    ```
+
+    ??? "Learn how to create a SQL Formatter"
+        <iframe width="1280" height="720" src="https://www.youtube.com/embed/o0FkOvJqKgs" frameborder="0" allowfullscreen></iframe>
+
+
+
