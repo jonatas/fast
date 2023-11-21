@@ -946,6 +946,18 @@ multiple locations and returns tuples with files and results.</p>
 <p>You can also override the second param and pass target files or folders:</p>
 <div class="highlight"><pre><span></span><code><span class="no">Fast</span><span class="o">.</span><span class="n">search_all</span><span class="p">(</span><span class="s2">&quot;(def _)&quot;</span><span class="p">,</span> <span class="s1">&#39;../other-folder&#39;</span><span class="p">)</span>
 </code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Use Fast with SQL</p>
+<p>Did you like the Ruby AST?</p>
+<p>Check out the <a href="/sql-support">SQL Support</a>.</p>
+<p>You can do things like:</p>
+<div class="highlight"><pre><span></span><code><span class="no">Fast</span><span class="o">.</span><span class="n">parse_sql</span><span class="p">(</span><span class="s1">&#39;select 1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;ival&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">)</span> <span class="c1"># =&gt; &quot;select 2&quot;</span>
+</code></pre></div>
+<details>
+<summary>Learn how to create a SQL Formatter</summary>
+<p><iframe width="1280" height="720" src="https://www.youtube.com/embed/o0FkOvJqKgs" frameborder="0" allowfullscreen></iframe></p>
+</details>
+</div>
 
 
 
