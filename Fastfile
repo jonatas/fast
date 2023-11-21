@@ -99,11 +99,13 @@ Fast.shortcut :format_sql do
   method = File.exist?(file) ? :parse_sql_file : :parse_sql
   ast = Fast.public_send(method, file)
   ast = ast.first if ast.is_a? Array
+  eligible_kw = [:RESERVED_KEYWORD]
+  eligible_tokens = [:BY]
 
   output = Fast::SQL.replace('_', ast) do |root|
     sb = root.loc.expression.source_buffer
     sb.tokens.each do |token|
-      if token.keyword_kind == :RESERVED_KEYWORD
+      if eligible_kw.include?(token.keyword_kind) || eligible_tokens.include?(token.token)
         range = Parser::Source::Range.new(sb, token.start, token.end)
         replace(range, range.source.upcase)
       end
