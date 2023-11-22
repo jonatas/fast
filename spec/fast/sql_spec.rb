@@ -14,8 +14,9 @@ RSpec.describe Fast do
                 s(:res_target,
                   s(:val,
                     s(:a_const,
-                      s(:ival,
-                        s(:ival, 1))))))))
+                      s(:val,
+                        s(:integer,
+                          s(:ival, 1)))))))))
         end
       end
     end
@@ -29,8 +30,9 @@ RSpec.describe Fast do
                                  s(:res_target,
                                    s(:val,
                                      s(:a_const,
-                                       s(:ival,
-                                         s(:ival, 1))))))))
+                                       s(:val,
+                                         s(:integer,
+                                           s(:ival, 1)))))))))
         end
       end
       describe "string" do
@@ -42,8 +44,9 @@ RSpec.describe Fast do
                 s(:res_target,
                   s(:val,
                     s(:a_const,
-                      s(:sval,
-                        s(:sval, "hello"))))))))
+                       s(:val,
+                         s(:string,
+                           s(:str, "hello")))))))))
         end
       end
       describe "float" do
@@ -55,8 +58,9 @@ RSpec.describe Fast do
                 s(:res_target,
                   s(:val,
                     s(:a_const,
-                      s(:fval,
-                        s(:fval, "1.0"))))))))
+                      s(:val,
+                        s(:float,
+                          s(:str, "1.0")))))))))
         end
       end
     end
@@ -77,8 +81,9 @@ RSpec.describe Fast do
                s(:name, "a"),
                s(:val,
                s(:a_const,
-                 s(:ival,
-                   s(:ival, 1))))))))
+                 s(:val,
+                   s(:integer,
+                     s(:ival, 1)))))))))
       end
     end
     context "when use from" do
@@ -90,8 +95,9 @@ RSpec.describe Fast do
               s(:res_target,
                 s(:val,
                   s(:a_const,
-                    s(:ival,
-                      s(:ival, 1)))))),
+                      s(:val,
+                        s(:integer,
+                          s(:ival, 1))))))),
             s(:from_clause,
               s(:range_var,
                 s(:relname, "a"),
@@ -109,8 +115,9 @@ RSpec.describe Fast do
               s(:res_target,
                 s(:val,
                   s(:a_const,
-                    s(:ival,
-                      s(:ival, 1)))))),
+                    s(:val,
+                      s(:integer,
+                        s(:ival, 1))))))),
           s(:from_clause,
             s(:range_var,
               s(:relname, "a"),
@@ -118,8 +125,9 @@ RSpec.describe Fast do
               s(:relpersistence, "p"))),
           s(:group_clause,
             s(:a_const,
-              s(:ival,
-                s(:ival, 1))))))
+              s(:val,
+                s(:integer,
+                  s(:ival, 1)))))))
       end
     end
   end
@@ -133,7 +141,10 @@ RSpec.describe Fast do
       end
 
       specify "captures nodes" do
-        expect(described_class.match?('(select_stmt (target_list (res_target (val (a_const (ival (ival $_))))))))', sql['select 1'])).to eq([1])
+        expect(
+          described_class.match?('$select_stmt',
+                                 ast=sql['select 1'])
+        ).to eq([ast])
       end
 
       specify "captures multiple nodes" do
@@ -148,7 +159,7 @@ RSpec.describe Fast do
             columns_and_table,
             sql['select name from customer']
           )).to eq([
-            s(:string, s(:sval, "name")),
+            s(:string, s(:str, "name")),
             s(:relname, "customer")])
       end
     end
@@ -181,7 +192,7 @@ RSpec.describe Fast do
     end
 
     it "works with replacement" do
-      add_comment = ->{insert_before(_1.loc.expression,"-- my query\n")}
+      add_comment = -> (n) { insert_before(n.loc.expression,"-- my query\n")}
       expect(ast.replace('target_list', &add_comment)).to eq("-- my query\nselect 1")
     end
   end
@@ -259,17 +270,32 @@ RSpec.describe Fast do
       select * from b;
       SQL
 
-      let(:pattern) {'(relname "a")'}
-      let(:replacement) { ->(node, i) { replace(node.location.expression, 'c') } }
+      let(:replacement) { ->(node, i) { replace(node.location.expression, "XXXXX_#{i}") } }
 
-      specify do
-        expect { described_class.replace_sql_file('relname', file, &replacement) }
-          .to change { IO.read(file) }
-          .from(sql)
-          .to(<<~SQL)
-            select * from c;
+      context "when replace first statement" do
+        let(:pattern) {'(relname "a")'}
+
+        specify do
+          expect { described_class.replace_sql_file(pattern, file, &replacement) }
+            .to change { IO.read(file) }
+            .from(sql)
+            .to(<<~SQL)
+            select * from XXXXX_0;
             select * from b;
+          SQL
+        end
+      end
+      context "when replace all statements" do
+        let(:pattern) {'relname'}
+        specify do
+          expect { described_class.replace_sql_file(pattern, file, &replacement) }
+            .to change { IO.read(file) }
+            .from(sql)
+            .to(<<~SQL)
+            select * from XXXXX_0;
+            select * from XXXXX_1;
             SQL
+        end
       end
     end
   end

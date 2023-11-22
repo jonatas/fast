@@ -75,7 +75,8 @@ module Fast
       end
 
       # Generate methods for all affected types.
-      # Note the strategy is different from parent class, it if matches the root node, it executes otherwise it search pattern on
+      # Note the strategy is different from parent class,
+      # it will not stop on first match, but will execute the replacement on
       # all matching elements.
       # @see Fast.replace
       def replace_on(*types)
@@ -84,7 +85,7 @@ module Fast
             self.class.define_method :"on_#{type}" do |node|
               # SQL nodes are not being automatically invoked by the rewriter,
               # so we need to match the root node and invoke on matching inner elements.
-              node.search(search).each_with_index do |node, i|
+              Fast.search(search, ast).each_with_index do |node, i|
                 @match_index += 1
                 execute_replacement(node, i)
               end
