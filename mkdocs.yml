@@ -39,4 +39,7 @@ nav:
   - Research: research.md
   - Ideas: ideas.md
   - Videos: videos.md
-  - SQL Support: sql-support.md
+  - SQL:
+    - Intro: sql/index.md
+    - Shortcuts: sql/shortcuts.md
+    - About: sql-support.md

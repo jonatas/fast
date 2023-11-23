@@ -114,3 +114,27 @@ Fast.shortcut :format_sql do
   require 'fast/cli'
   puts Fast.highlight(output, sql: true)
 end
+
+# Anonymize SQL
+# fast .anonymize_sql file.sql
+Fast.shortcut :anonymize_sql do
+  require 'fast/sql'
+  file = ARGV.last
+  method = File.exist?(file) ? :parse_sql_file : :parse_sql
+  ast = Fast.public_send(method, file)
+  memo = {}
+
+  relnames = search("(relname $_)", ast).grep(String).uniq
+  pattern = "{relname (sval {#{relnames.map(&:inspect).join(' ')}})}"
+  puts "searching with #{pattern}"
+
+  content = Fast::SQL.replace(pattern, ast) do |node|
+    new_name = memo[node.source.tr(%|"'|, '')] ||= "x#{memo.size}"
+    new_name = "'#{new_name}'" if node.type == :sval
+    replace(node.loc.expression, new_name)
+  end
+  puts Fast.highlight(content, sql: true)
+end
+
+
+
