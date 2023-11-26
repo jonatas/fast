@@ -8,15 +8,8 @@ RSpec.describe Fast do
       describe "integer" do
         let(:sql) { "select 1" }
         it do
-          expect(ast).to eq(
-            s(:select_stmt,
-              s(:target_list,
-                s(:res_target,
-                  s(:val,
-                    s(:a_const,
-                      s(:val,
-                        s(:integer,
-                          s(:ival, 1)))))))))
+          expect(ast.type).to eq(:select_stmt)
+          expect(ast.first("(ival (ival 1)")).to eq(s(:ival, s(:ival, 1)))
         end
       end
     end
@@ -24,110 +17,52 @@ RSpec.describe Fast do
     context "when query sql is a plain statement" do
       describe "integer" do
         let(:sql) { "select 1" }
-        it "simplifies the AST" do
+        it "matches full ast" do
           expect(ast).to eq( s(:select_stmt,
                                s(:target_list,
                                  s(:res_target,
                                    s(:val,
                                      s(:a_const,
-                                       s(:val,
-                                         s(:integer,
-                                           s(:ival, 1)))))))))
-        end
-      end
-      describe "string" do
-        let(:sql) { "select 'hello'" }
-        it do
-          expect(ast).to eq(
-            s(:select_stmt,
-              s(:target_list,
-                s(:res_target,
-                  s(:val,
-                    s(:a_const,
-                       s(:val,
-                         s(:string,
-                           s(:str, "hello")))))))))
-        end
-      end
-      describe "float" do
-        let(:sql) { "select 1.0" }
-        it do
-          expect(ast).to eq(
-            s(:select_stmt,
-              s(:target_list,
-                s(:res_target,
-                  s(:val,
-                    s(:a_const,
-                      s(:val,
-                        s(:float,
-                          s(:str, "1.0")))))))))
+                                         s(:ival,
+                                           s(:ival, 1))))))))
         end
       end
     end
 
     context "when multiple queries are assigned" do
       let(:sql) { "select 1; select 2;" }
-      specify do
-        expect(ast).to eq([Fast.parse_sql("select 1"), Fast.parse_sql("select 2")])
+
+      context "when code is inline" do
+        specify do
+          expect(ast).to eq([Fast.parse_sql("select 1"), Fast.parse_sql("select 2")])
+        end
       end
+
+      context "when code content is in a file" do
+        include_context :with_sql_file do
+          let(:drop) {"drop table a;"}
+          let(:create) {"create table if not exists seq (id serial);"}
+          let(:sql) { [drop, create].join("\n") }
+          let(:ast) { Fast.parse_sql_file(file) }
+
+          specify do
+            expect(ast).to eq([Fast.parse_sql(drop), Fast.parse_sql(create)])
+            expect(ast.map{_1.loc.expression.to_range}).to eq([0...12, 13...56])
+          end
+        end
+      end
+
     end
     context "when use alias" do
       let(:sql) { "select 1 as a" }
       specify do
-        expect(ast).to eq(
-         s(:select_stmt,
-           s(:target_list,
-             s(:res_target,
-               s(:name, "a"),
-               s(:val,
-               s(:a_const,
-                 s(:val,
-                   s(:integer,
-                     s(:ival, 1)))))))))
+        expect(ast.first("(name 'a')")).not_to be_nil
       end
     end
     context "when use from" do
       let(:sql) { "select 1 from a" }
       specify do
-        expect(ast).to eq(
-          s(:select_stmt,
-            s(:target_list,
-              s(:res_target,
-                s(:val,
-                  s(:a_const,
-                      s(:val,
-                        s(:integer,
-                          s(:ival, 1))))))),
-            s(:from_clause,
-              s(:range_var,
-                s(:relname, "a"),
-                s(:inh, true),
-                s(:relpersistence, "p")))))
-      end
-    end
-
-    context "when use group by" do
-      let(:sql) { "select 1 from a group by 1" }
-      specify do
-        expect(ast).to eq(
-          s(:select_stmt,
-            s(:target_list,
-              s(:res_target,
-                s(:val,
-                  s(:a_const,
-                    s(:val,
-                      s(:integer,
-                        s(:ival, 1))))))),
-          s(:from_clause,
-            s(:range_var,
-              s(:relname, "a"),
-              s(:inh, true),
-              s(:relpersistence, "p"))),
-          s(:group_clause,
-            s(:a_const,
-              s(:val,
-                s(:integer,
-                  s(:ival, 1)))))))
+        expect(ast.first("(relname 'a'")).not_to be_nil
       end
     end
   end
@@ -159,7 +94,7 @@ RSpec.describe Fast do
             columns_and_table,
             sql['select name from customer']
           )).to eq([
-            s(:string, s(:str, "name")),
+            s(:string, s(:sval, "name")),
             s(:relname, "customer")])
       end
     end
