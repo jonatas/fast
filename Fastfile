@@ -18,6 +18,7 @@ Fast.shortcut(:finders, '(class ... (const nil Find)', 'lib')
 
 # Simple shortcut that I used often to show how the expression parser works
 Fast.shortcut(:parser, '(class (const nil ExpressionParser)', 'lib/fast.rb')
+Fast.shortcut(:sql_parser, '(def parse', 'lib/fast/sql.rb')
 
 # Use `fast .bump_version` to rewrite the version file
 Fast.shortcut :bump_version do
