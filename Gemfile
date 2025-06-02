@@ -7,4 +7,6 @@ gemspec
 
 group :development do
   gem 'tty-markdown'
+  gem 'rubocop', require: false
+  gem 'rubocop-rspec', require: false
 end

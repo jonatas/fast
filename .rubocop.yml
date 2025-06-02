@@ -8,10 +8,12 @@ AllCops:
   Exclude:
     - 'tmp/**/*'
     - 'examples/*'
-  TargetRubyVersion: 2.6
+  TargetRubyVersion: 3.0
+  NewCops: enable
 
 Layout/LineLength:
   Enabled: false
+  Max: 120
 
 Layout/EmptyLinesAroundAttributeAccessor:
   Enabled: false
@@ -119,7 +121,7 @@ Style/SlicingWithRange:
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
-    - 'fast.gemspec'
+    - '*.gemspec'
 
 Lint/InterpolationCheck:
   Exclude:
@@ -127,7 +129,7 @@ Lint/InterpolationCheck:
 
 Metrics/MethodLength:
   CountComments: false  # count full line comments?
-  Max: 12
+  Max: 20
 
 Metrics/ModuleLength:
   Enabled: false
@@ -139,10 +141,11 @@ RSpec/NestedGroups:
   Max: 4
 
 RSpec/ExampleLength:
-  Max: 20
+  Max: 15
 
 RSpec/MultipleExpectations:
   Enabled: false
+  Max: 5
 
 RSpec/DescribedClass:
   Enabled: false
@@ -158,3 +161,10 @@ Style/HashTransformKeys:
 
 Style/HashTransformValues:
   Enabled: true
+
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: single_quotes
+
+Style/Documentation:
+  Enabled: false
