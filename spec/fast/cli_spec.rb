@@ -6,20 +6,20 @@ require 'fast/shortcut'
 
 RSpec.describe Fast::Cli do
   def highlight(output)
-    CodeRay.scan(output, :ruby).term
+    output # Remove syntax highlighting in tests
   end
 
   describe '.initialize' do
     subject(:cli) { described_class.new args }
 
     context 'with expression and file' do
-      let(:args) { %w[def lib/fast.rb] }
+      let(:args) { %w[--no-color def lib/fast.rb] }
 
       its(:pattern) { is_expected.to eq('def') }
     end
 
     context 'with expression and folders' do
-      let(:args) { %w[def lib/fast spec/fast] }
+      let(:args) { %w[--no-color def lib/fast spec/fast] }
 
       its(:pattern) { is_expected.to eq('def') }
     end
@@ -130,21 +130,20 @@ RSpec.describe Fast::Cli do
     end
 
     context 'with search in file' do
-      let(:args) { %w[casgn lib/fast/version.rb] }
+      let(:args) { %w[--no-color casgn lib/fast/version.rb] }
 
       it 'prints file with line number' do
-        expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+        expect { cli.run! }.to output(<<~RUBY).to_stdout
           # lib/fast/version.rb:4
           \s\sVERSION = '#{Fast::VERSION}'
         RUBY
       end
 
       context 'when the code is not from the beginning of the line' do
-        let(:args) { %w[str lib/fast/version.rb] }
+        let(:args) { %w[--no-color str lib/fast/version.rb] }
 
         it 'prints fragment of line' do
-          cli.run!
-          expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+          expect { cli.run! }.to output(<<~RUBY).to_stdout
             # lib/fast/version.rb:4
             '#{Fast::VERSION}'
           RUBY
@@ -152,10 +151,10 @@ RSpec.describe Fast::Cli do
       end
 
       context 'with args to print ast' do
-        let(:args) { %w[casgn lib/fast/version.rb --ast] }
+        let(:args) { %w[--no-color casgn lib/fast/version.rb --ast] }
 
         it 'prints ast instead of source code' do
-          expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+          expect { cli.run! }.to output(<<~RUBY).to_stdout
             # lib/fast/version.rb:4
             (casgn nil :VERSION
               (str "#{Fast::VERSION}"))
@@ -164,7 +163,7 @@ RSpec.describe Fast::Cli do
       end
 
       context 'with shortcut' do
-        let(:args) { ['.show_version'] }
+        let(:args) { %w[--no-color .show_version] }
 
         before do
           Fast.shortcuts.delete :show_version
@@ -174,7 +173,7 @@ RSpec.describe Fast::Cli do
         its(:pattern) { is_expected.to eq('(casgn nil _ (str _))') }
 
         it 'uses the predefined values from the shortcut' do
-          expect { cli.run! }.to output(highlight(<<~RUBY)).to_stdout
+          expect { cli.run! }.to output(<<~RUBY).to_stdout
             # lib/fast/version.rb:4
               VERSION = '#{Fast::VERSION}'
           RUBY
@@ -182,10 +181,10 @@ RSpec.describe Fast::Cli do
       end
 
       context 'with args --headless --captures' do
-        let(:args) { ['(casgn nil _ (str $_))', 'lib/fast/version.rb', '--captures', '--headless'] }
+        let(:args) { %w[--no-color (casgn nil _ (str $_)) lib/fast/version.rb --captures --headless] }
 
         it 'prints only captured scope' do
-          expect { cli.run! }.to output("#{highlight(Fast::VERSION)}\n").to_stdout
+          expect { cli.run! }.to output("#{Fast::VERSION}\n").to_stdout
         end
       end
     end
@@ -204,16 +203,16 @@ RSpec.describe Fast::Cli do
     let(:ast) { Fast.ast('a = 1') }
 
     it 'highlight the code with file in the header' do
-      allow(Fast).to receive(:highlight).with('# some_file.rb:1', colorize: true).and_call_original
-      allow(Fast).to receive(:highlight).with(ast, show_sexp: false, colorize: true).and_call_original
-      expect { Fast.report(ast, file: 'some_file.rb', show_sexp: false) }
-        .to output(highlight("# some_file.rb:1\na = 1\n")).to_stdout
+      allow(Fast).to receive(:highlight).with('# some_file.rb:1', colorize: false).and_call_original
+      allow(Fast).to receive(:highlight).with(ast, show_sexp: false, colorize: false).and_call_original
+      expect { Fast.report(ast, file: 'some_file.rb', show_sexp: false, colorize: false) }
+        .to output("# some_file.rb:1\na = 1\n").to_stdout
     end
 
     context 'with headless option' do
       it 'highlight the code without the file printed in the header' do
-        expect { Fast.report(ast, file: 'some_file.rb', headless: true) }
-          .to output(highlight("a = 1\n")).to_stdout
+        expect { Fast.report(ast, file: 'some_file.rb', headless: true, colorize: false) }
+          .to output("a = 1\n").to_stdout
       end
     end
   end
