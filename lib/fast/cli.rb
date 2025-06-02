@@ -212,9 +212,17 @@ module Fast
         else
           # For Ruby, keep existing behavior
           ast = Fast.ast(@pattern)
-          @pattern = ast.to_sexp
+          if ast.nil?
+            # If we can't parse the code directly, try to make it parseable
+            ast = Fast.ast("#{@pattern}; end")
+            if ast.nil?
+              puts "Error: Could not parse Ruby code: #{@pattern}"
+              return
+            end
+          end
+          @pattern = ast.type.to_s
+          debug "Search from code to #{@pattern}"
         end
-        debug "Search from code to #{@pattern}"
       end
 
       if @files.empty?

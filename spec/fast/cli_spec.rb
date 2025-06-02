@@ -45,6 +45,56 @@ RSpec.describe Fast::Cli do
             SELECT * FROM customers
           OUT
         end
+
+        context 'when showing AST' do
+          let(:args) { %w[--no-color --sql --from-code --ast] + ["select id from users"] }
+
+          it 'displays AST with underscores instead of hyphens' do
+            expect { cli.run! }.to output(/\(select_stmt\n.*target_list\n.*res_target/).to_stdout
+            expect { cli.run! }.not_to output(/select-stmt|target-list|res-target/).to_stdout
+          end
+        end
+
+        context 'when searching in files' do
+          let(:sql_content) { "SELECT * FROM customers" }
+          let(:args) { %w[--no-color --sql --from-code] + ["select * from users", file] }
+
+          before do
+            File.write(file, sql_content)
+          end
+
+          it 'finds matching SQL statements' do
+            expect { cli.run! }.to output("# tmp.sql:1\n#{sql_content}\n").to_stdout
+          end
+        end
+      end
+    end
+
+    context 'with --from-code for Ruby' do
+      context 'when showing AST' do
+        let(:args) { %w[--no-color --from-code --ast] + ["def hello; end"] }
+
+        it 'displays the Ruby AST' do
+          expect { cli.run! }.to output(/(def :hello\n?\s+\(args\))/).to_stdout
+        end
+      end
+
+      context 'when searching in files' do
+        let(:ruby_file) { 'test.rb' }
+        let(:ruby_content) { "def hello\n  puts 'world'\nend" }
+        let(:args) { %w[--no-color --from-code] + ["def hello", ruby_file] }
+
+        before do
+          File.write(ruby_file, ruby_content)
+        end
+
+        after do
+          File.unlink(ruby_file) if File.exist?(ruby_file)
+        end
+
+        it 'finds matching Ruby code' do
+          expect { cli.run! }.to output(/# test.rb:1\n#{ruby_content}/).to_stdout
+        end
       end
     end
 
@@ -194,8 +244,8 @@ RSpec.describe Fast::Cli do
   describe 'Fast.highlight' do
     it 'uses coderay to make ruby syntax highlight' do
       out = instance_double('term')
-      allow(out).to receive(:term)
-      allow(CodeRay).to receive(:scan).with(:symbol, :ruby).and_return(out)
+      expect(out).to receive(:term)
+      expect(CodeRay).to receive(:scan).with("symbol", :ruby).and_return(out)
       Fast.highlight(:symbol)
     end
   end
