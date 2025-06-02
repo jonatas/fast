@@ -53,8 +53,15 @@ end
 # Use to walkthrough the docs files with fast examples
 # fast .intro
 Fast.shortcut :intro do
-  ARGV << File.join(File.dirname(__FILE__), 'docs', 'walkthrough.md')
+  docs_dir = File.expand_path('../docs', __FILE__)
+  walkthrough_file = File.join(docs_dir, 'walkthrough.md')
+  
+  unless File.exist?(walkthrough_file)
+    puts "Error: Could not find walkthrough.md in #{docs_dir}"
+    return
+  end
 
+  ARGV << walkthrough_file
   Fast.shortcuts[:walk].run
 end
 
@@ -63,11 +70,17 @@ private
 def require_or_install_tty_md
   require 'tty-markdown'
 rescue LoadError
-  puts 'Installing tty-markdown gem to better engage you :)'
-  Gem.install('tty-markdown')
+  puts 'Installing tty-markdown gem via bundler to better engage you :)'
+  system('bundle install')
   puts 'Done! Now, back to our topic \o/'
   system('clear')
-  retry
+  begin
+    require 'tty-markdown'
+  rescue LoadError
+    puts "Failed to load tty-markdown even after installation."
+    puts "Please try running: bundle install"
+    exit 1
+  end
 end
 
 # Interactive command line walkthrough
@@ -75,8 +88,24 @@ end
 Fast.shortcut :walk do
   require_or_install_tty_md
   file = ARGV.last
-  execute = ->(line) { system(line) }
+  
+  unless File.exist?(file)
+    puts "Error: Could not find file #{file}"
+    return
+  end
+
+  execute = ->(line) { 
+    # Replace gem which commands with local file paths
+    if line =~ /gem which fast/
+      puts "Using local Fast installation"
+      return
+    end
+    # For other commands, use the shell
+    system(line) 
+  }
+  
   walk = ->(line) { line.each_char { |c| sleep(0.02) and print(c) } }
+  
   File.readlines(file).each do |line|
     case line
     when /^fast /
@@ -84,7 +113,11 @@ Fast.shortcut :walk do
       execute[line]
     when /^\$ /
       walk[line]
-      execute[line[2..]]
+      if line =~ /gem which fast/
+        puts "Using local Fast installation at #{File.expand_path('..', __FILE__)}"
+      else
+        execute[line[2..]]
+      end
     when /^!{3}\s/
       # Skip warnings that are only for web tutorials
     else
