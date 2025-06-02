@@ -194,20 +194,31 @@ module Fast
       end
 
       if @similar
-        ast = Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
+        ast = Fast.public_send(@sql ? :parse_sql : :ast, @pattern)
         @pattern = Fast.expression_from(ast)
         debug "Search similar to #{@pattern}"
       elsif @from_code
-        ast = Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
-        @pattern = ast.to_sexp
         if @sql
-          @pattern.gsub!(/\b-\b/,'_')
+          # For SQL, we parse the pattern as SQL code first
+          sql_ast = Fast.parse_sql(@pattern)
+          if @files.empty?
+            # If no files provided, just show the AST
+            puts Fast.highlight(sql_ast, show_sexp: true, colorize: @colorize, sql: @sql)
+            return
+          else
+            # For file searches, create a more flexible pattern that matches the statement type
+            @pattern = "(#{sql_ast.type.to_s.gsub('-', '_')} ...)"
+          end
+        else
+          # For Ruby, keep existing behavior
+          ast = Fast.ast(@pattern)
+          @pattern = ast.to_sexp
         end
         debug "Search from code to #{@pattern}"
       end
 
       if @files.empty?
-        ast ||= Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
+        ast ||= Fast.public_send(@sql ? :parse_sql : :ast, @pattern)
         puts Fast.highlight(ast, show_sexp: @show_sexp, colorize: @colorize, sql: @sql)
       else
         search
