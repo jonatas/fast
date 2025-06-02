@@ -24,20 +24,20 @@ RSpec.describe Fast::Cli do
       its(:pattern) { is_expected.to eq('def') }
     end
 
-    context "with --sql to search from sql" do
-     include_context :with_sql_file
-     let(:sql) { 'SELECT * FROM customers' }
-     let(:args) { ["--no-color", "--sql", "(relname 'customers')", file] }
+    context 'with --sql to search from sql' do
+      include_context 'with sql file'
+      let(:sql) { 'SELECT * FROM customers' }
+      let(:args) { ['--no-color', '--sql', "(relname 'customers')", file] }
 
       specify do
-         expect { cli.run! }.to output(<<~OUT).to_stdout
-            # tmp.sql:1
-            customers
-            OUT
+        expect { cli.run! }.to output(<<~OUT).to_stdout
+          # tmp.sql:1
+          customers
+        OUT
       end
 
       context 'with --sql --from-code' do
-        let(:args) { %w[--no-color  --sql --from-code] + ["table customers", file] }
+        let(:args) { %w[--no-color --sql --from-code] + ['table customers', file] }
 
         specify do
           expect { cli.run! }.to output(<<~OUT).to_stdout
@@ -47,7 +47,7 @@ RSpec.describe Fast::Cli do
         end
 
         context 'when showing AST' do
-          let(:args) { %w[--no-color --sql --from-code --ast] + ["select id from users"] }
+          let(:args) { %w[--no-color --sql --from-code --ast] + ['select id from users'] }
 
           it 'displays AST with underscores instead of hyphens' do
             expect { cli.run! }.to output(/\(select_stmt\n.*target_list\n.*res_target/).to_stdout
@@ -56,8 +56,8 @@ RSpec.describe Fast::Cli do
         end
 
         context 'when searching in files' do
-          let(:sql_content) { "SELECT * FROM customers" }
-          let(:args) { %w[--no-color --sql --from-code] + ["select * from users", file] }
+          let(:sql_content) { 'SELECT * FROM customers' }
+          let(:args) { %w[--no-color --sql --from-code] + ['select * from users', file] }
 
           before do
             File.write(file, sql_content)
@@ -72,7 +72,7 @@ RSpec.describe Fast::Cli do
 
     context 'with --from-code for Ruby' do
       context 'when showing AST' do
-        let(:args) { %w[--no-color --from-code --ast] + ["def hello; end"] }
+        let(:args) { %w[--no-color --from-code --ast] + ['def hello; end'] }
 
         it 'displays the Ruby AST' do
           expect { cli.run! }.to output(/(def :hello\n?\s+\(args\))/).to_stdout
@@ -82,7 +82,7 @@ RSpec.describe Fast::Cli do
       context 'when searching in files' do
         let(:ruby_file) { 'test.rb' }
         let(:ruby_content) { "def hello\n  puts 'world'\nend" }
-        let(:args) { %w[--no-color --from-code] + ["def hello", ruby_file] }
+        let(:args) { %w[--no-color --from-code] + ['def hello', ruby_file] }
 
         before do
           File.write(ruby_file, ruby_content)
@@ -132,7 +132,9 @@ RSpec.describe Fast::Cli do
 
     context 'with --similar' do
       let(:args) { %w[--ast --similar 1.1] }
+
       its(:similar) { is_expected.to be_truthy }
+
       specify do
         cli.run!
         expect(cli.pattern).to eq('(float _)')
@@ -152,7 +154,6 @@ RSpec.describe Fast::Cli do
         expect { cli.run! }.to output(/(send nil :match?)/).to_stdout
       end
     end
-
 
     context 'with --version' do
       let(:args) { %w[--version] }
@@ -242,10 +243,14 @@ RSpec.describe Fast::Cli do
   end
 
   describe 'Fast.highlight' do
+    let(:out) { instance_spy('TTY::Color::NoValue') }
+    
+    before do
+      allow(out).to receive(:term)
+      allow(CodeRay).to receive(:scan).with('symbol', :ruby).and_return(out)
+    end
+
     it 'uses coderay to make ruby syntax highlight' do
-      out = instance_double('term')
-      expect(out).to receive(:term)
-      expect(CodeRay).to receive(:scan).with("symbol", :ruby).and_return(out)
       Fast.highlight(:symbol)
     end
   end

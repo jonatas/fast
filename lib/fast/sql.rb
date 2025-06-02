@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 require 'pg_query'
 require_relative 'sql/rewriter'
 
 module Fast
-
   module_function
 
   # Shortcut to parse a sql file
@@ -46,7 +47,7 @@ module Fast
   # has additional methods to access the tokens and location of the node.
   # ast.search(:string).first.location.expression
   #  => #<Parser::Source::Range (sql) 7...18>
-  def parse_sql(statement, buffer_name: "(sql)")
+  def parse_sql(statement, buffer_name: '(sql)')
     SQL.parse(statement, buffer_name: buffer_name)
   end
 
@@ -80,13 +81,12 @@ module Fast
 
     # The SQL node is an AST node with additional tokenization info
     class Node < Fast::Node
-
       def first(pattern)
         search(pattern).first
       end
 
-      def replace(pattern, with=nil, &replacement)
-        replacement ||= -> (n) { replace(n.loc.expression, with) }
+      def replace(pattern, with = nil, &replacement)
+        replacement ||= ->(n) { replace(n.loc.expression, with) }
         if root?
           SQL.replace(pattern, self, &replacement)
         else
@@ -95,7 +95,7 @@ module Fast
       end
 
       def token
-        tokens.find{|e|e.start == location.begin}
+        tokens.find { |e| e.start == location.begin }
       end
 
       def tokens
@@ -105,32 +105,47 @@ module Fast
 
     module_function
 
+    EMPTY_VALUES = [{}, [], '', :SETOP_NONE, :LIMIT_OPTION_DEFAULT, false].freeze
+
     # Parses SQL statements Using PGQuery
     # @see sql_to_h
-    def parse(statement, buffer_name: "(sql)")
+    def parse(statement, buffer_name: '(sql)')
       return [] if statement.nil?
+
       source_buffer = SQL::SourceBuffer.new(buffer_name, source: statement)
       tree = PgQuery.parse(statement).tree
-      first, *, last = source_buffer.tokens
+      parse_statements(tree, source_buffer)
+    end
+
+    def parse_statements(tree, source_buffer)
+      _first, *, last_token = source_buffer.tokens
       stmts = tree.stmts.map do |stmt|
-        from = stmt.stmt_location
-        to = stmt.stmt_len.zero? ? last.end : from + stmt.stmt_len
-        expression = Parser::Source::Range.new(source_buffer, from, to)
-        source_map = Parser::Source::Map.new(expression)
-        sql_tree_to_ast(clean_structure(stmt.stmt.to_h), source_buffer: source_buffer, source_map: source_map)
+        parse_single_statement(stmt, source_buffer, last_token)
       end.flatten
       stmts.one? ? stmts.first : stmts
     end
 
-    # Clean up the hash structure returned by PgQuery
+    def parse_single_statement(stmt, source_buffer, last_token)
+      from = stmt.stmt_location
+      to = calculate_statement_end(stmt, from, last_token)
+      expression = Parser::Source::Range.new(source_buffer, from, to)
+      source_map = Parser::Source::Map.new(expression)
+      sql_tree_to_ast(clean_structure(stmt.stmt.to_h), source_buffer: source_buffer, source_map: source_map)
+    end
+
+    def calculate_statement_end(stmt, from, last_token)
+      stmt.stmt_len.zero? ? last_token.end : from + stmt.stmt_len
+    end
+
+    # Clean up the hash structure returned by PGQuery
     # @arg [Hash] hash the hash representation of the sql statement
     # @return [Hash] the hash representation of the sql statement
     def clean_structure(stmt)
       res_hash = stmt.map do |key, value|
         value = clean_structure(value) if value.is_a?(Hash)
-        value = value.map(&Fast::SQL.method(:clean_structure)) if value.is_a?(Array)
-        value = nil if [{}, [], "", :SETOP_NONE, :LIMIT_OPTION_DEFAULT, false].include?(value)
-        key = key.to_s.tr('-','_').to_sym
+        value = value.map { |v| clean_structure(v) } if value.is_a?(Array)
+        value = nil if EMPTY_VALUES.include?(value)
+        key = key.to_s.tr('-', '_').to_sym
         [key, value]
       end
       res_hash.to_h.compact
@@ -141,25 +156,40 @@ module Fast
     # @arg [Hash] obj the hash representation of the sql statement
     # @return [Array] the AST representation of the sql statement
     def sql_tree_to_ast(obj, source_buffer: nil, source_map: nil)
-      recursive = -> (e) { sql_tree_to_ast(e, source_buffer: source_buffer, source_map: source_map.dup) }
+      recursive = ->(e) { sql_tree_to_ast(e, source_buffer: source_buffer, source_map: source_map.dup) }
       case obj
       when Array
-        obj.map(&recursive).flatten.compact
+        handle_array_ast(obj, recursive)
       when Hash
-        if (start = obj.delete(:location))
-          if (token = source_buffer.tokens.find{|e|e.start == start})
-            expression = Parser::Source::Range.new(source_buffer, token.start, token.end)
-            source_map = Parser::Source::Map.new(expression)
-          end
-        end
-        obj.map do |key, value|
-          children  = [*recursive.call(value)]
-          Node.new(key, children, location: source_map)
-        end.compact
+        handle_hash_ast(obj, source_buffer, source_map, recursive)
       else
         obj
       end
     end
+
+    def handle_array_ast(obj, recursive)
+      obj.map(&recursive).flatten.compact
+    end
+
+    def handle_hash_ast(obj, source_buffer, source_map, recursive)
+      source_map = update_source_map(obj, source_buffer, source_map)
+      obj.filter_map do |key, value|
+        children = [*recursive.call(value)]
+        Node.new(key, children, location: source_map)
+      end
+    end
+
+    def update_source_map(obj, source_buffer, source_map)
+      if (start = obj.delete(:location)) && (token = find_token_at_position(source_buffer, start))
+        expression = Parser::Source::Range.new(source_buffer, token.start, token.end)
+        Parser::Source::Map.new(expression)
+      else
+        source_map
+      end
+    end
+
+    def find_token_at_position(source_buffer, start)
+      source_buffer.tokens.find { |e| e.start == start }
+    end
   end
 end
-
