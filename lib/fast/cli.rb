@@ -22,7 +22,9 @@ module Fast
       if node.respond_to?(:loc) && !show_sexp
         wrap_source_range(node).source
       else
-        node
+        output = node.to_s
+        output = output.gsub(/\b-\b/, '_') if sql
+        output
       end
     return output unless colorize
 
