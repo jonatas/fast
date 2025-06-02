@@ -46,6 +46,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'coderay'
   spec.add_dependency 'parallel'
   spec.add_dependency 'parser'
+  spec.add_dependency 'racc'
   spec.add_dependency 'pg_query'
 
   spec.add_development_dependency 'bundler'
