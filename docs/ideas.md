@@ -41,7 +41,7 @@ This example, shows adds and removals from specific node targets between two
 different files.
 
 If we start tracking AST transition synapses and associating with "Fixes" or
-"Reverts" we can predict introduction of new bugs by inpecting if the
+"Reverts" we can predict introduction of new bugs by inspecting whether the
 introduction of new patterns that can be possibly reverted or improved.
 
 ## Fast Rewriter with pure strings

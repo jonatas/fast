@@ -13,7 +13,7 @@ several interesting cases in action.
 
 ## List your fast shortcuts
 
-As the interface is very rudimentar, let's build a shortcut to print what
+As the interface is very rudimentary, let's build a shortcut to print what
 shortcuts are available. This is a good one to your `$HOME/Fastfile`:
 
 ```ruby
@@ -46,7 +46,7 @@ I always miss bringing something simple as `grep keyword` where I can leave a si
 search in all types of nodes and report interesting things about it.
 
 Let's consider a very flexible search that can target any code related to some
-keyword. Considering that we're talking about code indentifiers:
+keyword. Considering that we're talking about code identifiers:
 
 
 ```ruby

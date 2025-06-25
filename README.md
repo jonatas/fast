@@ -57,7 +57,7 @@ For example, let's take an `Integer` in Ruby:
 1
 ```
 
-It's corresponding s-expression would be:
+Its corresponding s-expression would be:
 
 ```ruby
 s(:int, 1)
@@ -198,7 +198,7 @@ def my_method
 end
 ```
 
-It's corresponding s-expression would be:
+Its corresponding s-expression would be:
 
 ```ruby
 ast =

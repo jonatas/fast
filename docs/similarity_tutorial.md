@@ -76,14 +76,14 @@ Fast.search_file('(class (const nil $_))','lib/fast.rb').grep(Symbol)
  :ExperimentFile]
 ```
 
-The idea of this inspecton is build a proof of concept to show the similarity
+The idea of this inspection is building a proof of concept to show the similarity
 of matcher classes because they only define a `match?` method.
 
 ```ruby
 patterns = Fast.search_file('class','lib/fast.rb').map{|n|Fast.expression_from(n)}
 ```
 
-A simple comparison between the patterns size versus `.uniq.size` can proof if
+A simple comparison between the patterns size versus `.uniq.size` can prove that
 the idea will work.
 
 ```ruby
