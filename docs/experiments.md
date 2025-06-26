@@ -130,8 +130,8 @@ line tool.
 - And the `policy` is executed to check if the current change is valuable
 
 If the file contains multiple `before` or `after` blocks, each removal will
-occur independently and the successfull removals will be combined as a
-secondary change. The process repeates until find all possible combinations.
+occur independently and the successful removals will be combined as a
+secondary change. The process repeats until find all possible combinations.
 
 See more examples in [experiments](experiments) folder.
 

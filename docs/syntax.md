@@ -192,7 +192,7 @@ def duplicate(value)
   end
 ```
 
-The expression is matching nodes that have a integer granchild and also with
+The expression is matching nodes that have an integer grandchild and also with
 type `def`.
 
 ## `...` is a **node** with children
@@ -305,7 +305,7 @@ Double check the expressions that have matched printing the AST:
 
 ## `{}` is for **any** matches like **union** conditions with **or** operator
 
-Let's say we to add check all occurrencies of the constant `ANSWER`.
+Let's say we want to add check all occurrences of the constant `ANSWER`.
 
 We'll need to get both `casgn` and `const` node types. For such cases we can
 surround the expressions with `{}` and it will return if the node matches with
