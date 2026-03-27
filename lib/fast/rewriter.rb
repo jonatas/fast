@@ -5,7 +5,7 @@
 module Fast
   class << self
     # Replaces content based on a pattern.
-    # @param [Astrolabe::Node] ast with the current AST to search.
+    # @param [Parser::AST::Node] ast with the current AST to search.
     # @param [String] pattern with the expression to be targeting nodes.
     # @param [Proc] replacement gives the [Rewriter] context in the block.
     # @example
@@ -15,7 +15,9 @@ module Fast
     # @return [String] with the new source code after apply the replacement
     # @see Fast::Rewriter
     def replace(pattern, ast, source = nil, &replacement)
-      rewriter_for(pattern, ast, source, &replacement).rewrite!
+      rewritten = rewriter_for(pattern, ast, source, &replacement).rewrite!
+      Fast.validate_ruby!(rewritten, buffer_name: ast.buffer_name) if rewritten
+      rewritten
     end
 
     # @return [Fast::Rewriter]
@@ -98,7 +100,7 @@ module Fast
     end
 
     # Execute {#replacement} block
-    # @param [Astrolabe::Node] node that will be yield in the replacement block
+    # @param [Parser::AST::Node] node that will be yield in the replacement block
     # @param [Array<Object>, nil] captures are yield if {#replacement} take second argument.
     def execute_replacement(node, captures)
       if replacement.parameters.length == 1

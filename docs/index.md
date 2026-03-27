@@ -84,11 +84,11 @@ Fast.ast("a = 2")   # => s(:lvasgn, :a, s(:int, 2))
 Fast.ast("b += 2")  # => s(:op_asgn, s(:lvasgn, :b), :+, s(:int, 2))
 ```
 
-It uses [astrolable](https://github.com/yujinakayama/astrolabe) gem behind the scenes:
+It uses the `parser` gem behind the scenes:
 
 ```ruby
 Fast.ast(Fast.ast("1")).class
-=> Astrolabe::Node
+=> Fast::Node
 Fast.ast(Fast.ast("1")).type
 => :int
 Fast.ast(Fast.ast("1")).children
@@ -421,5 +421,4 @@ Fast.search_all("(def _)", '../other-folder')
 
     ??? "Learn how to create a SQL Formatter"
         <iframe width="1280" height="720" src="https://www.youtube.com/embed/o0FkOvJqKgs" frameborder="0" allowfullscreen></iframe>
-
 

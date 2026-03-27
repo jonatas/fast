@@ -30,7 +30,7 @@ RSpec.configure do |config|
 
   helpers = Module.new do
     def s(type, *children)
-      Fast::Node.new(type, children, buffer_name: respond_to?(:buffer_name) ? buffer_name : "sql")
+      Fast::Node.new(type, children, {})
     end
   end
 

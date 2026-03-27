@@ -285,7 +285,7 @@ module Fast
       @fail_experiments << combination
     end
 
-    # @return [Array<Astrolabe::Node>]
+    # @return [Array<Parser::AST::Node>]
     def search_cases
       Fast.search(experiment.expression, @ast) || []
     end

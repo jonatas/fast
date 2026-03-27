@@ -42,7 +42,6 @@ Gem::Specification.new do |spec|
   spec.executables   = %w[fast fast-experiment]
   spec.require_paths = %w[lib experiments]
 
-  spec.add_dependency 'astrolabe'
   spec.add_dependency 'coderay'
   spec.add_dependency 'parallel'
   spec.add_dependency 'parser'

@@ -206,7 +206,7 @@ RSpec.describe Fast do
       it { expect(described_class).to be_match('(float 111.2345)', code['111.2345']) }
       it { expect(described_class).to be_match('(const nil I18n)', code['I18n']) }
 
-      context 'with astrolable node methods' do
+      context 'with parser-compatible node methods' do
         it { expect(described_class).to be_match('.send_type?', code['method']) }
         it { expect(described_class).to be_match('(.root? (!.root?))', code['a.b']) }
         it { expect(described_class).not_to be_match('(!.root? (.root?))', code['a.b']) }

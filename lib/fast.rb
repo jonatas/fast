@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require 'fileutils'
-require 'astrolabe/builder'
-require_relative 'fast/rewriter'
 
 # suppress output to avoid parser gem warnings'
 def suppress_output
@@ -21,8 +19,12 @@ suppress_output do
   require 'parser/current'
 end
 
+require_relative 'fast/rewriter'
+
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
+  NODE_PARENTS = ObjectSpace::WeakMap.new
+
   # Literals are shortcuts allowed inside {ExpressionParser}
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
@@ -68,7 +70,22 @@ module Fast
   /x.freeze
 
   # Set some convention methods from file.
-  class Node < Astrolabe::Node
+  class Node < Parser::AST::Node
+    def initialize(type, children = [], properties = {})
+      super
+      assign_parents!
+    end
+
+    class << self
+      def set_parent(node, parent)
+        NODE_PARENTS[node] = parent
+      end
+
+      def parent_for(node)
+        NODE_PARENTS[node]
+      end
+    end
+
     # @return [String] with path of the file or simply buffer name.
     def buffer_name
       expression.source_buffer.name
@@ -76,7 +93,12 @@ module Fast
 
     # @return [Parser::Source::Range] from the expression
     def expression
-      location.expression
+      loc.expression
+    end
+
+    # Backward-compatible alias for callers that still use `location`.
+    def location
+      loc
     end
 
     # @return [String] with the content of the #expression
@@ -87,6 +109,45 @@ module Fast
     # @return [Boolean] true if a file exists with the #buffer_name
     def from_file?
       File.exist?(buffer_name)
+    end
+
+    def each_child_node
+      return enum_for(:each_child_node) unless block_given?
+
+      children.grep(Parser::AST::Node).each { |child| yield child }
+    end
+
+    def each_descendant(*types, &block)
+      return enum_for(:each_descendant, *types) unless block_given?
+
+      each_child_node do |child|
+        yield child if types.empty? || types.include?(child.type)
+        child.each_descendant(*types, &block) if child.respond_to?(:each_descendant)
+      end
+    end
+
+    def root?
+      parent.nil?
+    end
+
+    def parent
+      self.class.parent_for(self)
+    end
+
+    def updated(type = nil, children = nil, properties = nil)
+      updated_node = super
+      updated_node.send(:assign_parents!)
+      updated_node
+    end
+
+    def respond_to_missing?(method_name, include_private = false)
+      type_query_method?(method_name) || super
+    end
+
+    def method_missing(method_name, *args, &block)
+      return type == type_query_name(method_name) if type_query_method?(method_name) && args.empty? && !block
+
+      super
     end
 
     # @return [Array<String>] with authors from the current expression range
@@ -116,16 +177,32 @@ module Fast
     def capture(pattern, *args)
       Fast.capture(pattern, self, *args)
     end
+
+    private
+
+    def assign_parents!
+      each_child_node do |child|
+        self.class.set_parent(child, self)
+        child.send(:assign_parents!) if child.respond_to?(:assign_parents!, true)
+      end
+    end
+
+    def type_query_method?(method_name)
+      method_name.to_s.end_with?('_type?')
+    end
+
+    def type_query_name(method_name)
+      method_name.to_s.delete_suffix('_type?').to_sym
+    end
   end
 
   # Custom builder allow us to set a buffer name for each Node
-  class Builder < Astrolabe::Builder
-    attr_writer :buffer_name
+  class Builder < Parser::Builders::Default
     # Generates {Node} from the given information.
     #
     # @return [Node] the generated node
     def n(type, children, source_map)
-      Node.new(type, children, location: source_map, buffer_name: @buffer_name)
+      Node.new(type, children, location: source_map)
     end
   end
 
@@ -140,10 +217,21 @@ module Fast
       Parser::CurrentRuby.new(builder_for(buffer_name)).parse(buffer)
     end
 
+    def validate_ruby!(content, buffer_name: '(string)')
+      buffer = Parser::Source::Buffer.new(buffer_name)
+      buffer.source = content
+      parser = Parser::CurrentRuby.new(builder_for(buffer_name))
+      parser.diagnostics.all_errors_are_fatal = true
+      parser.diagnostics.consumer = lambda do |diagnostic|
+        message = Array(diagnostic.render).join("\n")
+        raise RuntimeError, message
+      end
+      parser.parse(buffer)
+      true
+    end
+
     def builder_for(buffer_name)
-      builder = Builder.new
-      builder.buffer_name = buffer_name
-      builder
+      Builder.new
     end
 
     # @return [Fast::Node] parsed from file content

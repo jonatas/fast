@@ -77,7 +77,7 @@ module Fast
     # Use ARGV to catch regular arguments from command line if the block is
     # given.
     #
-    # @return [Hash<String, Array<Astrolabe::Node>] with file => search results.
+    # @return [Hash<String, Array<Parser::AST::Node>] with file => search results.
     def run
       Fast.instance_exec(&@block) if single_run_with_block?
     end

@@ -3,6 +3,7 @@
 require 'spec_helper'
 require 'fast/cli'
 require 'fast/shortcut'
+require 'fileutils'
 
 RSpec.describe Fast::Cli do
   def highlight(output)
@@ -166,8 +167,22 @@ RSpec.describe Fast::Cli do
         let(:args) { %w[--no-color .show_version] }
 
         before do
-          Fast.shortcuts.delete :show_version
-          Fast.shortcut(:show_version, '(casgn nil _ (str _))', 'lib/fast/version.rb')
+          # Ensure version file exists
+          version_file = 'lib/fast/version.rb'
+          FileUtils.mkdir_p(File.dirname(version_file))
+          File.write(version_file, <<~RUBY) unless File.exist?(version_file)
+            module Fast
+              VERSION = '0.2.2'
+            end
+          RUBY
+
+          # Clear and set up shortcuts
+          Fast.shortcuts.clear
+          Fast.shortcut(:show_version, '(casgn nil _ (str _))', 'lib/fast/version.rb', '--no-color')
+        end
+
+        after do
+          Fast.shortcuts.clear
         end
 
         its(:pattern) { is_expected.to eq('(casgn nil _ (str _))') }
@@ -182,6 +197,17 @@ RSpec.describe Fast::Cli do
 
       context 'with args --headless --captures' do
         let(:args) { %w[--no-color (casgn nil _ (str $_)) lib/fast/version.rb --captures --headless] }
+
+        before do
+          # Ensure version file exists
+          version_file = 'lib/fast/version.rb'
+          FileUtils.mkdir_p(File.dirname(version_file))
+          File.write(version_file, <<~RUBY) unless File.exist?(version_file)
+            module Fast
+              VERSION = '0.2.2'
+            end
+          RUBY
+        end
 
         it 'prints only captured scope' do
           expect { cli.run! }.to output("#{Fast::VERSION}\n").to_stdout
