@@ -8,12 +8,67 @@ require 'fast/cli'
 module Fast
   # Implements the Model Context Protocol (MCP) server over STDIO.
   class McpServer
+    TOOLS = [
+      {
+        name: 'search_ruby_ast',
+        description: 'Search Ruby files using a Fast AST pattern. Returns file, line range, and source. Use show_ast=true only when you need the s-expression.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            pattern: { type: 'string', description: 'Fast AST pattern, e.g. "(def match?)" or "(send nil :raise ...)".' },
+            paths:   { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
+            show_ast: { type: 'boolean', description: 'Include s-expression AST in results (default: false).' }
+          },
+          required: ['pattern', 'paths']
+        }
+      },
+      {
+        name: 'ruby_method_source',
+        description: 'Extract source of a Ruby method by name across files. Optionally filter by class name.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            method_name: { type: 'string', description: 'Method name, e.g. "initialize".' },
+            paths:       { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
+            class_name:  { type: 'string', description: 'Optional class name to restrict results, e.g. "Matcher".' },
+            show_ast:    { type: 'boolean', description: 'Include s-expression AST in results (default: false).' }
+          },
+          required: ['method_name', 'paths']
+        }
+      },
+      {
+        name: 'ruby_class_source',
+        description: 'Extract the full source of a Ruby class by name.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            class_name: { type: 'string', description: 'Class name to extract, e.g. "Rewriter".' },
+            paths:      { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
+            show_ast:   { type: 'boolean', description: 'Include s-expression AST in results (default: false).' }
+          },
+          required: ['class_name', 'paths']
+        }
+      },
+      {
+        name: 'rewrite_ruby',
+        description: 'Apply a Fast pattern replacement to Ruby source code. Returns the rewritten source. Does NOT write to disk.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            source:      { type: 'string', description: 'Ruby source code to rewrite.' },
+            pattern:     { type: 'string', description: 'Fast AST pattern to match nodes for replacement.' },
+            replacement: { type: 'string', description: 'Ruby expression to replace matched node source with.' }
+          },
+          required: ['source', 'pattern', 'replacement']
+        }
+      }
+    ].freeze
+
     def self.run!
       new.run
     end
 
     def run
-      # Disable STDOUT buffering for instantaneous JSON-RPC replies
       STDOUT.sync = true
 
       while (line = STDIN.gets)
@@ -24,9 +79,9 @@ module Fast
           request = JSON.parse(line)
           handle_request(request)
         rescue JSON::ParserError => e
-          write_error(nil, -32700, "Parse error", e.message)
+          write_error(nil, -32700, 'Parse error', e.message)
         rescue StandardError => e
-          write_error(request&.fetch('id', nil), -32603, "Internal error", e.message)
+          write_error(request&.fetch('id', nil), -32603, 'Internal error', e.message)
         end
       end
     end
@@ -34,7 +89,7 @@ module Fast
     private
 
     def handle_request(request)
-      id = request['id']
+      id     = request['id']
       method = request['method']
       params = request['params'] || {}
 
@@ -46,101 +101,108 @@ module Fast
           serverInfo: { name: 'fast-mcp', version: Fast::VERSION }
         })
       when 'tools/list'
-        write_response(id, {
-          tools: [
-            {
-              name: 'search_ruby_ast',
-              description: 'Searches a Ruby codebase (via AST) using a Fast pattern.',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  pattern: { type: 'string', description: 'The Fast AST pattern to search (e.g., "(def match?)").' },
-                  paths: { type: 'array', items: { type: 'string' }, description: 'List of files or directories to search.' }
-                },
-                required: ['pattern', 'paths']
-              }
-            },
-            {
-              name: 'ruby_method_source',
-              description: 'Extracts the source code of a specific Ruby method by name.',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  method_name: { type: 'string', description: 'Name of the method to extract (e.g., "initialize").' },
-                  paths: { type: 'array', items: { type: 'string' }, description: 'List of files or directories to search.' }
-                },
-                required: ['method_name', 'paths']
-              }
-            }
-          ]
-        })
+        write_response(id, { tools: TOOLS })
       when 'tools/call'
         handle_tool_call(id, params)
       when 'notifications/initialized'
-        # Just acknowledge
+        nil
       else
-        write_error(id, -32601, "Method not found", "Method #{method} not supported") if id
+        write_error(id, -32601, 'Method not found', "#{method} not supported") if id
       end
     end
 
     def handle_tool_call(id, params)
       tool_name = params['name']
-      args = params['arguments'] || {}
+      args      = params['arguments'] || {}
+      show_ast  = args['show_ast'] || false
 
-      begin
-        result =
-          case tool_name
-          when 'search_ruby_ast'
-            execute_search(args['pattern'], args['paths'])
-          when 'ruby_method_source'
-            execute_search("(def #{args['method_name']})", args['paths'])
-          else
-            raise "Unknown tool: #{tool_name}"
-          end
+      result =
+        case tool_name
+        when 'search_ruby_ast'
+          execute_search(args['pattern'], args['paths'], show_ast: show_ast)
+        when 'ruby_method_source'
+          execute_method_search(args['method_name'], args['paths'],
+                                class_name: args['class_name'], show_ast: show_ast)
+        when 'ruby_class_source'
+          execute_class_search(args['class_name'], args['paths'], show_ast: show_ast)
+        when 'rewrite_ruby'
+          execute_rewrite(args['source'], args['pattern'], args['replacement'])
+        else
+          raise "Unknown tool: #{tool_name}"
+        end
 
-        write_response(id, {
-          content: [
-            {
-              type: 'text',
-              text: JSON.generate(result)
-            }
-          ]
-        })
-      rescue => e
-        write_error(id, -32603, "Tool execution failed", e.message)
-      end
+      write_response(id, { content: [{ type: 'text', text: JSON.generate(result) }] })
+    rescue => e
+      write_error(id, -32603, 'Tool execution failed', e.message)
     end
 
-    def execute_search(pattern, paths)
+    def execute_search(pattern, paths, show_ast: false)
       results = []
       on_result = ->(file, matches) do
         matches.compact.each do |node|
-          next unless node.respond_to?(:loc) && node.loc.respond_to?(:expression)
-          
-          exp = node.loc.expression
-          next unless exp # Sometimes AST nodes missing expression
+          next unless (exp = node_expression(node))
 
-          results << {
-            file: file,
+          entry = {
+            file:       file,
             line_start: exp.line,
-            line_end: exp.last_line,
-            code: Fast.highlight(node, colorize: false),
-            ast: Fast.highlight(node, show_sexp: true, colorize: false)
+            line_end:   exp.last_line,
+            code:       Fast.highlight(node, colorize: false)
           }
+          entry[:ast] = Fast.highlight(node, show_sexp: true, colorize: false) if show_ast
+          results << entry
         end
       end
-      
+
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result)
       results
     end
 
+    def execute_method_search(method_name, paths, class_name: nil, show_ast: false)
+      pattern = "(def #{method_name})"
+      results = execute_search(pattern, paths, show_ast: show_ast)
+      return results unless class_name
+
+      # Filter: keep only methods whose file contains the class
+      results.select do |r|
+        class_defined_in_file?(class_name, r[:file])
+      end
+    end
+
+    def execute_class_search(class_name, paths, show_ast: false)
+      # Match both `class Foo` and `class Foo::Bar`
+      pattern = "{ (class (const _ :#{class_name})) (class (const nil :#{class_name})) }"
+      execute_search(pattern, paths, show_ast: show_ast)
+    end
+
+    def execute_rewrite(source, pattern, replacement)
+      ast    = Fast.ast(source)
+      result = Fast.replace(pattern, ast, source) do |node|
+        replace(node.loc.expression, replacement)
+      end
+      { original: source, rewritten: result, changed: result != source }
+    end
+
+    # Returns loc.expression if available
+    def node_expression(node)
+      return unless node.respond_to?(:loc) && node.loc.respond_to?(:expression)
+
+      node.loc.expression
+    end
+
+    # Check whether a class is defined anywhere in the file's AST
+    def class_defined_in_file?(class_name, file)
+      ast = Fast.ast_from_file(file)
+      Fast.match?("(class (const _ :#{class_name}) ...)", ast)
+    rescue
+      false
+    end
+
     def write_response(id, result)
-      response = { jsonrpc: '2.0', id: id, result: result }
-      STDOUT.puts response.to_json
+      STDOUT.puts({ jsonrpc: '2.0', id: id, result: result }.to_json)
     end
 
     def write_error(id, code, message, data = nil)
-      err = { code: code, message: message }
+      err      = { code: code, message: message }
       err[:data] = data if data
       response = { jsonrpc: '2.0', error: err }
       response[:id] = id if id
