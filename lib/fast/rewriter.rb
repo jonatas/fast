@@ -1,3 +1,5 @@
+require 'parser/current'
+require 'parser/tree_rewriter'
 # frozen_string_literal: true
 
 # Rewriter loads a set of methods related to automated replacement using

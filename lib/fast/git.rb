@@ -8,7 +8,7 @@ module Fast
   #  @example
   #    require 'fast/git'
   #    Fast.ast_from_file('lib/fast.rb').git_log.first.author.name # => "Jonatas Davi Paganini"
-  class Node < Astrolabe::Node
+  class Node
     # @return [Git::Base] from current directory
     def git
       require 'git' unless defined? Git

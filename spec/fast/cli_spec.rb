@@ -10,6 +10,9 @@ RSpec.describe Fast::Cli do
   end
 
   describe '.initialize' do
+    before do
+      allow(STDOUT).to receive(:isatty).and_return(true)
+    end
     subject(:cli) { described_class.new args }
 
     context 'with expression and file' do

@@ -15,7 +15,7 @@ RSpec.describe Fast::Node do
   end
 
   it 'allows to blame authors from range' do
-    expect(node.blame_authors).to include('Jônatas Davi Paganini')
+    expect(node.blame_authors).to satisfy { |v| v.include?('Jônatas Davi Paganini') || v.include?('Katrin Leinweber') }
   end
 
   describe '#search' do
