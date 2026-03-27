@@ -17,6 +17,9 @@ theme:
 extra_css:
   - stylesheets/custom.css
 
+plugins:
+  - search
+
 markdown_extensions:
   - admonition
   - pymdownx.details
@@ -33,7 +36,10 @@ nav:
   - Experiments: experiments.md
   - Shortcuts: shortcuts.md
   - Git Integration: git.md
+  - Fast for LLMs and Agents: agents.md
+  - MCP Server Tutorial: mcp_tutorial.md
   - Code Similarity: similarity_tutorial.md
+  - LLM/Agent Feature TODOs: llm_features.md
   - Pry Integration: pry-integration.md
   - Editors' Integration: editors-integration.md
   - Research: research.md

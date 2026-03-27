@@ -205,7 +205,7 @@ end
 ## RSpec: Remove unused let
 
 !!! hint "First shortcut with experiments"
-    If you're not familiar with automated experiments, you can read about it [here](/experiments).
+    If you're not familiar with automated experiments, you can read about it [here](experiments.md).
 
 The current scenario is similar in terms of search with the previous one, but more advanced
 because we're going to introduce automated refactoring.
@@ -320,4 +320,3 @@ I love to use nested assertions and I often need examples to refer to them:
 # Show RSpec nested assertions with .and
 Fast.shortcut(:nested_assertions, '^^(send ... and)', 'spec')
 ```
-

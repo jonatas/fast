@@ -2,7 +2,7 @@
 # Research
 
 I love to research about codebase as data and prototyping ideas several times
-doesn't fit in simple [shortcuts](/shortcuts).
+doesn't fit in simple [shortcuts](shortcuts.md).
 
 Here is my first research that worth sharing:
 

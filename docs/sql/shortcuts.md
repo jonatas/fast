@@ -76,5 +76,5 @@ Fast.shortcut :anonymize_sql do
 end
 ```
 
- Check out the default [shortcuts](/shortcuts) guide if you need more content
+ Check out the default [shortcuts](../shortcuts.md) guide if you need more content
  about shortcuts.

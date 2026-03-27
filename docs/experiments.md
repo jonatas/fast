@@ -133,7 +133,9 @@ If the file contains multiple `before` or `after` blocks, each removal will
 occur independently and the successfull removals will be combined as a
 secondary change. The process repeates until find all possible combinations.
 
-See more examples in [experiments](experiments) folder.
+See more examples in the
+[`experiments/`](https://github.com/jonatas/fast/tree/master/experiments)
+folder.
 
 To run multiple experiments, use `fast-experiment` runner:
 
@@ -152,4 +154,3 @@ Or a single file:
 ```
 fast-experiment RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
 ```
-

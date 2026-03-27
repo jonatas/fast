@@ -14,5 +14,4 @@ force the decision for the SQL parser.
 
 The command line tool should be compatible with most of the commands.
 
-To dive into all parsing steps, check out the [SQL](/sql/) section.
-
+To dive into all parsing steps, check out the [SQL](sql/index.md) section.

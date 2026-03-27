@@ -71,7 +71,7 @@ Fast.match?("(select_stmt (target_list (res_target (val ($...)))))", ast)
 #         s(:ival, 1))))]
 ```
 
-And ignoring node types or values using `_`. Check all [syntax](/syntax) options.
+And ignoring node types or values using `_`. Check all [syntax](../syntax.md) options.
 
 ```ruby
 Fast.match?("(select_stmt (_ (_ (val ($...)))))", ast)
@@ -285,5 +285,4 @@ fast --sql --from-code "select * from my_table" *.sql
 
 ## Reusing your patterns and statements
 
-Check out the [Shortcuts](/sql/shortcuts).
-
+Check out the [Shortcuts](shortcuts.md).

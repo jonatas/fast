@@ -411,7 +411,7 @@ Fast.search_all("(def _)", '../other-folder')
 
     Did you like the Ruby AST?
 
-    Check out the [SQL Support](/sql-support).
+    Check out the [SQL Support](sql-support.md).
 
     You can do things like:
 
@@ -421,6 +421,5 @@ Fast.search_all("(def _)", '../other-folder')
 
     ??? "Learn how to create a SQL Formatter"
         <iframe width="1280" height="720" src="https://www.youtube.com/embed/o0FkOvJqKgs" frameborder="0" allowfullscreen></iframe>
-
 
 

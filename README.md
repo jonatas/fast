@@ -12,6 +12,20 @@ the code was written without an AST.
 
 Check out the official documentation: https://jonatas.github.io/fast.
 
+## Documentation locally
+
+The documentation site is built with MkDocs Material and a few Markdown
+extensions. To run it locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements-docs.txt
+mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000`.
+
 ## Token Syntax for `find` in AST
 
 The current version of Fast covers the following token elements:

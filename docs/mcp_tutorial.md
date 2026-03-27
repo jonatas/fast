@@ -1,49 +1,110 @@
 # Fast MCP Server Tutorial
 
-Welcome! `fast` now ships with an extremely powerful `fast-mcp` execution server designed to act as an AST search backend for LLMs via the Model Context Protocol (MCP). Let's explore everything it can do!
+`fast-mcp` exposes Fast's Ruby AST search and rewrite primitives as MCP tools over stdio. It is best when an LLM host can register an MCP server and call tools directly instead of parsing CLI text output.
 
-## Tools Available
-The server exposes four highly optimized tools to navigate Ruby code structure reliably without spamming you with full files.
+## What the server exposes
+
+The current server exposes five tools:
+
 1. `search_ruby_ast`
 2. `ruby_method_source`
 3. `ruby_class_source`
 4. `rewrite_ruby`
+5. `rewrite_ruby_file`
 
-## Testing it Locally with JSON-RPC
+These are MCP `tools`, not MCP `resources`. If your host lists resources/templates and shows nothing, that does not mean the server is broken. It means the host has not connected to the server's tool interface.
 
-Since MCP expects JSON-RPC 2.0 requests over stdio, you can send manual queries to `bin/fast-mcp`.
+## When MCP is better than CLI
 
-### 1. Extracting a specific method
-Need to fetch exactly how `def search_all` is implemented? Send this to STDIN:
-```json
-{"jsonrpc":"2.0", "id": 1, "method": "tools/call", "params": {"name": "ruby_method_source", "arguments": {"method_name": "search_all", "paths": ["lib"]}}}
+Use MCP when:
+
+- Your host supports MCP server registration and tool calling.
+- You want structured JSON results without asking the model to parse CLI text.
+- You want the host to decide when to call `ruby_method_source` or `search_ruby_ast` as a first-class tool.
+
+Use the CLI when:
+
+- Your host cannot register MCP servers.
+- You only need ad hoc terminal searches.
+- You want the simplest possible integration surface.
+
+In practice, CLI is the easiest integration to get working. MCP is the better long-term interface for LLM agents because it preserves typed arguments and structured responses.
+
+## Testing it locally with JSON-RPC
+
+The server speaks JSON-RPC 2.0 over stdio through `bin/fast-mcp`.
+
+### 1. List the tools
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
+  | ruby -Ilib bin/fast-mcp
 ```
-**Output Highlights**: You will get back an array in the `result.content` showing EXACTLY the method block start to finish `def search_all... end`, perfectly trimmed with line boundaries `[195..206]`.
 
-### 2. Extracting an entire class
-Need the structural definition of `class Cli`?
-```json
-{"jsonrpc":"2.0", "id": 2, "method": "tools/call", "params": {"name": "ruby_class_source", "arguments": {"class_name": "Cli", "paths": ["lib"]}}}
+### 2. Extract a specific method
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ruby_method_source","arguments":{"method_name":"search_all","paths":["lib"]}}}' \
+  | ruby -Ilib bin/fast-mcp
 ```
-This is fully syntax-aware so it handles `class Fast::Cli` or `class Cli < Object` effortlessly, unlike grep where you might catch random string tokens.
 
-### 3. Using Raw AST Patterns (`search_ruby_ast`)
-You can tap directly into the rubocop AST matching syntax for massive flexibility:
-```json
-{"jsonrpc":"2.0", "id": 3, "method": "tools/call", "params": {"name": "search_ruby_ast", "arguments": {"pattern": "(send nil :require (str _))", "paths": ["lib/fast.rb"]}}}
+This returns a JSON payload whose `result.content[0].text` is itself a JSON array of matches. Each match includes `file`, `line_start`, `line_end`, and the trimmed `code` snippet.
+
+### 3. Extract a method from a known class
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ruby_method_source","arguments":{"method_name":"run","class_name":"McpServer","paths":["lib"]}}}' \
+  | ruby -Ilib bin/fast-mcp
 ```
-*Tip: If you want to dive into the raw S-expression for the file, set `"show_ast": true` inside `arguments`.*
 
-### 4. Code Rewriting (`rewrite_ruby`)
-Want to quickly draft a refactor using the tool before doing it with standard editing commands? You can ask `fast-mcp` to apply a fast rewrite AST replacement inline to check the output!
-```json
-{"jsonrpc":"2.0", "id": 4, "method": "tools/call", "params": {"name": "rewrite_ruby", "arguments": {"source": "def foo; puts 1; end", "pattern": "(send nil :puts (int 1))", "replacement": "logger.info('hello')"}}}
+This is often more token-efficient than returning the full class body.
+
+### 4. Search with a raw AST pattern
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"search_ruby_ast","arguments":{"pattern":"(send nil :require (str _))","paths":["lib/fast/mcp_server.rb"]}}}' \
+  | ruby -Ilib bin/fast-mcp
 ```
-Returns a diff mapping object `{"rewritten": "def foo; logger.info('hello'); end"}`.
 
-## Error Handling Edge Cases
-- **Missing Paths**: If you supply a path that doesn't exist, the tool safely catches `rb_sysopen` and returns an MCP Error code -32603, avoiding a server crash.
-- **Parse Errors / Mismatches**: If you supply an invalid ruby block like `(def unclosed`, `fast` gracefully isolates the search expression mismatch to return an empty `[]` search result rather than destroying the process context. 
+Set `"show_ast": true` only when you need the s-expression too.
 
-## Best Practices
-- Fast AST queries are exceptionally precise but can occasionally miss syntax edge-cases (e.g. `send` with blocks might require `block` matcher first). When in doubt, perform a generic text search first to grab the `show_ast: true` signature!
+### 5. Preview a rewrite without touching disk
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"rewrite_ruby","arguments":{"source":"def foo; puts 1; end","pattern":"(send nil :puts (int 1))","replacement":"logger.info('\''hello'\'')"}}}' \
+  | ruby -Ilib bin/fast-mcp
+```
+
+### 6. Rewrite a file in place
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"rewrite_ruby_file","arguments":{"file":"lib/fast/mcp_server.rb","pattern":"(send nil :require (str \"json\"))","replacement":"require '\''json'\''"}}}' \
+  | ruby -Ilib bin/fast-mcp
+```
+
+Prefer `rewrite_ruby` first to preview the change.
+
+## Error behavior
+
+- Missing paths return MCP error `-32603` with the underlying file error.
+- Invalid AST patterns currently return an empty result array `[]`.
+- Unknown tool names return MCP error `-32603`.
+
+## Current limitations
+
+- `ruby_method_source` with `class_name` filters by file membership, not lexical scope. If a file defines the class anywhere, matching methods in that file can pass the filter.
+- `ruby_class_source` returns the full class body, which can still be large for token-sensitive workflows.
+- Hosts must register the server explicitly. A raw MCP resource list will stay empty because this server does not publish resources.
+
+## Best practices
+
+- Start with `ruby_method_source` when you know the method name.
+- Use `search_ruby_ast` for call sites and structural queries.
+- Prefer method-level extraction over class-level extraction to save tokens.
+- Fall back to the CLI for hosts that cannot call MCP tools yet.
