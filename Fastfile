@@ -125,12 +125,22 @@ Fast.shortcut :anonymize_sql do
 end
 
 # Give all details in a shorter format
-# fast .resume file.rb
-Fast.shortcut :resume do
-  require 'fast/resume'
+# fast .summary file.rb
+Fast.shortcut :summary do
   file = ARGV.last
   if file && File.exist?(file)
-    Fast::Resume.new(IO.read(file)).summarize
+    Fast.summary(IO.read(file), file: file).summarize
+  else
+    puts "Please provide a valid file to summarize."
+  end
+end
+
+# Give all details in a shorter format
+# fast .resume file.rb
+Fast.shortcut :resume do
+  file = ARGV.last
+  if file && File.exist?(file)
+    Fast.summary(IO.read(file), file: file, command_name: '.resume').summarize
   else
     puts "Please provide a valid file to resume."
   end

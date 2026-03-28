@@ -5,56 +5,22 @@ require 'fast/resume'
 
 RSpec.describe Fast::Resume do
   describe '#summarize' do
-    let(:code) do
-      <<~RUBY
-        module Store
-          class Item < ActiveRecord::Base
-            has_many :variants
-            belongs_to :user
-            
-            attr_accessor :virtual_price, :name
-            
-            validates :name, presence: true
-            validate :custom_check
-            
-            before_save :prepare_price
-            after_create :notify_user
-            
-            scope :active, -> { where(active: true) }
-            scope :recent, ->(limit) { order(created_at: :desc).limit(limit) }
-            
-            def calculate(tax, extra: 0)
-              1
-            end
-            
-            def self.find_cheap
-              2
-            end
-          end
-        end
-      RUBY
+    it 'keeps the legacy command label in unsupported template errors' do
+      expect { described_class.new('= render :thing', file: 'sample.slim').summarize }
+        .to output("Unsupported template format for .resume: .slim\n").to_stdout
     end
 
-    subject { described_class.new(code) }
+    it 'uses the shared summary behavior' do
+      code = <<~RUBY
+        class ModernController
+          before_action :load_user, if: :current_user?
+        end
+      RUBY
 
-    it 'outputs a comprehensive skeleton' do
-      expect { subject.summarize }.to output(<<~EXPECTED).to_stdout
-        module Store
-          class Item < ActiveRecord::Base
-            has_many :variants
-            belongs_to :user
+      expect { described_class.new(code).summarize }.to output(<<~EXPECTED).to_stdout
+        class ModernController
 
-            attr_accessor :virtual_price, :*name
-
-            Scopes: active, recent(limit)
-
-            Hooks: before_save :prepare_price, after_create :notify_user
-
-            Validations: *name, :custom_check
-
-            def calculate(tax, extra: 0)
-            def self.find_cheap
-          end
+          Hooks: before_action :load_user, if: :current_user?
         end
       EXPECTED
     end

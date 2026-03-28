@@ -192,6 +192,22 @@ module Fast
   end
 
   class << self
+    def ast_node?(node)
+      node.respond_to?(:type) && node.respond_to?(:children)
+    end
+
+    def parse_ruby(content, buffer_name: '(string)')
+      ast(content, buffer_name: buffer_name) || begin
+        require_relative 'fast/prism_adapter'
+        Fast::PrismAdapter.parse(content, buffer_name: buffer_name)
+      end
+    end
+
+    def summary(code_or_ast, file: nil, command_name: '.summary')
+      require_relative 'fast/summary'
+      Summary.new(code_or_ast, file: file, command_name: command_name)
+    end
+
     def parser_class
       @parser_class ||= begin
         require parser_require_path
@@ -513,7 +529,7 @@ module Fast
     #   Fast.expression_from(Fast.ast('def name; person.name end')) # => '(def _ (args) (send (send nil _) _))'
     def expression_from(node)
       case node
-      when Parser::AST::Node
+      when ->(candidate) { ast_node?(candidate) }
         children_expression = node.children.map(&method(:expression_from)).join(' ')
         "(#{node.type}#{" #{children_expression}" if node.children.any?})"
       when nil, 'nil'
@@ -628,7 +644,7 @@ module Fast
 
     def compare_symbol_or_head(expression, node)
       case node
-      when Parser::AST::Node
+      when ->(candidate) { Fast.ast_node?(candidate) }
         node.type == expression.to_sym
       when String
         node == expression.to_s

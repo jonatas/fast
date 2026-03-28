@@ -19,6 +19,14 @@ RSpec.describe Fast do
     end
   end
 
+  describe '.summary' do
+    it 'builds a summary object' do
+      summary = described_class.summary('class Post; end')
+
+      expect(summary).to be_a(Fast::Summary)
+    end
+  end
+
   describe '.expression' do
     it 'parses ... as Find' do
       expect(described_class.expression('...')).to be_a(Fast::Find)
