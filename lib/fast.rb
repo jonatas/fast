@@ -99,7 +99,7 @@ module Fast
     def each_child_node
       return enum_for(:each_child_node) unless block_given?
 
-      children.grep(Parser::AST::Node).each { |child| yield child }
+      children.select { |child| Fast.ast_node?(child) }.each { |child| yield child }
     end
 
     def each_descendant(*types, &block)
@@ -197,10 +197,41 @@ module Fast
     end
 
     def parse_ruby(content, buffer_name: '(string)')
-      ast(content, buffer_name: buffer_name) || begin
-        require_relative 'fast/prism_adapter'
-        Fast::PrismAdapter.parse(content, buffer_name: buffer_name)
+      require_relative 'fast/prism_adapter'
+      Fast::PrismAdapter.parse(content, buffer_name: buffer_name) || begin
+        parser_ast(content, buffer_name: buffer_name)
       end
+    end
+
+    def parser_ast(content, buffer_name: '(string)')
+      buffer = Parser::Source::Buffer.new(buffer_name)
+      buffer.source = content
+      parser_class.new(builder_for(buffer_name)).parse(buffer)
+    end
+
+    def parser_ast_from_file(file)
+      @parser_cache ||= {}
+      @parser_cache[file] ||=
+        begin
+          method =
+            if file.end_with?('.sql')
+              require_relative 'fast/sql' unless respond_to?(:parse_sql)
+              :parse_sql
+            else
+              :parser_ast
+            end
+          Fast.public_send(method, IO.read(file), buffer_name: file)
+        end
+    end
+
+    def parse_file(file)
+      return parser_ast_from_file(file) if file.end_with?('.sql')
+
+      @cache ||= {}
+      @cache[file] ||=
+        begin
+          parse_ruby(IO.read(file), buffer_name: file)
+        end
     end
 
     def summary(code_or_ast, file: nil, command_name: '.summary')
@@ -245,9 +276,7 @@ module Fast
     #   Fast.ast("1") # => s(:int, 1)
     #   Fast.ast("a.b") # => s(:send, s(:send, nil, :a), :b)
     def ast(content, buffer_name: '(string)')
-      buffer = Parser::Source::Buffer.new(buffer_name)
-      buffer.source = content
-      parser_class.new(builder_for(buffer_name)).parse(buffer)
+      parser_ast(content, buffer_name: buffer_name)
     end
 
     def validate_ruby!(content, buffer_name: '(string)')
@@ -273,18 +302,7 @@ module Fast
     # @example
     #   Fast.ast_from_file("example.rb") # => s(...)
     def ast_from_file(file)
-      @cache ||= {}
-      @cache[file] ||=
-        begin
-          method =
-            if file.end_with?('.sql')
-              require_relative 'fast/sql' unless respond_to?(:parse_sql)
-              :parse_sql
-            else
-              :ast
-            end
-          Fast.public_send(method, IO.read(file), buffer_name: file)
-        end
+      parse_file(file)
     end
 
     # Verify if a given AST matches with a specific pattern
@@ -452,12 +470,12 @@ module Fast
     end
 
     # Folds the AST to a maximum depth, replacing deeper branches with `...`
-    # @param node [Parser::AST::Node]
+    # @param node [Fast::Node]
     # @param level [Integer] maximum depth to explore
     # @param current_level [Integer] internal tracker for depth
-    # @return [Parser::AST::Node] the folded AST
+    # @return [Fast::Node] the folded AST
     def fold_ast(node, level: nil, current_level: 1)
-      return node unless node.is_a?(Parser::AST::Node)
+      return node unless ast_node?(node) && node.respond_to?(:updated)
       return node if level.nil?
 
       if current_level >= level
@@ -473,12 +491,12 @@ module Fast
     end
 
     # Folds ruby source code to a maximum depth, replacing deep block bodies with `# ...`
-    # @param node [Parser::AST::Node]
+    # @param node [Fast::Node]
     # @param level [Integer] maximum depth to explore
     # @return [String] the folded source representation
     def fold_source(node, level: 1)
       return node if node.is_a?(String)
-      return node.loc.expression.source rescue node.to_s unless node.is_a?(Parser::AST::Node)
+      return node.loc.expression.source rescue node.to_s unless ast_node?(node) && node.respond_to?(:loc)
 
       source = node.loc.expression.source.dup
       root_begin = node.loc.expression.begin_pos
@@ -486,7 +504,7 @@ module Fast
       regions = []
 
       walker = ->(n, current_level) do
-        return unless n.is_a?(Parser::AST::Node)
+        return unless ast_node?(n)
 
         if current_level >= level
           body_node = nil
@@ -506,7 +524,7 @@ module Fast
           end
         end
 
-        n.children.each { |c| walker.call(c, current_level + 1) }
+        n.children.each { |c| walker.call(c, current_level + 1) if ast_node?(c) }
       end
 
       walker.call(node, 1)

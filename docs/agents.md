@@ -40,6 +40,21 @@ To maximize reliability and reduce context noise, use these flags when invoking 
 - `--bodyless`: Omits the code block body and only shows the matched headers (useful for finding *where* something is without reading *what* it is).
 - `--ast`: Prints the S-expression representation of the matching nodes. Outstanding when you need to understand the internal AST structure of a complex ruby construct to construct more advanced `fast` queries or RuboCop node patterns.
 
+## Use `.summary` for first-pass reconnaissance
+
+`fast .summary file.rb` is a high-leverage shortcut for agents entering a large file. Instead of reading the full body first, it prints a compact structural outline:
+
+- class and module nesting
+- constants
+- mixins
+- relationships such as `has_many` and `belongs_to`
+- attributes such as `attr_reader`
+- scopes, hooks, and validations
+- method signatures grouped by visibility
+- macro-heavy sections that would otherwise waste tokens
+
+This is especially useful before deciding whether to fetch full method bodies through `fast`, MCP tools, or ordinary file reads.
+
 ## Essential MCP tools
 
 If your host supports MCP, register `bin/fast-mcp` and call these tools:
@@ -74,6 +89,14 @@ fast "(def process)" app/ lib/ --no-color
 
 With MCP, call `ruby_method_source` with `method_name: "process"` and `paths: ["app", "lib"]`.
 
+### Summarizing a large file before reading it
+
+```bash
+fast .summary app/models/order.rb --no-color
+```
+
+This is often the best first step when the file is large and you need to decide which methods or macros deserve deeper inspection.
+
 ## Advanced search
 
 You can use `^` to search upstream (e.g. parent nodes) or use `{}` for unions:
@@ -94,3 +117,32 @@ fast "(send nil {def_node_matcher def_node_search})" lib/ --no-color
 4. **Prefer method-sized context**: Method extraction is usually the best token-saving unit for both CLI and MCP.
 5. **Use MCP when available**: Agents should prefer MCP over CLI once the host can register the server, because structured tool calls are easier to orchestrate than parsing terminal output.
 6. **Preview before writing**: Prefer `rewrite_ruby` before `rewrite_ruby_file` so the agent can inspect the result even though invalid rewrites are already rejected.
+7. **Use `.summary` before deep reads**: For unfamiliar large files, a summary is often the cheapest way to understand the shape before pulling full source.
+
+## Larger scenarios
+
+### 1. Onboarding to a large Rails model
+
+Start with `fast .summary app/models/order.rb --no-color`.
+
+This lets the agent see:
+
+- associations
+- validations
+- callbacks
+- scopes
+- public vs private method shape
+
+That is a better starting point than reading 500 lines top to bottom, especially when most of the file is macro noise.
+
+### 2. Auditing callback-heavy classes before a refactor
+
+For files with many `before_*`, `after_*`, and macro declarations, `.summary` quickly exposes lifecycle hooks and method boundaries. The agent can then fetch only the callback implementations it actually needs.
+
+### 3. Planning a rewrite safely
+
+Use `.summary` first to identify the small set of methods or macros involved, then switch to `ruby_method_source`, `search_ruby_ast`, or `rewrite_ruby`. This reduces token use and lowers the chance of targeting the wrong scope.
+
+### 4. Reviewing framework-heavy files
+
+Controllers, jobs, mailers, and serializers often contain more declarations than logic. `.summary` helps the agent separate framework declarations from the few methods that contain actual behavior.

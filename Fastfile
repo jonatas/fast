@@ -127,21 +127,10 @@ end
 # Give all details in a shorter format
 # fast .summary file.rb
 Fast.shortcut :summary do
-  file = ARGV.last
+  file = ARGV.reverse.find { |arg| !arg.start_with?('-') && File.exist?(arg) }
   if file && File.exist?(file)
     Fast.summary(IO.read(file), file: file).summarize
   else
     puts "Please provide a valid file to summarize."
-  end
-end
-
-# Give all details in a shorter format
-# fast .resume file.rb
-Fast.shortcut :resume do
-  file = ARGV.last
-  if file && File.exist?(file)
-    Fast.summary(IO.read(file), file: file, command_name: '.resume').summarize
-  else
-    puts "Please provide a valid file to resume."
   end
 end

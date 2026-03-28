@@ -8,79 +8,29 @@ module Fast
     module_function
 
     class Location
+      attr_accessor :node
       attr_reader :expression
 
       def initialize(buffer_name, source, start_offset, end_offset)
         buffer = Parser::Source::Buffer.new(buffer_name)
         buffer.source = source
-        @expression = Parser::Source::Range.new(buffer, start_offset, end_offset)
-      end
-    end
-
-    class Node
-      attr_reader :type, :children, :loc
-      attr_accessor :parent
-
-      def initialize(type, children:, loc:)
-        @type = type
-        @children = Array(children)
-        @loc = loc
-        assign_parents!
-      end
-
-      def expression
-        loc.expression
-      end
-
-      def source
-        expression.source
-      end
-
-      def each_child_node
-        return enum_for(:each_child_node) unless block_given?
-
-        children.select { |child| child.respond_to?(:type) && child.respond_to?(:children) }.each { |child| yield child }
-      end
-
-      def each_descendant(*types, &block)
-        return enum_for(:each_descendant, *types) unless block_given?
-
-        each_child_node do |child|
-          yield child if types.empty? || types.include?(child.type)
-          child.each_descendant(*types, &block)
-        end
-      end
-
-      def search(pattern, *args)
-        Fast.search(pattern, self, *args)
-      end
-
-      def capture(pattern, *args)
-        Fast.capture(pattern, self, *args)
-      end
-
-      def root?
-        parent.nil?
-      end
-
-      def respond_to_missing?(method_name, include_private = false)
-        method_name.to_s.end_with?('_type?') || super
-      end
-
-      def method_missing(method_name, *args, &block)
-        if method_name.to_s.end_with?('_type?') && args.empty? && !block
-          return type == method_name.to_s.delete_suffix('_type?').to_sym
-        end
-
-        super
+        @expression = Parser::Source::Range.new(
+          buffer,
+          character_offset(source, start_offset),
+          character_offset(source, end_offset)
+        )
       end
 
       private
 
-      def assign_parents!
-        each_child_node do |child|
-          child.parent = self
-        end
+      def character_offset(source, byte_offset)
+        source.byteslice(0, byte_offset).to_s.length
+      end
+    end
+
+    class Node < Fast::Node
+      def initialize(type, children:, loc:)
+        super(type, Array(children), location: loc)
       end
     end
 
@@ -128,9 +78,13 @@ module Fast
         build_node(:sym, [node.unescaped], node, source, buffer_name)
       when Prism::StringNode
         build_node(:str, [node.unescaped], node, source, buffer_name)
+      when Prism::InterpolatedStringNode
+        build_node(:dstr, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
       when Prism::ArrayNode
         build_node(:array, node.elements.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
       when Prism::HashNode
+        build_node(:hash, node.elements.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
+      when Prism::KeywordHashNode
         build_node(:hash, node.elements.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
       when Prism::AssocNode
         build_node(:pair, [adapt(node.key, source, buffer_name), adapt(node.value, source, buffer_name)], node, source, buffer_name)
@@ -158,9 +112,33 @@ module Fast
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.statements, source, buffer_name), adapt(node.consequent, source, buffer_name)], node, source, buffer_name)
       when Prism::UnlessNode
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.consequent, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::CaseNode
+        children = [adapt(node.predicate, source, buffer_name)]
+        children.concat(node.conditions.map { |condition| adapt(condition, source, buffer_name) })
+        else_clause =
+          if node.respond_to?(:else_clause)
+            node.else_clause
+          elsif node.respond_to?(:consequent)
+            node.consequent
+          end
+        children << adapt_else_clause(else_clause, source, buffer_name) if else_clause
+        build_node(:case, children, node, source, buffer_name)
+      when Prism::WhenNode
+        condition =
+          if node.conditions.length == 1
+            adapt(node.conditions.first, source, buffer_name)
+          else
+            build_node(:array, node.conditions.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
+          end
+        build_node(:when, [condition, adapt(node.statements, source, buffer_name)].compact, node, source, buffer_name)
+      when Prism::ElseNode
+        adapt_else_clause(node, source, buffer_name)
       when Prism::BeginNode, Prism::EmbeddedStatementsNode
         statements = adapt_statements(node.statements, source, buffer_name)
-        statements.is_a?(Node) ? statements : build_node(:begin, statements, node, source, buffer_name)
+        children = statements.is_a?(Node) && statements.type == :begin ? statements.children : Array(statements)
+        build_node(:begin, children, node, source, buffer_name)
+      when Prism::EmbeddedVariableNode
+        build_node(:begin, [adapt(node.variable, source, buffer_name)].compact, node, source, buffer_name)
       when Prism::LambdaNode
         build_node(:lambda, [adapt_block_parameters(node.parameters, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
       else
@@ -208,6 +186,10 @@ module Fast
       else
         build_node(:arg, [node.name], node, source, buffer_name)
       end
+    end
+
+    def adapt_else_clause(node, source, buffer_name)
+      adapt(node.statements, source, buffer_name)
     end
 
     def parameter_name(node)
