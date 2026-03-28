@@ -40,6 +40,13 @@ module Fast
     def load_fast_files!
       fast_files.each(&method(:load))
     end
+
+    def render_markdown_for_terminal(line)
+      require 'tty-markdown'
+      TTY::Markdown.parse(line)
+    rescue LoadError
+      line
+    end
   end
 
   # Wraps shortcuts for repeated command line actions or build custom scripts

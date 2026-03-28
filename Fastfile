@@ -58,22 +58,9 @@ Fast.shortcut :intro do
   Fast.shortcuts[:walk].run
 end
 
-# Useful for `fast .walk file.md` but not required by the library.
-private
-def require_or_install_tty_md
-  require 'tty-markdown'
-rescue LoadError
-  puts 'Installing tty-markdown gem to better engage you :)'
-  Gem.install('tty-markdown')
-  puts 'Done! Now, back to our topic \o/'
-  system('clear')
-  retry
-end
-
 # Interactive command line walkthrough
 # fast .walk docs/walkthrough.md
 Fast.shortcut :walk do
-  require_or_install_tty_md
   file = ARGV.last
   execute = ->(line) { system(line) }
   walk = ->(line) { line.each_char { |c| sleep(0.02) and print(c) } }
@@ -88,7 +75,7 @@ Fast.shortcut :walk do
     when /^!{3}\s/
       # Skip warnings that are only for web tutorials
     else
-      walk[TTY::Markdown.parse(line)]
+      walk[Fast.render_markdown_for_terminal(line)]
     end
   end
 end

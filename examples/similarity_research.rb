@@ -6,9 +6,11 @@ require 'set'
 
 arguments = ARGV
 pattern = arguments.shift || '{ block case send def defs while class if }'
-
-files = Fast.ruby_files_from(*%w(spec lib app gems)) +
-  Dir[File.join(Gem.path.first,'**/*.rb')]
+locations = arguments.empty? ? %w[spec lib app gems] : arguments
+existing_locations = locations.select(&File.method(:exist?))
+files = Fast.ruby_files_from(*existing_locations)
+files |= Dir[File.join(Gem.path.first, '**/*.rb')] if arguments.empty?
+abort('No Ruby files found.') if files.empty?
 
 total = files.count
 pattern = Fast.expression(pattern)
@@ -54,5 +56,9 @@ puts "mapped #{similarities.size} cases"
 similarities.delete_if {|k,v| k.size < 30 || v.size < 5}
 puts "Removing the small ones we have #{similarities.size} similarities"
 
-similarities.show similarities.top[0][0]
-
+top = similarities.top
+if top.empty?
+  puts 'No similarities found.'
+else
+  similarities.show top[0][0]
+end

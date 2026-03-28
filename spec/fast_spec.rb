@@ -13,6 +13,12 @@ RSpec.describe Fast do
   let(:defined_proc) { described_class::LITERAL }
   let(:code) { ->(string) { described_class.ast(string) } }
 
+  describe '.parser_class' do
+    it 'selects a versioned parser class' do
+      expect(described_class.parser_class.name).to match(/\AParser::Ruby\d+\z/)
+    end
+  end
+
   describe '.expression' do
     it 'parses ... as Find' do
       expect(described_class.expression('...')).to be_a(Fast::Find)

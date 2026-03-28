@@ -1,29 +1,14 @@
 # frozen_string_literal: true
 
 require 'fileutils'
-
-# suppress output to avoid parser gem warnings'
-def suppress_output
-  original_stdout = $stdout.clone
-  original_stderr = $stderr.clone
-  $stderr.reopen File.new('/dev/null', 'w')
-  $stdout.reopen File.new('/dev/null', 'w')
-  yield
-ensure
-  $stdout.reopen original_stdout
-  $stderr.reopen original_stderr
-end
-
-suppress_output do
-  require 'parser'
-  require 'parser/current'
-end
+require 'parser'
 
 require_relative 'fast/rewriter'
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
   NODE_PARENTS = ObjectSpace::WeakMap.new
+  VERSIONED_PARSER_RANGE = ((1..3).flat_map { |major| (0..9).map { |minor| [major, minor] } }).freeze
 
   # Literals are shortcuts allowed inside {ExpressionParser}
   LITERAL = {
@@ -207,6 +192,38 @@ module Fast
   end
 
   class << self
+    def parser_class
+      @parser_class ||= begin
+        require parser_require_path
+        Parser.const_get(parser_const_name)
+      end
+    end
+
+    def parser_require_path
+      "parser/#{parser_const_name.downcase}"
+    end
+
+    def parser_const_name
+      @parser_const_name ||= begin
+        current_version = Gem::Version.new(RUBY_VERSION[/\A\d+\.\d+/])
+
+        VERSIONED_PARSER_RANGE
+          .reverse
+          .map { |major, minor| "Ruby#{major}#{minor}" }
+          .find do |const_name|
+            parser_version_supported?(const_name) &&
+              Gem::Version.new(const_name.delete_prefix('Ruby').chars.join('.')) <= current_version
+          end || raise(LoadError, "No parser implementation available for Ruby #{RUBY_VERSION}")
+      end
+    end
+
+    def parser_version_supported?(const_name)
+      require "parser/#{const_name.downcase}"
+      true
+    rescue LoadError
+      false
+    end
+
     # @return [Fast::Node] from the parsed content
     # @example
     #   Fast.ast("1") # => s(:int, 1)
@@ -214,13 +231,13 @@ module Fast
     def ast(content, buffer_name: '(string)')
       buffer = Parser::Source::Buffer.new(buffer_name)
       buffer.source = content
-      Parser::CurrentRuby.new(builder_for(buffer_name)).parse(buffer)
+      parser_class.new(builder_for(buffer_name)).parse(buffer)
     end
 
     def validate_ruby!(content, buffer_name: '(string)')
       buffer = Parser::Source::Buffer.new(buffer_name)
       buffer.source = content
-      parser = Parser::CurrentRuby.new(builder_for(buffer_name))
+      parser = parser_class.new(builder_for(buffer_name))
       parser.diagnostics.all_errors_are_fatal = true
       parser.diagnostics.consumer = lambda do |diagnostic|
         message = Array(diagnostic.render).join("\n")
