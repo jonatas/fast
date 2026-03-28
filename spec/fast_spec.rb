@@ -19,11 +19,27 @@ RSpec.describe Fast do
     end
   end
 
+  describe '.validate_ruby!' do
+    it 'wraps parser validation errors in Fast::SyntaxError' do
+      expect do
+        described_class.validate_ruby!('def invalid(')
+      end.to raise_error(Fast::SyntaxError)
+    end
+  end
+
   describe '.summary' do
     it 'builds a summary object' do
       summary = described_class.summary('class Post; end')
 
       expect(summary).to be_a(Fast::Summary)
+    end
+  end
+
+  describe '.scan' do
+    it 'builds a scan object' do
+      scan = described_class.scan(['lib'])
+
+      expect(scan).to be_a(Fast::Scan)
     end
   end
 

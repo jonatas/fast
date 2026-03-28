@@ -3,12 +3,16 @@
 require 'fileutils'
 require 'parser'
 
+require_relative 'fast/source'
+require_relative 'fast/node'
 require_relative 'fast/rewriter'
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
   NODE_PARENTS = ObjectSpace::WeakMap.new
   VERSIONED_PARSER_RANGE = ((1..3).flat_map { |major| (0..9).map { |minor| [major, minor] } }).freeze
+
+  class SyntaxError < StandardError; end
 
   # Literals are shortcuts allowed inside {ExpressionParser}
   LITERAL = {
@@ -54,133 +58,6 @@ module Fast
     %\d                   # bind extra arguments to the expression
   /x.freeze
 
-  # Set some convention methods from file.
-  class Node < Parser::AST::Node
-    def initialize(type, children = [], properties = {})
-      super
-      assign_parents!
-    end
-
-    class << self
-      def set_parent(node, parent)
-        NODE_PARENTS[node] = parent
-      end
-
-      def parent_for(node)
-        NODE_PARENTS[node]
-      end
-    end
-
-    # @return [String] with path of the file or simply buffer name.
-    def buffer_name
-      expression.source_buffer.name
-    end
-
-    # @return [Parser::Source::Range] from the expression
-    def expression
-      loc.expression
-    end
-
-    # Backward-compatible alias for callers that still use `location`.
-    def location
-      loc
-    end
-
-    # @return [String] with the content of the #expression
-    def source
-      expression.source
-    end
-
-    # @return [Boolean] true if a file exists with the #buffer_name
-    def from_file?
-      File.exist?(buffer_name)
-    end
-
-    def each_child_node
-      return enum_for(:each_child_node) unless block_given?
-
-      children.select { |child| Fast.ast_node?(child) }.each { |child| yield child }
-    end
-
-    def each_descendant(*types, &block)
-      return enum_for(:each_descendant, *types) unless block_given?
-
-      each_child_node do |child|
-        yield child if types.empty? || types.include?(child.type)
-        child.each_descendant(*types, &block) if child.respond_to?(:each_descendant)
-      end
-    end
-
-    def root?
-      parent.nil?
-    end
-
-    def parent
-      self.class.parent_for(self)
-    end
-
-    def updated(type = nil, children = nil, properties = nil)
-      updated_node = super
-      updated_node.send(:assign_parents!)
-      updated_node
-    end
-
-    def respond_to_missing?(method_name, include_private = false)
-      type_query_method?(method_name) || super
-    end
-
-    def method_missing(method_name, *args, &block)
-      return type == type_query_name(method_name) if type_query_method?(method_name) && args.empty? && !block
-
-      super
-    end
-
-    # @return [Array<String>] with authors from the current expression range
-    def blame_authors
-      `git blame -L #{expression.first_line},#{expression.last_line} #{buffer_name}`.lines.map do |line|
-        line.split('(')[1].split(/\d+/).first.strip
-      end
-    end
-
-    # @return [String] with the first element from #blame_authors
-    def author
-      blame_authors.first
-    end
-
-    # Search recursively into a node and its children using a pattern.
-    # @param [String] pattern
-    # @param [Array] *args extra arguments to interpolate in the pattern.
-    # @return [Array<Fast::Node>>] with files and results
-    def search(pattern, *args)
-      Fast.search(pattern, self, *args)
-    end
-
-    # Captures elements from search recursively
-    # @param [String] pattern
-    # @param [Array] *args extra arguments to interpolate in the pattern.
-    # @return [Array<Fast::Node>>] with files and results
-    def capture(pattern, *args)
-      Fast.capture(pattern, self, *args)
-    end
-
-    private
-
-    def assign_parents!
-      each_child_node do |child|
-        self.class.set_parent(child, self)
-        child.send(:assign_parents!) if child.respond_to?(:assign_parents!, true)
-      end
-    end
-
-    def type_query_method?(method_name)
-      method_name.to_s.end_with?('_type?')
-    end
-
-    def type_query_name(method_name)
-      method_name.to_s.delete_suffix('_type?').to_sym
-    end
-  end
-
   # Custom builder allow us to set a buffer name for each Node
   class Builder < Parser::Builders::Default
     # Generates {Node} from the given information.
@@ -198,15 +75,16 @@ module Fast
 
     def parse_ruby(content, buffer_name: '(string)')
       require_relative 'fast/prism_adapter'
-      Fast::PrismAdapter.parse(content, buffer_name: buffer_name) || begin
-        parser_ast(content, buffer_name: buffer_name)
+      parser_ast(content, buffer_name: buffer_name) || begin
+        Fast::PrismAdapter.parse(content, buffer_name: buffer_name)
       end
     end
 
     def parser_ast(content, buffer_name: '(string)')
-      buffer = Parser::Source::Buffer.new(buffer_name)
-      buffer.source = content
+      buffer = Fast::Source.buffer(buffer_name, source: content)
       parser_class.new(builder_for(buffer_name)).parse(buffer)
+    rescue Parser::SyntaxError => e
+      raise SyntaxError, e.message
     end
 
     def parser_ast_from_file(file)
@@ -237,6 +115,11 @@ module Fast
     def summary(code_or_ast, file: nil, command_name: '.summary')
       require_relative 'fast/summary'
       Summary.new(code_or_ast, file: file, command_name: command_name)
+    end
+
+    def scan(locations, command_name: '.scan')
+      require_relative 'fast/scan'
+      Scan.new(locations, command_name: command_name)
     end
 
     def parser_class
@@ -280,13 +163,12 @@ module Fast
     end
 
     def validate_ruby!(content, buffer_name: '(string)')
-      buffer = Parser::Source::Buffer.new(buffer_name)
-      buffer.source = content
+      buffer = Fast::Source.buffer(buffer_name, source: content)
       parser = parser_class.new(builder_for(buffer_name))
       parser.diagnostics.all_errors_are_fatal = true
       parser.diagnostics.consumer = lambda do |diagnostic|
         message = Array(diagnostic.render).join("\n")
-        raise RuntimeError, message
+        raise SyntaxError, message
       end
       parser.parse(buffer)
       true
