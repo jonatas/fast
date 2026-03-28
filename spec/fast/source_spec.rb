@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'fast/source'
+require 'fast/source_rewriter'
 
 RSpec.describe Fast::Source do
   describe '.buffer' do
@@ -64,6 +65,51 @@ RSpec.describe Fast::Source do
 
       expect(buffer.class.name).to eq('Parser::Source::Buffer')
       expect(buffer.source).to eq('hello')
+    end
+  end
+end
+
+RSpec.describe Fast::SourceRewriter do
+  let(:buffer) { Fast::Source.buffer('(string)', source: source) }
+  let(:rewriter) { described_class.new(buffer) }
+
+  describe '#process' do
+    let(:source) { 'hello world' }
+
+    it 'replaces a range' do
+      rewriter.replace(Fast::Source.range(buffer, 6, 11), 'reader')
+
+      expect(rewriter.process).to eq('hello reader')
+    end
+
+    it 'inserts around a range' do
+      range = Fast::Source.range(buffer, 6, 11)
+      rewriter.insert_before(range, '(')
+      rewriter.insert_after(range, ')')
+
+      expect(rewriter.process).to eq('hello (world)')
+    end
+
+    it 'keeps later replacements on the same range' do
+      range = Fast::Source.range(buffer, 6, 11)
+      rewriter.replace(range, 'reader')
+      rewriter.replace(range, 'friend')
+
+      expect(rewriter.process).to eq('hello friend')
+    end
+
+    it 'merges overlapping deletions' do
+      rewriter.remove(Fast::Source.range(buffer, 0, 5))
+      rewriter.remove(Fast::Source.range(buffer, 3, 11))
+
+      expect(rewriter.process).to eq('')
+    end
+
+    it 'raises on overlapping replacements' do
+      rewriter.replace(Fast::Source.range(buffer, 0, 5), 'hi')
+      rewriter.replace(Fast::Source.range(buffer, 3, 11), 'friend')
+
+      expect { rewriter.process }.to raise_error(Fast::SourceRewriter::ClobberingError)
     end
   end
 end

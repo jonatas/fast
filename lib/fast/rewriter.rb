@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fast/source'
+require_relative 'source_rewriter'
 
 # Rewriter loads a set of methods related to automated replacement using
 # expressions and custom blocks of code.
@@ -58,12 +59,11 @@ module Fast
   #    rewriter.search ='(lvasgn _ ...)'
   #    rewriter.replacement =  -> (node) { replace(node.location.name, 'variable_renamed') }
   #    rewriter.rewrite! # => "variable_renamed = 1"
-  class Rewriter < Parser::TreeRewriter
+  class Rewriter
     # @return [Integer] with occurrence index
     attr_reader :match_index
     attr_accessor :search, :replacement, :source, :ast
     def initialize(*_args)
-      super()
       @match_index = 0
     end
 
@@ -74,6 +74,12 @@ module Fast
 
     def buffer
       Fast::Source.parser_buffer('replacement', source: source || ast.loc.expression.source)
+    end
+
+    def rewrite(source_buffer, root)
+      @source_rewriter = Fast::SourceRewriter.new(source_buffer)
+      traverse(root)
+      @source_rewriter.process
     end
 
     # @return [Array<Symbol>] with all types that matches
@@ -94,9 +100,29 @@ module Fast
             @match_index += 1
             execute_replacement(node, captures)
           end
-          super(node)
+          traverse_children(node)
         end
       end
+    end
+
+    def remove(range)
+      @source_rewriter.remove(range)
+    end
+
+    def wrap(range, before, after)
+      @source_rewriter.wrap(range, before, after)
+    end
+
+    def insert_before(range, content)
+      @source_rewriter.insert_before(range, content)
+    end
+
+    def insert_after(range, content)
+      @source_rewriter.insert_after(range, content)
+    end
+
+    def replace(range, content)
+      @source_rewriter.replace(range, content)
     end
 
     # Execute {#replacement} block
@@ -107,6 +133,32 @@ module Fast
         instance_exec node, &replacement
       else
         instance_exec node, captures, &replacement
+      end
+    end
+
+    private
+
+    def traverse(node)
+      return if node.nil?
+
+      if node.is_a?(Array)
+        node.each { |child| traverse(child) }
+        return
+      end
+
+      return unless Fast.ast_node?(node)
+
+      handler = :"on_#{node.type}"
+      if respond_to?(handler, true)
+        public_send(handler, node)
+      else
+        traverse_children(node)
+      end
+    end
+
+    def traverse_children(node)
+      node.children.each do |child|
+        traverse(child) if Fast.ast_node?(child) || child.is_a?(Array)
       end
     end
   end
