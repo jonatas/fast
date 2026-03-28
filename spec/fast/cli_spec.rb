@@ -96,6 +96,18 @@ RSpec.describe Fast::Cli do
       its(:show_sexp) { is_expected.to be_truthy }
     end
 
+    context 'with --level' do
+      let(:args) { %w[--level 3] }
+
+      its(:level) { is_expected.to eq(3) }
+    end
+
+    context 'with -l' do
+      let(:args) { %w[-l 2] }
+
+      its(:level) { is_expected.to eq(2) }
+    end
+
     context 'with --ast --from-code ' do
       let(:args) { %w[--no-color --ast --from-code match?] }
 
@@ -230,7 +242,7 @@ RSpec.describe Fast::Cli do
 
     it 'highlight the code with file in the header' do
       allow(Fast).to receive(:highlight).with('# some_file.rb:1', colorize: false).and_call_original
-      allow(Fast).to receive(:highlight).with(ast, show_sexp: false, colorize: false).and_call_original
+      allow(Fast).to receive(:highlight).with(ast, show_sexp: false, colorize: false, level: nil).and_call_original
       expect { Fast.report(ast, file: 'some_file.rb', show_sexp: false, colorize: false) }
         .to output("# some_file.rb:1\na = 1\n").to_stdout
     end

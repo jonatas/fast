@@ -435,6 +435,73 @@ module Fast
       files.reject(&dir_filter)
     end
 
+    # Folds the AST to a maximum depth, replacing deeper branches with `...`
+    # @param node [Parser::AST::Node]
+    # @param level [Integer] maximum depth to explore
+    # @param current_level [Integer] internal tracker for depth
+    # @return [Parser::AST::Node] the folded AST
+    def fold_ast(node, level: nil, current_level: 1)
+      return node unless node.is_a?(Parser::AST::Node)
+      return node if level.nil?
+
+      if current_level >= level
+        if node.children.any?
+          node.updated(nil, [:'...'])
+        else
+          node
+        end
+      else
+        new_children = node.children.map { |c| fold_ast(c, level: level, current_level: current_level + 1) }
+        node.updated(nil, new_children)
+      end
+    end
+
+    # Folds ruby source code to a maximum depth, replacing deep block bodies with `# ...`
+    # @param node [Parser::AST::Node]
+    # @param level [Integer] maximum depth to explore
+    # @return [String] the folded source representation
+    def fold_source(node, level: 1)
+      return node if node.is_a?(String)
+      return node.loc.expression.source rescue node.to_s unless node.is_a?(Parser::AST::Node)
+
+      source = node.loc.expression.source.dup
+      root_begin = node.loc.expression.begin_pos
+
+      regions = []
+
+      walker = ->(n, current_level) do
+        return unless n.is_a?(Parser::AST::Node)
+
+        if current_level >= level
+          body_node = nil
+          case n.type
+          when :class, :module, :def, :defs, :block
+            body_node = n.children.last
+          when :begin
+            body_node = n
+          end
+
+          if body_node && body_node.loc && body_node.loc.respond_to?(:expression) && body_node.loc.expression
+            regions << [
+              body_node.loc.expression.begin_pos - root_begin,
+              body_node.loc.expression.end_pos - root_begin
+            ]
+            return
+          end
+        end
+
+        n.children.each { |c| walker.call(c, current_level + 1) }
+      end
+
+      walker.call(node, 1)
+
+      regions.sort_by { |r| -r[0] }.each do |start_pos, end_pos|
+        source[start_pos...end_pos] = "# ..."
+      end
+
+      source
+    end
+
     # Extracts a node pattern expression from a given node supressing identifiers and primitive types.
     # Useful to index abstract patterns or similar code structure.
     # @see https://jonatas.github.io/fast/similarity_tutorial/

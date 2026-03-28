@@ -581,6 +581,32 @@ RSpec.describe Fast do
     end
   end
 
+  describe 'Fast.fold_source' do
+    let(:ast) { code['module M; class A; def b(x); 1+1; end; end; end'] }
+
+    it 'folds Ruby source text to a given level' do
+      folded = described_class.fold_source(ast, level: 3)
+      expect(folded).to eq(<<~RUBY.chomp)
+        module M; class A; def b(x); # ...; end; end; end
+      RUBY
+    end
+  end
+
+  describe 'Fast.fold_ast' do
+    let(:ast) { code['module M; class A; def b(x); 1+1; end; end; end'] }
+
+    it 'folds AST to a given level' do
+      folded = described_class.fold_ast(ast, level: 3)
+      expect(folded.to_sexp).to eq(<<~SEXP.chomp)
+        (module
+          (const nil :M)
+          (class
+            (const :"...") nil
+            (def :"...")))
+      SEXP
+    end
+  end
+
   describe 'Fast.expression_from' do
     it { expect(described_class.expression_from(code['1'])).to eq('(int _)') }
     it { expect(described_class.expression_from(code['nil'])).to eq('(nil)') }
