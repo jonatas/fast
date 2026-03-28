@@ -135,7 +135,7 @@ end
 Fast.shortcut :summary do
   file = ARGV.reverse.find { |arg| !arg.start_with?('-') && File.exist?(arg) }
   if file && File.exist?(file)
-    Fast.summary(IO.read(file), file: file).summarize
+    Fast.summary(IO.read(file), file: file, level: fast_option_value(ARGV, '-l', '--level')).summarize
   else
     puts "Please provide a valid file to summarize."
   end

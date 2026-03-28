@@ -386,7 +386,7 @@ ast = Fast.ast("def name; person.name end")
 Generally, we  use the `location.expression`:
 
 ```ruby
-ast.location.expression # => #<Parser::Source::Range (string) 0...25>
+ast.location.expression # => #<Fast::Source::Range (string) 0...25>
 ```
 
 But location also brings some metadata about specific fragments:
@@ -397,7 +397,7 @@ ast.location.instance_variables # => [:@keyword, :@operator, :@name, :@end, :@ex
 
 Range for the keyword that identifies the method definition:
 ```ruby
-ast.location.keyword # => #<Parser::Source::Range (string) 0...3>
+ast.location.keyword # => #<Fast::Source::Range (string) 0...3>
 ```
 
 You can always pick the source of a source range:
@@ -409,7 +409,7 @@ ast.location.keyword.source # => "def"
 Or only the method name:
 
 ```ruby
-ast.location.name # => #<Parser::Source::Range (string) 4...8>
+ast.location.name # => #<Fast::Source::Range (string) 4...8>
 ast.location.name.source # => "name"
 ```
 

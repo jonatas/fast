@@ -20,7 +20,7 @@ files = Fast.ruby_files_from(arguments.any? ? arguments : '.')
 files.select do |file|
   begin
     puts file if Fast.search_file(pattern, file).any?
-  rescue Parser::SyntaxError
+  rescue Fast::SyntaxError
     []
   end
 end

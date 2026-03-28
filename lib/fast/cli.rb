@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fast'
+require 'fast/source'
 require 'fast/version'
 require 'fast/sql'
 require 'coderay'
@@ -19,19 +20,19 @@ module Fast
   # @param colorize [Boolean] skips `CodeRay` processing when false.
   # @param level [Integer] defines the max depth to print the AST.
   def highlight(node, show_sexp: false, colorize: true, sql: false, level: nil)
-    output =
-      if node.respond_to?(:loc) && !show_sexp
-        if level
-          Fast.fold_source(node, level: level)
+      output =
+        if node.respond_to?(:loc) && !show_sexp
+          if level
+            Fast.fold_source(node, level: level)
+          else
+            wrap_source_range(node).source
+          end
+        elsif show_sexp && level && Fast.ast_node?(node)
+          Fast.fold_ast(node, level: level).to_s
+        elsif show_sexp
+          node.to_s
         else
-          wrap_source_range(node).source
-        end
-      elsif show_sexp && level && node.is_a?(Parser::AST::Node)
-        Fast.fold_ast(node, level: level).to_s
-      elsif show_sexp
-        node.to_s
-      else
-        node
+          node
       end
     return output unless colorize
 
@@ -42,7 +43,7 @@ module Fast
   # and fixes end of the expression including heredoc strings.
   def wrap_source_range(node)
     expression = node.loc.expression
-    Parser::Source::Range.new(
+    Fast::Source.range(
       expression.source_buffer,
       first_position_from_expression(node),
       last_position_from_expression(node) || expression.end_pos
@@ -68,7 +69,7 @@ module Fast
 
   # Combines {.highlight} with files printing file name in the head with the
   # source line.
-  # @param result [Parser::AST::Node]
+  # @param result [Fast::Node]
   # @param show_sexp [Boolean] Show string expression instead of source
   # @param file [String] Show the file name and result line before content
   # @param headless [Boolean] Skip printing the file name and line before content
@@ -77,7 +78,7 @@ module Fast
   #   Fast.report(result, file: 'file.rb')
   def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true, level: nil) # rubocop:disable Metrics/ParameterLists
     if file
-      line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
+      line = result.loc.expression.line if Fast.ast_node?(result) && result.respond_to?(:loc)
       if show_link
         puts(result.link)
       elsif show_permalink

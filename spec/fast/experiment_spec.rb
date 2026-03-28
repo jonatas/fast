@@ -92,6 +92,53 @@ RSpec.describe Fast::Experiment do
         expect(experiment_file.build_combinations).to be_empty
       end
     end
+
+    describe '#run_partial_replacement_with' do
+      it 'tracks failed combinations when the policy rejects the rewrite' do
+        allow(experiment.ok_if).to receive(:call).and_return(false)
+
+        expect do
+          experiment_file.run_partial_replacement_with(1)
+        end.to output(/🔴/).to_stdout
+
+        expect(experiment_file.fail_experiments).to include(1)
+      end
+
+      it 'raises when no changes were made' do
+        allow(experiment_file).to receive(:partial_replace).and_return(File.read(spec))
+
+        expect do
+          experiment_file.run_partial_replacement_with(1)
+        end.to raise_error('No changes were made to the file.')
+      end
+    end
+
+    describe '#done!' do
+      it 'prints completion details and applies the winning experimental file' do
+        experiment_file.ok_with([1, 3])
+        winning_file = experiment_file.experimental_filename([1, 3])
+        File.write(winning_file, "let(:user) { build_stubbed(:user) }\n")
+
+        expect do
+          experiment_file.done!
+        end.to output(/Done with .* after 1 combinations.*mv .*#{Regexp.escape(winning_file)}.*/m).to_stdout
+
+        expect(File.read(spec)).to eq("let(:user) { build_stubbed(:user) }\n")
+      ensure
+        File.delete(winning_file) if winning_file && File.exist?(winning_file)
+      end
+    end
+
+    describe '#run' do
+      it 'skips files with too many combinations' do
+        allow(experiment_file).to receive(:build_combinations).and_return((1..1001).to_a, [])
+        allow(experiment_file).to receive(:done!)
+
+        expect do
+          experiment_file.run
+        end.to output(/Ignoring .* because it has 1001 possible combinations/).to_stdout
+      end
+    end
   end
 
   describe 'Fast.experiment' do
@@ -116,5 +163,42 @@ RSpec.describe Fast::Experiment do
     end
 
     it { is_expected.to eq(Fast.experiments['RSpec/ReplaceCreateWithBuildStubbed']) }
+  end
+
+  describe 'end-to-end policy run' do
+    let(:tmpdir) { Dir.mktmpdir('fast_experiment_spec') }
+    let(:spec_file) { File.join(tmpdir, 'replace_create_spec.rb') }
+
+    before do
+      File.write(spec_file, <<~RUBY)
+        RSpec.describe 'experiment rewrite' do
+          it 'passes only after rewriting' do
+            expect(create(:user)).to eq(:ok)
+          end
+        end
+      RUBY
+    end
+
+    after do
+      FileUtils.remove_entry(tmpdir) if File.exist?(tmpdir)
+    end
+
+    it 'rewrites a failing spec into a passing one and applies the change' do
+      target_file = spec_file
+      experiment = Fast.experiment('RSpec/ReplaceCreateForTempSpec') do
+        lookup target_file
+        search '(send nil create)'
+        edit { |node| replace(node.loc.expression, ':ok') }
+        policy do |new_file|
+          system("bundle exec rspec #{new_file} >/dev/null 2>&1")
+        end
+      end
+
+      expect do
+        experiment.run_with(target_file)
+      end.to output(/✅ .*experiment_1_.*replace_create_spec\.rb/m).to_stdout
+
+      expect(File.read(target_file)).to include('expect(:ok).to eq(:ok)')
+    end
   end
 end
