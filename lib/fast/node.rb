@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 module Fast
-  class Node < Parser::AST::Node
+  class Node
+    attr_reader :type, :children, :loc
+
     def initialize(type, children = [], properties = {})
-      super
+      @type = type.to_sym
+      @children = Array(children).freeze
+      @loc = properties[:location]
       assign_parents!
     end
 
@@ -66,13 +70,30 @@ module Fast
     end
 
     def updated(type = nil, children = nil, properties = nil)
-      updated_node = super
+      updated_node = self.class.new(
+        type || self.type,
+        children || self.children,
+        { location: properties&.fetch(:location, loc) || loc }
+      )
       updated_node.send(:assign_parents!)
       updated_node
     end
 
+    def ==(other)
+      Fast.ast_node?(other) && type == other.type && children == other.children
+    end
+    alias eql? ==
+
+    def hash
+      [type, children].hash
+    end
+
     def to_a
       children.dup
+    end
+
+    def <<(child)
+      updated(nil, children + [child])
     end
 
     def deconstruct
