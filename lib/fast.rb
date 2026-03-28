@@ -73,11 +73,20 @@ module Fast
       node.respond_to?(:type) && node.respond_to?(:children)
     end
 
-    def parse_ruby(content, buffer_name: '(string)')
+    def prism_ast(content, buffer_name: '(string)')
       require_relative 'fast/prism_adapter'
-      parser_ast(content, buffer_name: buffer_name) || begin
-        Fast::PrismAdapter.parse(content, buffer_name: buffer_name)
-      end
+      result = Fast::PrismAdapter.parse(content, buffer_name: buffer_name)
+      return result if result
+
+      prism_errors = Prism.parse(content).errors
+      message = prism_errors.map(&:message).uniq.join("\n")
+      raise SyntaxError, message
+    end
+
+    def parse_ruby(content, buffer_name: '(string)')
+      prism_ast(content, buffer_name: buffer_name)
+    rescue SyntaxError
+      parser_ast(content, buffer_name: buffer_name)
     end
 
     def parser_ast(content, buffer_name: '(string)')
@@ -112,9 +121,9 @@ module Fast
         end
     end
 
-    def summary(code_or_ast, file: nil, command_name: '.summary')
+    def summary(code_or_ast, file: nil, command_name: '.summary', level: nil)
       require_relative 'fast/summary'
-      Summary.new(code_or_ast, file: file, command_name: command_name)
+      Summary.new(code_or_ast, file: file, command_name: command_name, level: level)
     end
 
     def scan(locations, command_name: '.scan', level: nil)
@@ -159,10 +168,13 @@ module Fast
     #   Fast.ast("1") # => s(:int, 1)
     #   Fast.ast("a.b") # => s(:send, s(:send, nil, :a), :b)
     def ast(content, buffer_name: '(string)')
-      parser_ast(content, buffer_name: buffer_name)
+      parse_ruby(content, buffer_name: buffer_name)
     end
 
     def validate_ruby!(content, buffer_name: '(string)')
+      prism_ast(content, buffer_name: buffer_name)
+      true
+    rescue SyntaxError
       buffer = Fast::Source.parser_buffer(buffer_name, source: content)
       parser = parser_class.new(builder_for(buffer_name))
       parser.diagnostics.all_errors_are_fatal = true

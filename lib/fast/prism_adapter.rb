@@ -11,7 +11,10 @@ module Fast
       attr_accessor :node
       attr_reader :expression
 
-      def initialize(buffer_name, source, start_offset, end_offset)
+      def initialize(buffer_name, source, start_offset, end_offset, prism_node: nil)
+        @buffer_name = buffer_name
+        @source = source
+        @prism_node = prism_node
         buffer = Fast::Source.buffer(buffer_name, source: source)
         @expression = Fast::Source.range(
           buffer,
@@ -20,16 +23,51 @@ module Fast
         )
       end
 
+      def name
+        return unless @prism_node&.respond_to?(:name_loc) && @prism_node.name_loc
+
+        range_for(@prism_node.name_loc)
+      end
+
+      def selector
+        return unless @prism_node&.respond_to?(:message_loc) && @prism_node.message_loc
+
+        range_for(@prism_node.message_loc)
+      end
+
+      def operator
+        return unless @prism_node&.respond_to?(:operator_loc) && @prism_node.operator_loc
+
+        range_for(@prism_node.operator_loc)
+      end
+
       private
 
       def character_offset(source, byte_offset)
         source.byteslice(0, byte_offset).to_s.length
+      end
+
+      def range_for(prism_location)
+        buffer = Fast::Source.buffer(@buffer_name, source: @source)
+        Fast::Source.range(
+          buffer,
+          character_offset(@source, prism_location.start_offset),
+          character_offset(@source, prism_location.end_offset)
+        )
       end
     end
 
     class Node < Fast::Node
       def initialize(type, children:, loc:)
         super(type, Array(children), location: loc)
+      end
+
+      def updated(type = nil, children = nil, properties = nil)
+        self.class.new(
+          type || self.type,
+          children: children || self.children,
+          loc: properties&.fetch(:location, loc) || loc
+        )
       end
     end
 
@@ -74,13 +112,17 @@ module Fast
               adapt_block_parameters(node.block.parameters, source, buffer_name),
               adapt(node.block.body, source, buffer_name)
             ],
-            node.block,
+            node,
             source,
             buffer_name
           )
         end
 
         adapt_call_node(node, source, buffer_name)
+      when Prism::ParenthesesNode
+        adapt(node.body, source, buffer_name)
+      when Prism::RangeNode
+        build_node(node.exclude_end? ? :erange : :irange, [adapt(node.left, source, buffer_name), adapt(node.right, source, buffer_name)], node, source, buffer_name)
       when Prism::BlockArgumentNode
         build_node(:block_pass, [adapt(node.expression, source, buffer_name)], node, source, buffer_name)
       when Prism::ConstantPathNode
@@ -115,6 +157,18 @@ module Fast
         build_node(:ivasgn, [node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::LocalVariableWriteNode, Prism::LocalVariableOrWriteNode
         build_node(:lvasgn, [node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
+      when Prism::LocalVariableOperatorWriteNode
+        build_node(
+          :op_asgn,
+          [
+            build_node(:lvasgn, [node.name], node, source, buffer_name),
+            (node.respond_to?(:binary_operator) ? node.binary_operator : node.operator),
+            adapt(node.value, source, buffer_name)
+          ],
+          node,
+          source,
+          buffer_name
+        )
       when Prism::IntegerNode
         build_node(:int, [node.value], node, source, buffer_name)
       when Prism::FloatNode
@@ -209,7 +263,23 @@ module Fast
       children = [adapt(node.receiver, source, buffer_name), node.name]
       children.concat(node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) } || [])
       children << adapt(node.block, source, buffer_name) if node.respond_to?(:block) && node.block && !node.block.is_a?(Prism::BlockNode)
-      build_node(:send, children, node, source, buffer_name)
+      return build_node(:send, children, node, source, buffer_name) unless node.respond_to?(:block) && node.block.is_a?(Prism::BlockNode)
+
+      end_offset = node.block.location.start_offset
+      while end_offset > node.location.start_offset && source.byteslice(end_offset - 1, 1)&.match?(/\s/)
+        end_offset -= 1
+      end
+
+      loc = Location.new(
+        buffer_name,
+        source,
+        node.location.start_offset,
+        end_offset,
+        prism_node: node
+      )
+      send_node = Node.new(:send, children: children, loc: loc)
+      loc.node = send_node
+      send_node
     end
 
     def adapt_else_clause(node, source, buffer_name)
@@ -228,11 +298,13 @@ module Fast
     def build_node(type, children, prism_node, source, buffer_name)
       loc =
         if prism_node
-          Location.new(buffer_name, source, prism_node.location.start_offset, prism_node.location.end_offset)
+          Location.new(buffer_name, source, prism_node.location.start_offset, prism_node.location.end_offset, prism_node: prism_node)
         else
           Location.new(buffer_name, source, 0, 0)
         end
-      Node.new(type, children: children, loc: loc)
+      node = Node.new(type, children: children, loc: loc)
+      loc.node = node
+      node
     end
   end
 end
