@@ -73,7 +73,7 @@ module Fast
     end
 
     def buffer
-      Fast::Source.parser_buffer('replacement', source: source || ast.loc.expression.source)
+      Fast::Source.buffer('replacement', source: source || ast.loc.expression.source)
     end
 
     def rewrite(source_buffer, root)

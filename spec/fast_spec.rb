@@ -13,14 +13,8 @@ RSpec.describe Fast do
   let(:defined_proc) { described_class::LITERAL }
   let(:code) { ->(string) { described_class.ast(string) } }
 
-  describe '.parser_class' do
-    it 'selects a versioned parser class' do
-      expect(described_class.parser_class.name).to match(/\AParser::Ruby\d+\z/)
-    end
-  end
-
   describe '.validate_ruby!' do
-    it 'wraps parser validation errors in Fast::SyntaxError' do
+    it 'wraps Prism validation errors in Fast::SyntaxError' do
       expect do
         described_class.validate_ruby!('def invalid(')
       end.to raise_error(Fast::SyntaxError)

@@ -4,7 +4,6 @@ require 'fileutils'
 
 require_relative 'fast/source'
 require_relative 'fast/node'
-require_relative 'fast/parser_compat'
 require_relative 'fast/rewriter'
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
@@ -74,12 +73,10 @@ module Fast
 
     def parse_ruby(content, buffer_name: '(string)')
       prism_ast(content, buffer_name: buffer_name)
-    rescue SyntaxError
-      parser_ast(content, buffer_name: buffer_name)
     end
 
     def parser_ast(content, buffer_name: '(string)')
-      ParserCompat.parse(content, buffer_name: buffer_name)
+      prism_ast(content, buffer_name: buffer_name)
     end
 
     def parser_ast_from_file(file)
@@ -118,19 +115,19 @@ module Fast
     end
 
     def parser_class
-      ParserCompat.parser_class
+      raise NoMethodError, 'Fast.parser_class was removed; Fast now parses Ruby with Prism'
     end
 
     def parser_require_path
-      ParserCompat.parser_require_path
+      raise NoMethodError, 'Fast.parser_require_path was removed; Fast now parses Ruby with Prism'
     end
 
     def parser_const_name
-      ParserCompat.parser_const_name
+      raise NoMethodError, 'Fast.parser_const_name was removed; Fast now parses Ruby with Prism'
     end
 
     def parser_version_supported?(const_name)
-      ParserCompat.parser_version_supported?(const_name)
+      raise NoMethodError, "Fast.parser_version_supported?(#{const_name.inspect}) was removed; Fast now parses Ruby with Prism"
     end
 
     # @return [Fast::Node] from the parsed content
@@ -144,12 +141,10 @@ module Fast
     def validate_ruby!(content, buffer_name: '(string)')
       prism_ast(content, buffer_name: buffer_name)
       true
-    rescue SyntaxError
-      ParserCompat.validate!(content, buffer_name: buffer_name)
     end
 
     def builder_for(buffer_name)
-      ParserCompat.builder
+      raise NoMethodError, "Fast.builder_for(#{buffer_name.inspect}) was removed; Fast now parses Ruby with Prism"
     end
 
     # @return [Fast::Node] parsed from file content

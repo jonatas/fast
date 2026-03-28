@@ -101,14 +101,6 @@ module Fast
 
     module_function
 
-    def parser_buffer(name, source: nil)
-      require 'parser'
-
-      buffer = Parser::Source::Buffer.new(name)
-      buffer.source = source if source
-      buffer
-    end
-
     def buffer(name, source: nil, buffer_class: Fast::Source::Buffer)
       buffer_class.new(name, source: source)
     end

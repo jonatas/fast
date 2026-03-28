@@ -59,14 +59,6 @@ RSpec.describe Fast::Source do
     end
   end
 
-  describe '.parser_buffer' do
-    it 'builds a parser-compatible buffer only for parser-backed paths' do
-      buffer = described_class.parser_buffer('(string)', source: 'hello')
-
-      expect(buffer.class.name).to eq('Parser::Source::Buffer')
-      expect(buffer.source).to eq('hello')
-    end
-  end
 end
 
 RSpec.describe Fast::SourceRewriter do
