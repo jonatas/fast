@@ -117,9 +117,9 @@ module Fast
       Summary.new(code_or_ast, file: file, command_name: command_name)
     end
 
-    def scan(locations, command_name: '.scan')
+    def scan(locations, command_name: '.scan', level: nil)
       require_relative 'fast/scan'
-      Scan.new(locations, command_name: command_name)
+      Scan.new(locations, command_name: command_name, level: level)
     end
 
     def parser_class

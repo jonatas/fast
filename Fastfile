@@ -146,8 +146,17 @@ end
 Fast.shortcut :scan do
   locations = ARGV.select { |arg| !arg.start_with?('-') && File.exist?(arg) }
   if locations.any?
-    Fast.scan(locations).scan
+    Fast.scan(locations, level: fast_option_value(ARGV, '-l', '--level')).scan
   else
     puts "Please provide at least one valid file or directory to scan."
   end
+end
+
+def fast_option_value(args, short_name, long_name)
+  args.each_with_index do |arg, index|
+    return args[index + 1] if arg == short_name || arg == long_name
+    return arg.split('=', 2).last if arg.start_with?("#{long_name}=")
+  end
+
+  nil
 end

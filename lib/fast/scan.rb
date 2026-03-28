@@ -16,9 +16,10 @@ module Fast
     MAX_SIGNALS = 4
     MAX_MACROS = 3
 
-    def initialize(locations, command_name: '.scan')
+    def initialize(locations, command_name: '.scan', level: nil)
       @locations = Array(locations)
       @command_name = command_name
+      @level = normalize_level(level)
     end
 
     def scan
@@ -92,10 +93,10 @@ module Fast
         puts "  #{object_signature(entry)}"
 
         signals = build_signals(entry)
-        puts "  signals: #{signals.join(' | ')}" if signals.any?
+        puts "  signals: #{signals.join(' | ')}" if show_signals? && signals.any?
 
         methods = build_methods(entry)
-        puts "  methods: #{methods.join(', ')}" if methods.any?
+        puts "  methods: #{methods.join(', ')}" if show_methods? && methods.any?
       end
     end
 
@@ -183,6 +184,20 @@ module Fast
 
     def module_function_entry?(entry)
       entry[:kind] == :module && entry[:macros].include?('module_function')
+    end
+
+    def normalize_level(level)
+      return 3 if level.nil?
+
+      [[level.to_i, 1].max, 3].min
+    end
+
+    def show_signals?
+      @level >= 2
+    end
+
+    def show_methods?
+      @level >= 3
     end
   end
 end

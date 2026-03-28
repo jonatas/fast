@@ -89,4 +89,41 @@ RSpec.describe Fast::Scan do
 
     OUT
   end
+
+  it 'supports lower detail levels for repo triage' do
+    scan = described_class.new([
+      File.join(root, 'app/models'),
+      File.join(root, 'app/controllers'),
+      File.join(root, 'app/services')
+    ], level: 1)
+
+    expect { scan.scan }.to output(<<~OUT).to_stdout
+      Models:
+      - #{File.join(root, 'app/models/order.rb')}
+        Order < ApplicationRecord
+
+      Controllers:
+      - #{File.join(root, 'app/controllers/orders_controller.rb')}
+        OrdersController < ApplicationController
+
+      Services:
+      - #{File.join(root, 'app/services/invoice_sync_service.rb')}
+        Billing::InvoiceSyncService
+
+    OUT
+  end
+
+  it 'shows signals but omits methods at level 2' do
+    scan = described_class.new([
+      File.join(root, 'app/models')
+    ], level: 2)
+
+    expect { scan.scan }.to output(<<~OUT).to_stdout
+      Models:
+      - #{File.join(root, 'app/models/order.rb')}
+        Order < ApplicationRecord
+        signals: relationships=belongs_to :customer, has_many :line_items | hooks=before_save :normalize_reference | validations=:reference, presence: true
+
+    OUT
+  end
 end
