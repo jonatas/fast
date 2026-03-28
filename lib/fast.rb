@@ -81,7 +81,7 @@ module Fast
     end
 
     def parser_ast(content, buffer_name: '(string)')
-      buffer = Fast::Source.buffer(buffer_name, source: content)
+      buffer = Fast::Source.parser_buffer(buffer_name, source: content)
       parser_class.new(builder_for(buffer_name)).parse(buffer)
     rescue Parser::SyntaxError => e
       raise SyntaxError, e.message
@@ -163,7 +163,7 @@ module Fast
     end
 
     def validate_ruby!(content, buffer_name: '(string)')
-      buffer = Fast::Source.buffer(buffer_name, source: content)
+      buffer = Fast::Source.parser_buffer(buffer_name, source: content)
       parser = parser_class.new(builder_for(buffer_name))
       parser.diagnostics.all_errors_are_fatal = true
       parser.diagnostics.consumer = lambda do |diagnostic|

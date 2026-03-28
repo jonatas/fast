@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require 'fast/source'
+
 # Rewriter loads a set of methods related to automated replacement using
 # expressions and custom blocks of code.
 module Fast
   class << self
     # Replaces content based on a pattern.
-    # @param [Parser::AST::Node] ast with the current AST to search.
+    # @param [Fast::Node] ast with the current AST to search.
     # @param [String] pattern with the expression to be targeting nodes.
     # @param [Proc] replacement gives the [Rewriter] context in the block.
     # @example
@@ -33,7 +35,7 @@ module Fast
     # Replaces the source of an {Fast#ast_from_file} with
     # and the same source if the pattern does not match.
     def replace_file(pattern, file, &replacement)
-      ast = ast_from_file(file)
+      ast = parser_ast_from_file(file)
       replace(pattern, ast, IO.read(file), &replacement)
     end
 
@@ -71,14 +73,12 @@ module Fast
     end
 
     def buffer
-      buffer = Parser::Source::Buffer.new('replacement')
-      buffer.source = source || ast.loc.expression.source
-      buffer
+      Fast::Source.parser_buffer('replacement', source: source || ast.loc.expression.source)
     end
 
     # @return [Array<Symbol>] with all types that matches
     def types
-      Fast.search(search, ast).grep(Parser::AST::Node).map(&:type).uniq
+      Fast.search(search, ast).select { |node| Fast.ast_node?(node) }.map(&:type).uniq
     end
 
     def match?(node)
@@ -100,7 +100,7 @@ module Fast
     end
 
     # Execute {#replacement} block
-    # @param [Parser::AST::Node] node that will be yield in the replacement block
+    # @param [Fast::Node] node that will be yield in the replacement block
     # @param [Array<Object>, nil] captures are yield if {#replacement} take second argument.
     def execute_replacement(node, captures)
       if replacement.parameters.length == 1
