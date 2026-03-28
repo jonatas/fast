@@ -36,7 +36,7 @@ module Fast
     # Replaces the source of an {Fast#ast_from_file} with
     # and the same source if the pattern does not match.
     def replace_file(pattern, file, &replacement)
-      ast = parser_ast_from_file(file)
+      ast = ast_from_file(file)
       replace(pattern, ast, IO.read(file), &replacement)
     end
 
