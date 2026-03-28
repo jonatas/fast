@@ -55,6 +55,18 @@ To maximize reliability and reduce context noise, use these flags when invoking 
 
 This is especially useful before deciding whether to fetch full method bodies through `fast`, MCP tools, or ordinary file reads.
 
+`.summary` also supports `-l` / `--level`:
+
+- `-l 1`: only class/module inventory
+- `-l 2`: inventory plus signals such as constants, hooks, validations, scopes, and macros
+- `-l 3`: inventory, signals, and method signatures
+
+Example:
+
+```bash
+fast .summary lib/fast/mcp_server.rb -l 2 --no-color
+```
+
 ## Use `.scan` for multi-file triage
 
 `fast .scan path/to/dir --no-color` extends the same idea across many files. It classifies files into broad groups and prints a bounded per-file outline without dumping full bodies.
@@ -68,6 +80,18 @@ The scanner is designed to help agents avoid rabbit holes during repo exploratio
 - avoid printing method bodies, large constants, or implementation details by default
 
 This makes `.scan` a better first move than reading a whole directory tree when the task is still about classification and narrowing scope.
+
+`.scan` also supports `-l` / `--level`:
+
+- `-l 1`: only grouped object inventory
+- `-l 2`: inventory plus high-signal metadata
+- `-l 3`: inventory, metadata, and method entrypoints
+
+Example:
+
+```bash
+fast .scan lib/fast -l 1 --no-color
+```
 
 ## Essential MCP tools
 

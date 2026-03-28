@@ -139,5 +139,64 @@ RSpec.describe Fast::Summary do
         end
       EXPECTED
     end
+
+    it 'aggregates top-level requires into a single line' do
+      code = <<~RUBY
+        require 'json'
+        require 'fast'
+        require_relative 'helper'
+
+        module Fast
+          class McpServer
+          end
+        end
+      RUBY
+
+      expect { described_class.new(code).summarize }.to output(<<~EXPECTED).to_stdout
+        requires: "json", "fast", "helper"
+
+        module Fast
+          class McpServer
+          end
+        end
+      EXPECTED
+    end
+
+    it 'supports level 1 for structural inventory only' do
+      expect { described_class.new(code, level: 1).summarize }.to output(<<~EXPECTED).to_stdout
+        module Store
+          class Item < ActiveRecord::Base
+            class Audit
+            end
+          end
+        end
+      EXPECTED
+    end
+
+    it 'supports level 2 for signals without methods' do
+      expect { described_class.new(code, level: 2).summarize }.to output(<<~EXPECTED).to_stdout
+        module Store
+          class Item < ActiveRecord::Base
+
+            STATUS = [...]
+
+            include Trackable
+
+            has_many :variants
+            belongs_to :user
+
+            attr_accessor :virtual_price, :name
+
+            Scopes: active, recent(limit)
+
+            Hooks: before_save :prepare_price, after_create :notify_user
+
+            Validations: :name, presence: true, :custom_check
+            class Audit
+            end
+          end
+        end
+      EXPECTED
+    end
   end
 end

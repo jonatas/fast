@@ -6,9 +6,10 @@ module Fast
   class Summary
     VISIBILITIES = %i[public protected private].freeze
 
-    def initialize(code_or_ast, file: nil, command_name: '.summary')
+    def initialize(code_or_ast, file: nil, command_name: '.summary', level: nil)
       @file = file
       @command_name = command_name
+      @level = normalize_level(level)
       @source =
         if code_or_ast.is_a?(String)
           code_or_ast
@@ -63,7 +64,7 @@ module Fast
         summarize_body(node.children[2], indent + '  ')
         puts "#{indent}end"
       when :begin
-        node.children.each { |child| print_node(child, indent) if Fast.ast_node?(child) }
+        summarize_body(node, indent)
       else
         summarize_body(node, indent)
       end
@@ -114,6 +115,7 @@ module Fast
         hooks: summary[:hooks],
         validations: summary[:validations],
         macros: summary[:macros],
+        requires: summary[:requires],
         methods: summary[:methods],
         nested: summary[:nested].filter_map { |child| outline_for(child) },
         line: node.loc&.expression&.line
@@ -136,15 +138,18 @@ module Fast
 
       summary = build_summary(body)
 
-      print_lines(summary[:constants], indent)
-      print_lines(summary[:mixins], indent)
-      print_lines(summary[:relationships], indent)
-      print_lines(summary[:attributes], indent)
-      print_section('Scopes', summary[:scopes], indent)
-      print_section('Hooks', summary[:hooks], indent)
-      print_section('Validations', summary[:validations], indent)
-      print_section('Macros', summary[:macros], indent)
-      print_methods(summary[:methods], indent)
+      if show_signals?
+        print_requires(summary[:requires], indent)
+        print_lines(summary[:constants], indent)
+        print_lines(summary[:mixins], indent)
+        print_lines(summary[:relationships], indent)
+        print_lines(summary[:attributes], indent)
+        print_section('Scopes', summary[:scopes], indent)
+        print_section('Hooks', summary[:hooks], indent)
+        print_section('Validations', summary[:validations], indent)
+        print_section('Macros', summary[:macros], indent)
+      end
+      print_methods(summary[:methods], indent) if show_methods?
       summary[:nested].each { |child| print_node(child, indent) }
     end
 
@@ -158,6 +163,7 @@ module Fast
         hooks: [],
         validations: [],
         macros: [],
+        requires: [],
         methods: VISIBILITIES.to_h { |visibility| [visibility, []] },
         nested: []
       }
@@ -221,6 +227,8 @@ module Fast
         summary[:validations] << validates_summary(node)
       elsif Fast.match?('(send nil validate ...)', node)
         summary[:validations] << validate_summary(node)
+      elsif Fast.match?('(send nil {require require_relative} (str _))', node)
+        summary[:requires] << require_summary(node)
       elsif Fast.match?('(send nil {private protected public})', node)
         nil
       else
@@ -237,6 +245,7 @@ module Fast
       return false if Fast.match?('(send nil {has_many belongs_to has_one has_and_belongs_to_many} ...)', node)
       return false if Fast.match?('(send nil {attr_accessor attr_reader attr_writer} ...)', node)
       return false if Fast.match?('(send nil {include extend prepend} ...)', node)
+      return false if Fast.match?('(send nil {require require_relative} (str _))', node)
       return false if Fast.match?('(send nil {scope validates validate private protected public} ...)', node)
 
       !summary[:macros].include?(compact_node_source(node))
@@ -261,6 +270,20 @@ module Fast
       [node]
     end
 
+    def normalize_level(level)
+      return 3 if level.nil?
+
+      [[level.to_i, 1].max, 3].min
+    end
+
+    def show_signals?
+      @level >= 2
+    end
+
+    def show_methods?
+      @level >= 3
+    end
+
     def constant_summary(node)
       lhs = node_source(node.children[0])
       name = node.children[1]
@@ -278,6 +301,11 @@ module Fast
         end
       end
       "#{node.children[1]} #{args.join(', ')}"
+    end
+
+    def require_summary(node)
+      path = node.children[2]&.children&.first
+      "#{node.children[1]} #{path.inspect}"
     end
 
     def scope_summary(node)
@@ -341,6 +369,10 @@ module Fast
         '{...}'
       when :block, :lambda
         '{ ... }'
+      when :send
+        return compact_value(node.children[0]) if node.children[1] == :freeze && node.children.length == 2
+
+        node_source(node)
       else
         node_source(node)
       end
@@ -364,6 +396,14 @@ module Fast
       else
         "#{head} ..."
       end
+    end
+
+    def print_requires(requires, indent)
+      return if requires.empty?
+
+      formatted = requires.map { |entry| entry.split(' ', 2).last }.join(', ')
+      puts "#{indent}requires: #{formatted}"
+      puts
     end
 
     def print_lines(lines, indent)
