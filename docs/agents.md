@@ -13,6 +13,7 @@ Both help reduce token waste compared with raw text grep. The right integration 
 - **Context Preservation**: `fast` inherently understands the bounds of a method or block. It will print the entire body of the AST node matched, not just the single line containing the keyword.
 - **Token Efficiency**: Get only the function or class you want, instead of 100 lines of regex false positives.
 - **File and Line Locality**: Outcomes are directly prefixed with the file and line number by default (`# file/path.rb:123`), making it trivial to know exactly where the code is located for further editing or patching.
+- **Safer Rewrites**: Fast validates rewritten Ruby before returning it or writing it to disk. Invalid replacements fail with an error instead of silently producing broken code.
 
 ## CLI or MCP
 
@@ -51,6 +52,16 @@ If your host supports MCP, register `bin/fast-mcp` and call these tools:
 
 These return JSON text payloads with file paths, line bounds, and trimmed code snippets. They are usually more robust for agents than scraping pretty CLI output.
 
+## Why rewrite safety matters for agents
+
+Many rewriting workflows only guarantee that a string replacement happened. They do not guarantee that the resulting source still parses. That is risky for LLM agents because one bad rewrite can poison the next tool call, confuse the model, or write broken files into the working tree.
+
+Fast's rewrite path validates the rewritten Ruby after applying the replacement:
+
+- `rewrite_ruby` fails instead of returning invalid Ruby.
+- `rewrite_ruby_file` fails instead of writing invalid Ruby to disk.
+- MCP surfaces this as a normal tool error, which is easier for agents to recover from than a corrupted file.
+
 ## Query examples
 
 ### Finding method definitions
@@ -82,3 +93,4 @@ fast "(send nil {def_node_matcher def_node_search})" lib/ --no-color
 3. **AST Inspection**: If you need to manipulate a complex file, you can output the AST of a specific method to construct a patch: `fast "(def <name>)" <file> --ast --no-color`.
 4. **Prefer method-sized context**: Method extraction is usually the best token-saving unit for both CLI and MCP.
 5. **Use MCP when available**: Agents should prefer MCP over CLI once the host can register the server, because structured tool calls are easier to orchestrate than parsing terminal output.
+6. **Preview before writing**: Prefer `rewrite_ruby` before `rewrite_ruby_file` so the agent can inspect the result even though invalid rewrites are already rejected.

@@ -23,6 +23,7 @@ Currently, the CLI prints source output as plain text heavily reliant on `Fast.r
 LLMs often need to make precise string replacements in large files. By leveraging the AST, `fast` can target replacements more accurately than regex.
 - **Requirement**: Add an automated way to replace nodes via CLI. For example: `fast replace "(def match?)" "def match?(node, env)" lib/`.
 - **Value**: Enables agents to run structural find-and-replace deterministically across hundred-file codebases, removing the risk of regex false positives.
+- **Current advantage**: The existing Ruby rewrite path already validates the rewritten output and rejects invalid Ruby before returning or writing it.
 
 ## 3. Context Lines (`-C`, `-A`, `-B` like Grep)
 LLMs sometimes need the structural match but also a few surrounding lines of context (imports, class definitions, sibling methods) to make a correct edit.

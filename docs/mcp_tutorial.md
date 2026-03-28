@@ -80,6 +80,8 @@ printf '%s\n' \
   | ruby -Ilib bin/fast-mcp
 ```
 
+Fast validates the rewritten Ruby before returning it. That matters for LLM workflows because a bad replacement fails early instead of feeding invalid code back into the next tool call.
+
 ### 6. Rewrite a file in place
 
 ```bash
@@ -94,6 +96,7 @@ Prefer `rewrite_ruby` first to preview the change.
 
 - Missing paths return MCP error `-32603` with the underlying file error.
 - Invalid AST patterns currently return an empty result array `[]`.
+- Invalid rewrite output returns MCP error `-32603` with parser diagnostics, and `rewrite_ruby_file` does not modify the file.
 - Unknown tool names return MCP error `-32603`.
 
 ## Current limitations
