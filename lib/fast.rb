@@ -1,16 +1,15 @@
 # frozen_string_literal: true
 
 require 'fileutils'
-require 'parser'
 
 require_relative 'fast/source'
 require_relative 'fast/node'
+require_relative 'fast/parser_compat'
 require_relative 'fast/rewriter'
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
   NODE_PARENTS = ObjectSpace::WeakMap.new
-  VERSIONED_PARSER_RANGE = ((1..3).flat_map { |major| (0..9).map { |minor| [major, minor] } }).freeze
 
   class SyntaxError < StandardError; end
 
@@ -58,16 +57,6 @@ module Fast
     %\d                   # bind extra arguments to the expression
   /x.freeze
 
-  # Custom builder allow us to set a buffer name for each Node
-  class Builder < Parser::Builders::Default
-    # Generates {Node} from the given information.
-    #
-    # @return [Node] the generated node
-    def n(type, children, source_map)
-      Node.new(type, children, location: source_map)
-    end
-  end
-
   class << self
     def ast_node?(node)
       node.respond_to?(:type) && node.respond_to?(:children)
@@ -90,10 +79,7 @@ module Fast
     end
 
     def parser_ast(content, buffer_name: '(string)')
-      buffer = Fast::Source.parser_buffer(buffer_name, source: content)
-      parser_class.new(builder_for(buffer_name)).parse(buffer)
-    rescue Parser::SyntaxError => e
-      raise SyntaxError, e.message
+      ParserCompat.parse(content, buffer_name: buffer_name)
     end
 
     def parser_ast_from_file(file)
@@ -132,35 +118,19 @@ module Fast
     end
 
     def parser_class
-      @parser_class ||= begin
-        require parser_require_path
-        Parser.const_get(parser_const_name)
-      end
+      ParserCompat.parser_class
     end
 
     def parser_require_path
-      "parser/#{parser_const_name.downcase}"
+      ParserCompat.parser_require_path
     end
 
     def parser_const_name
-      @parser_const_name ||= begin
-        current_version = Gem::Version.new(RUBY_VERSION[/\A\d+\.\d+/])
-
-        VERSIONED_PARSER_RANGE
-          .reverse
-          .map { |major, minor| "Ruby#{major}#{minor}" }
-          .find do |const_name|
-            parser_version_supported?(const_name) &&
-              Gem::Version.new(const_name.delete_prefix('Ruby').chars.join('.')) <= current_version
-          end || raise(LoadError, "No parser implementation available for Ruby #{RUBY_VERSION}")
-      end
+      ParserCompat.parser_const_name
     end
 
     def parser_version_supported?(const_name)
-      require "parser/#{const_name.downcase}"
-      true
-    rescue LoadError
-      false
+      ParserCompat.parser_version_supported?(const_name)
     end
 
     # @return [Fast::Node] from the parsed content
@@ -175,19 +145,11 @@ module Fast
       prism_ast(content, buffer_name: buffer_name)
       true
     rescue SyntaxError
-      buffer = Fast::Source.parser_buffer(buffer_name, source: content)
-      parser = parser_class.new(builder_for(buffer_name))
-      parser.diagnostics.all_errors_are_fatal = true
-      parser.diagnostics.consumer = lambda do |diagnostic|
-        message = Array(diagnostic.render).join("\n")
-        raise SyntaxError, message
-      end
-      parser.parse(buffer)
-      true
+      ParserCompat.validate!(content, buffer_name: buffer_name)
     end
 
     def builder_for(buffer_name)
-      Builder.new
+      ParserCompat.builder
     end
 
     # @return [Fast::Node] parsed from file content
