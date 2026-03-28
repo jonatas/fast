@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'parser'
 require 'prism'
+require 'fast/source'
 
 module Fast
   module PrismAdapter
@@ -12,9 +12,8 @@ module Fast
       attr_reader :expression
 
       def initialize(buffer_name, source, start_offset, end_offset)
-        buffer = Parser::Source::Buffer.new(buffer_name)
-        buffer.source = source
-        @expression = Parser::Source::Range.new(
+        buffer = Fast::Source.buffer(buffer_name, source: source)
+        @expression = Fast::Source.range(
           buffer,
           character_offset(source, start_offset),
           character_offset(source, end_offset)
@@ -63,11 +62,27 @@ module Fast
           build_node(:def, [node.name, adapt_parameters(node.parameters, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
         end
       when Prism::BlockNode
-        build_node(:block, [adapt(node.call, source, buffer_name), adapt_block_parameters(node.parameters, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
+        return nil unless node.respond_to?(:call)
+
+        build_node(:block, [adapt_call_node(node.call, source, buffer_name), adapt_block_parameters(node.parameters, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
       when Prism::CallNode
-        children = [adapt(node.receiver, source, buffer_name), node.name]
-        children.concat(node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) } || [])
-        build_node(:send, children, node, source, buffer_name)
+        if node.respond_to?(:block) && node.block.is_a?(Prism::BlockNode)
+          return build_node(
+            :block,
+            [
+              adapt_call_node(node, source, buffer_name),
+              adapt_block_parameters(node.block.parameters, source, buffer_name),
+              adapt(node.block.body, source, buffer_name)
+            ],
+            node.block,
+            source,
+            buffer_name
+          )
+        end
+
+        adapt_call_node(node, source, buffer_name)
+      when Prism::BlockArgumentNode
+        build_node(:block_pass, [adapt(node.expression, source, buffer_name)], node, source, buffer_name)
       when Prism::ConstantPathNode
         build_const_path(node, source, buffer_name)
       when Prism::ConstantReadNode
@@ -80,6 +95,8 @@ module Fast
         build_node(:str, [node.unescaped], node, source, buffer_name)
       when Prism::InterpolatedStringNode
         build_node(:dstr, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
+      when Prism::InterpolatedSymbolNode
+        build_node(:dsym, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
       when Prism::ArrayNode
         build_node(:array, node.elements.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
       when Prism::HashNode
@@ -186,6 +203,13 @@ module Fast
       else
         build_node(:arg, [node.name], node, source, buffer_name)
       end
+    end
+
+    def adapt_call_node(node, source, buffer_name)
+      children = [adapt(node.receiver, source, buffer_name), node.name]
+      children.concat(node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) } || [])
+      children << adapt(node.block, source, buffer_name) if node.respond_to?(:block) && node.block && !node.block.is_a?(Prism::BlockNode)
+      build_node(:send, children, node, source, buffer_name)
     end
 
     def adapt_else_clause(node, source, buffer_name)

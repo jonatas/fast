@@ -1,4 +1,10 @@
 # frozen_string_literal: true
+begin
+  require 'fast/source'
+rescue LoadError
+  nil
+end
+
 # Fastfile is loaded when you start an expression with a dot.
 #
 # You can introduce shortcuts or methods that can be embedded during your
@@ -94,7 +100,7 @@ Fast.shortcut :format_sql do
     sb = root.loc.expression.source_buffer
     sb.tokens.each do |token|
       if eligible_kw.include?(token.keyword_kind) || eligible_tokens.include?(token.token)
-        range = Parser::Source::Range.new(sb, token.start, token.end)
+        range = Fast::Source.range(sb, token.start, token.end)
         replace(range, range.source.upcase)
       end
     end
@@ -132,5 +138,16 @@ Fast.shortcut :summary do
     Fast.summary(IO.read(file), file: file).summarize
   else
     puts "Please provide a valid file to summarize."
+  end
+end
+
+# Group and classify multiple Ruby files without printing full bodies
+# fast .scan lib app/models --no-color
+Fast.shortcut :scan do
+  locations = ARGV.select { |arg| !arg.start_with?('-') && File.exist?(arg) }
+  if locations.any?
+    Fast.scan(locations).scan
+  else
+    puts "Please provide at least one valid file or directory to scan."
   end
 end

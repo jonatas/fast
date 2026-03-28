@@ -24,7 +24,7 @@ module Fast
     def scan
       files = Fast.ruby_files_from(*@locations)
       grouped = files.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |file, memo|
-        entries = Fast.summary(IO.read(file), file: file, command_name: @command_name).outline
+        entries = flatten_entries(Fast.summary(IO.read(file), file: file, command_name: @command_name).outline)
         next if entries.empty?
 
         memo[classify(file, entries)] << [file, entries]
@@ -89,21 +89,57 @@ module Fast
 
       puts "- #{file}"
       entries.each do |entry|
-        puts "  #{entry[:headline]}"
+        puts "  #{object_signature(entry)}"
 
         signals = build_signals(entry)
         puts "  signals: #{signals.join(' | ')}" if signals.any?
 
         methods = build_methods(entry)
         puts "  methods: #{methods.join(', ')}" if methods.any?
-
-        puts "  nested: #{entry[:nested].join(', ')}" if entry[:nested].any?
       end
     end
 
     def structural_entries(entries)
-      filtered = entries.select { |entry| %i[module class].include?(entry[:kind]) }
+      filtered = entries.select do |entry|
+        %i[module class].include?(entry[:kind]) && interesting_entry?(entry)
+      end
       filtered.empty? ? entries.reject { |entry| entry[:kind] == :send } : filtered
+    end
+
+    def flatten_entries(entries, namespace = nil)
+      entries.flat_map do |entry|
+        qualified_name = qualify_name(namespace, entry[:name])
+        flattened_entry = entry.merge(
+          name: qualified_name,
+          nested: []
+        )
+
+        [flattened_entry] + flatten_entries(entry[:nested], qualified_name)
+      end
+    end
+
+    def qualify_name(namespace, name)
+      return name unless namespace && name
+      return name if name.include?('::')
+
+      "#{namespace}::#{name}"
+    end
+
+    def interesting_entry?(entry)
+      entry[:methods].values.any?(&:any?) ||
+        entry[:relationships].any? ||
+        entry[:hooks].any? ||
+        entry[:validations].any? ||
+        entry[:scopes].any? ||
+        entry[:macros].any? ||
+        entry[:mixins].any?
+    end
+
+    def object_signature(entry)
+      signature = entry[:name].to_s
+      return signature unless entry[:kind] == :class && entry[:superclass]
+
+      "#{signature} < #{entry[:superclass]}"
     end
 
     def build_signals(entry)
@@ -125,11 +161,28 @@ module Fast
 
     def build_methods(entry)
       public_methods = entry[:methods][:public].first(MAX_METHODS)
+      protected_methods = entry[:methods][:protected].first(2)
       private_methods = entry[:methods][:private].first(2)
 
-      methods = public_methods.dup
-      methods << "private: #{private_methods.join(', ')}" if private_methods.any?
+      methods = public_methods.map { |method| qualify_method(entry, method) }
+      methods.concat(protected_methods.map { |method| "protected #{qualify_method(entry, method)}" })
+      methods.concat(private_methods.map { |method| "private #{qualify_method(entry, method)}" })
       methods
+    end
+
+    def qualify_method(entry, signature)
+      method = signature.delete_prefix('def ')
+      separator = singleton_method?(method) || module_function_entry?(entry) ? '.' : '#'
+      method = method.delete_prefix('self.')
+      "#{entry[:name]}#{separator}#{method}"
+    end
+
+    def singleton_method?(method)
+      method.start_with?('self.')
+    end
+
+    def module_function_entry?(entry)
+      entry[:kind] == :module && entry[:macros].include?('module_function')
     end
   end
 end

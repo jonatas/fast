@@ -72,20 +72,20 @@ RSpec.describe Fast::Scan do
     expect { scan.scan }.to output(<<~OUT).to_stdout
       Models:
       - #{File.join(root, 'app/models/order.rb')}
-        class Order < ApplicationRecord
+        Order < ApplicationRecord
         signals: relationships=belongs_to :customer, has_many :line_items | hooks=before_save :normalize_reference | validations=:reference, presence: true
-        methods: def submit!, private: def normalize_reference
+        methods: Order#submit!, private Order#normalize_reference
 
       Controllers:
       - #{File.join(root, 'app/controllers/orders_controller.rb')}
-        class OrdersController < ApplicationController
+        OrdersController < ApplicationController
         signals: hooks=before_action :load_order
-        methods: def update, private: def load_order
+        methods: OrdersController#update, private OrdersController#load_order
 
       Services:
       - #{File.join(root, 'app/services/invoice_sync_service.rb')}
-        module Billing
-        nested: InvoiceSyncService
+        Billing::InvoiceSyncService
+        methods: Billing::InvoiceSyncService#call, private Billing::InvoiceSyncService#push_invoice
 
     OUT
   end

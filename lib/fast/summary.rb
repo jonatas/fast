@@ -36,6 +36,12 @@ module Fast
       end
     end
 
+    def outline
+      return [] unless @ast
+
+      top_level_nodes(@ast).filter_map { |node| outline_for(node) }
+    end
+
     private
 
     def unsupported_template?
@@ -60,6 +66,68 @@ module Fast
         node.children.each { |child| print_node(child, indent) if Fast.ast_node?(child) }
       else
         summarize_body(node, indent)
+      end
+    end
+
+    def top_level_nodes(node)
+      return [] unless Fast.ast_node?(node)
+
+      case node.type
+      when :begin
+        node.children.select { |child| Fast.ast_node?(child) }
+      else
+        [node]
+      end
+    end
+
+    def outline_for(node)
+      return unless Fast.ast_node?(node)
+
+      case node.type
+      when :module
+        summary = build_summary(node.children[1])
+        build_outline_entry(node, summary, kind: :module, name: node_source(node.children[0]))
+      when :class
+        summary = build_summary(node.children[2])
+        build_outline_entry(node, summary,
+                            kind: :class,
+                            name: node_source(node.children[0]),
+                            superclass: node.children[1] && node_source(node.children[1]))
+      else
+        summary = build_summary(node)
+        build_outline_entry(node, summary, kind: node.type, name: node.type.to_s)
+      end
+    end
+
+    def build_outline_entry(node, summary, kind:, name:, superclass: nil)
+      {
+        file: @file,
+        kind: kind,
+        name: name,
+        superclass: superclass,
+        headline: outline_headline(kind, name, superclass),
+        constants: summary[:constants],
+        mixins: summary[:mixins],
+        relationships: summary[:relationships],
+        attributes: summary[:attributes],
+        scopes: summary[:scopes],
+        hooks: summary[:hooks],
+        validations: summary[:validations],
+        macros: summary[:macros],
+        methods: summary[:methods],
+        nested: summary[:nested].filter_map { |child| outline_for(child) },
+        line: node.loc&.expression&.line
+      }
+    end
+
+    def outline_headline(kind, name, superclass)
+      case kind
+      when :module
+        "module #{name}"
+      when :class
+        superclass ? "class #{name} < #{superclass}" : "class #{name}"
+      else
+        name.to_s
       end
     end
 

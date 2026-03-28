@@ -55,6 +55,20 @@ To maximize reliability and reduce context noise, use these flags when invoking 
 
 This is especially useful before deciding whether to fetch full method bodies through `fast`, MCP tools, or ordinary file reads.
 
+## Use `.scan` for multi-file triage
+
+`fast .scan path/to/dir --no-color` extends the same idea across many files. It classifies files into broad groups and prints a bounded per-file outline without dumping full bodies.
+
+The scanner is designed to help agents avoid rabbit holes during repo exploration:
+
+- group files into models, controllers, services, jobs, mailers, libraries, and other
+- show one short headline per structural entry
+- surface only the most useful signals such as hooks, validations, relationships, mixins, and macros
+- list a capped set of public and private method names
+- avoid printing method bodies, large constants, or implementation details by default
+
+This makes `.scan` a better first move than reading a whole directory tree when the task is still about classification and narrowing scope.
+
 ## Essential MCP tools
 
 If your host supports MCP, register `bin/fast-mcp` and call these tools:
@@ -112,12 +126,14 @@ fast "(send nil {def_node_matcher def_node_search})" lib/ --no-color
 ## Best practices for LLM context
 
 1. **Initial Recon**: When entering a new file or directory, if you know the name of the function, use `fast "(def <name>)" <path> --no-color`.
-2. **Finding References**: To find where a method is called, use `fast "(send _ :<name>)" <path> --no-color`.
-3. **AST Inspection**: If you need to manipulate a complex file, you can output the AST of a specific method to construct a patch: `fast "(def <name>)" <file> --ast --no-color`.
-4. **Prefer method-sized context**: Method extraction is usually the best token-saving unit for both CLI and MCP.
-5. **Use MCP when available**: Agents should prefer MCP over CLI once the host can register the server, because structured tool calls are easier to orchestrate than parsing terminal output.
-6. **Preview before writing**: Prefer `rewrite_ruby` before `rewrite_ruby_file` so the agent can inspect the result even though invalid rewrites are already rejected.
-7. **Use `.summary` before deep reads**: For unfamiliar large files, a summary is often the cheapest way to understand the shape before pulling full source.
+2. **Repo Triage**: When entering an unfamiliar directory, start with `fast .scan <path> --no-color` to classify files before reading anything deeply.
+3. **Finding References**: To find where a method is called, use `fast "(send _ :<name>)" <path> --no-color`.
+4. **AST Inspection**: If you need to manipulate a complex file, you can output the AST of a specific method to construct a patch: `fast "(def <name>)" <file> --ast --no-color`.
+5. **Prefer method-sized context**: Method extraction is usually the best token-saving unit for both CLI and MCP.
+6. **Use MCP when available**: Agents should prefer MCP over CLI once the host can register the server, because structured tool calls are easier to orchestrate than parsing terminal output.
+7. **Preview before writing**: Prefer `rewrite_ruby` before `rewrite_ruby_file` so the agent can inspect the result even though invalid rewrites are already rejected.
+8. **Use `.summary` before deep reads**: For unfamiliar large files, a summary is often the cheapest way to understand the shape before pulling full source.
+9. **Use `.scan` before `.summary` at repo scale**: Scan first, then summarize only the small set of files that look relevant.
 
 ## Larger scenarios
 
@@ -146,3 +162,21 @@ Use `.summary` first to identify the small set of methods or macros involved, th
 ### 4. Reviewing framework-heavy files
 
 Controllers, jobs, mailers, and serializers often contain more declarations than logic. `.summary` helps the agent separate framework declarations from the few methods that contain actual behavior.
+
+### 5. Scanning a repository without losing scope
+
+Start with:
+
+```bash
+fast .scan lib app/services app/models --no-color
+```
+
+Then follow up with `.summary` or MCP method extraction only for the files the scan surfaces as relevant.
+
+In local validation on `lib/fast`:
+
+- reading the whole tree was about `29,144` estimated tokens
+- `fast .scan lib/fast --no-color` was about `471`
+- `.scan` plus summaries for the two most relevant files was about `1,654`
+
+That is the main value of `.scan`: not just fewer tokens, but tighter scope control. The agent gets classification first, then chooses where to go deeper instead of committing too early to a large file.

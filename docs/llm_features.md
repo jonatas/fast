@@ -2,6 +2,21 @@
 
 `fast` already ships both a CLI and an MCP server for LLM-oriented workflows. This page tracks the remaining work to make those integrations stronger and easier to adopt.
 
+## Existing strengths
+
+Before the remaining gaps, there are already two high-value agent workflows available today:
+
+- `.summary` for single-file structural reconnaissance
+- `.scan` for multi-file repo triage with bounded output
+
+In local validation on `lib/fast`:
+
+- full tree read: about `29,144` estimated tokens
+- `.scan lib/fast --no-color`: about `471`
+- `.scan` plus summaries for two relevant files: about `1,654`
+
+That means the current summary-first workflow can already reduce both token use and exploration noise substantially, even before JSON output exists.
+
 ## 1. JSON Structured Output (`--json`)
 Currently, the CLI prints source output as plain text heavily reliant on `Fast.report`. The MCP server already returns structured JSON-like payloads, but the CLI still lacks a native machine-friendly mode.
 - **Requirement**: Add a `--json` flag to `fast`.
