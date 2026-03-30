@@ -231,10 +231,10 @@ module Fast
       return build_node(:args, [], nil, source, buffer_name) unless node
 
       children = []
-      children.concat(node.requireds.map { |child| build_node(:arg, [child.name], child, source, buffer_name) }) if node.respond_to?(:requireds)
+      children.concat(node.requireds.map { |child| adapt_required_parameter(child, source, buffer_name) }) if node.respond_to?(:requireds)
       children.concat(node.optionals.map { |child| build_node(:optarg, [child.name, adapt(child.value, source, buffer_name)], child, source, buffer_name) }) if node.respond_to?(:optionals)
       children << build_node(:restarg, [parameter_name(node.rest)], node.rest, source, buffer_name) if node.respond_to?(:rest) && node.rest
-      children.concat(node.posts.map { |child| build_node(:arg, [child.name], child, source, buffer_name) }) if node.respond_to?(:posts)
+      children.concat(node.posts.map { |child| adapt_required_parameter(child, source, buffer_name) }) if node.respond_to?(:posts)
       children.concat(node.keywords.map { |child| adapt_keyword_parameter(child, source, buffer_name) }) if node.respond_to?(:keywords)
       children << build_node(:kwrestarg, [parameter_name(node.keyword_rest)], node.keyword_rest, source, buffer_name) if node.respond_to?(:keyword_rest) && node.keyword_rest
       children << build_node(:blockarg, [parameter_name(node.block)], node.block, source, buffer_name) if node.respond_to?(:block) && node.block
@@ -246,6 +246,17 @@ module Fast
 
       params = node.respond_to?(:parameters) ? node.parameters : node
       adapt_parameters(params, source, buffer_name)
+    end
+
+    def adapt_required_parameter(child, source, buffer_name)
+      if child.is_a?(Prism::MultiTargetNode)
+        mlhs_children = child.lefts.map { |c| adapt_required_parameter(c, source, buffer_name) }
+        mlhs_children << build_node(:restarg, [parameter_name(child.rest)], child.rest, source, buffer_name) if child.respond_to?(:rest) && child.rest
+        mlhs_children.concat(child.rights.map { |c| adapt_required_parameter(c, source, buffer_name) }) if child.respond_to?(:rights)
+        build_node(:mlhs, mlhs_children, child, source, buffer_name)
+      else
+        build_node(:arg, [child.name], child, source, buffer_name)
+      end
     end
 
     def adapt_keyword_parameter(node, source, buffer_name)
