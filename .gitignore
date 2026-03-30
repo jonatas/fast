@@ -5,8 +5,10 @@
 /coverage/
 /doc/
 /pkg/
+/site/
 /spec/reports/
 /tmp/
+.venv/
 
 # rspec failure tracking
 .rspec_status

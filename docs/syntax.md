@@ -150,7 +150,7 @@ the expression in their context. We need to check their `parent`.
 
 ## `^` is to get the **parent node** of an expression
 
-By default, Parser::AST::Node  does not have access to parent and for accessing
+By default, Fast AST nodes do not have access to parent and for accessing
 it you can say `^` for reaching the parent.
 
     $ fast '^int' example.rb

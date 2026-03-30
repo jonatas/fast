@@ -1,28 +1,17 @@
 # frozen_string_literal: true
 
 require 'fileutils'
-require 'astrolabe/builder'
+
+require_relative 'fast/source'
+require_relative 'fast/node'
 require_relative 'fast/rewriter'
-
-# suppress output to avoid parser gem warnings'
-def suppress_output
-  original_stdout = $stdout.clone
-  original_stderr = $stderr.clone
-  $stderr.reopen File.new('/dev/null', 'w')
-  $stdout.reopen File.new('/dev/null', 'w')
-  yield
-ensure
-  $stdout.reopen original_stdout
-  $stderr.reopen original_stderr
-end
-
-suppress_output do
-  require 'parser'
-  require 'parser/current'
-end
 
 # Fast is a tool to help you search in the code through the Abstract Syntax Tree
 module Fast
+  NODE_PARENTS = ObjectSpace::WeakMap.new
+
+  class SyntaxError < StandardError; end
+
   # Literals are shortcuts allowed inside {ExpressionParser}
   LITERAL = {
     '...' => ->(node) { node&.children&.any? },
@@ -67,83 +56,95 @@ module Fast
     %\d                   # bind extra arguments to the expression
   /x.freeze
 
-  # Set some convention methods from file.
-  class Node < Astrolabe::Node
-    # @return [String] with path of the file or simply buffer name.
-    def buffer_name
-      expression.source_buffer.name
-    end
-
-    # @return [Parser::Source::Range] from the expression
-    def expression
-      location.expression
-    end
-
-    # @return [String] with the content of the #expression
-    def source
-      expression.source
-    end
-
-    # @return [Boolean] true if a file exists with the #buffer_name
-    def from_file?
-      File.exist?(buffer_name)
-    end
-
-    # @return [Array<String>] with authors from the current expression range
-    def blame_authors
-      `git blame -L #{expression.first_line},#{expression.last_line} #{buffer_name}`.lines.map do |line|
-        line.split('(')[1].split(/\d+/).first.strip
-      end
-    end
-
-    # @return [String] with the first element from #blame_authors
-    def author
-      blame_authors.first
-    end
-
-    # Search recursively into a node and its children using a pattern.
-    # @param [String] pattern
-    # @param [Array] *args extra arguments to interpolate in the pattern.
-    # @return [Array<Fast::Node>>] with files and results
-    def search(pattern, *args)
-      Fast.search(pattern, self, *args)
-    end
-
-    # Captures elements from search recursively
-    # @param [String] pattern
-    # @param [Array] *args extra arguments to interpolate in the pattern.
-    # @return [Array<Fast::Node>>] with files and results
-    def capture(pattern, *args)
-      Fast.capture(pattern, self, *args)
-    end
-  end
-
-  # Custom builder allow us to set a buffer name for each Node
-  class Builder < Astrolabe::Builder
-    attr_writer :buffer_name
-    # Generates {Node} from the given information.
-    #
-    # @return [Node] the generated node
-    def n(type, children, source_map)
-      Node.new(type, children, location: source_map, buffer_name: @buffer_name)
-    end
-  end
-
   class << self
+    def ast_node?(node)
+      node.respond_to?(:type) && node.respond_to?(:children)
+    end
+
+    def prism_ast(content, buffer_name: '(string)')
+      require_relative 'fast/prism_adapter'
+      result = Fast::PrismAdapter.parse(content, buffer_name: buffer_name)
+      return result if result
+
+      prism_errors = Prism.parse(content).errors
+      message = prism_errors.map(&:message).uniq.join("\n")
+      raise SyntaxError, message
+    end
+
+    def parse_ruby(content, buffer_name: '(string)')
+      prism_ast(content, buffer_name: buffer_name)
+    end
+
+    def parser_ast(content, buffer_name: '(string)')
+      prism_ast(content, buffer_name: buffer_name)
+    end
+
+    def parser_ast_from_file(file)
+      @parser_cache ||= {}
+      @parser_cache[file] ||=
+        begin
+          method =
+            if file.end_with?('.sql')
+              require_relative 'fast/sql' unless respond_to?(:parse_sql)
+              :parse_sql
+            else
+              :parser_ast
+            end
+          Fast.public_send(method, IO.read(file), buffer_name: file)
+        end
+    end
+
+    def parse_file(file)
+      return parser_ast_from_file(file) if file.end_with?('.sql')
+
+      @cache ||= {}
+      @cache[file] ||=
+        begin
+          parse_ruby(IO.read(file), buffer_name: file)
+        end
+    end
+
+    def summary(code_or_ast, file: nil, command_name: '.summary', level: nil)
+      require_relative 'fast/summary'
+      Summary.new(code_or_ast, file: file, command_name: command_name, level: level)
+    end
+
+    def scan(locations, command_name: '.scan', level: nil)
+      require_relative 'fast/scan'
+      Scan.new(locations, command_name: command_name, level: level)
+    end
+
+    def parser_class
+      raise NoMethodError, 'Fast.parser_class was removed; Fast now parses Ruby with Prism'
+    end
+
+    def parser_require_path
+      raise NoMethodError, 'Fast.parser_require_path was removed; Fast now parses Ruby with Prism'
+    end
+
+    def parser_const_name
+      raise NoMethodError, 'Fast.parser_const_name was removed; Fast now parses Ruby with Prism'
+    end
+
+    def parser_version_supported?(const_name)
+      raise NoMethodError, "Fast.parser_version_supported?(#{const_name.inspect}) was removed; Fast now parses Ruby with Prism"
+    end
+
     # @return [Fast::Node] from the parsed content
     # @example
     #   Fast.ast("1") # => s(:int, 1)
     #   Fast.ast("a.b") # => s(:send, s(:send, nil, :a), :b)
     def ast(content, buffer_name: '(string)')
-      buffer = Parser::Source::Buffer.new(buffer_name)
-      buffer.source = content
-      Parser::CurrentRuby.new(builder_for(buffer_name)).parse(buffer)
+      parse_ruby(content, buffer_name: buffer_name)
+    end
+
+    def validate_ruby!(content, buffer_name: '(string)')
+      prism_ast(content, buffer_name: buffer_name)
+      true
     end
 
     def builder_for(buffer_name)
-      builder = Builder.new
-      builder.buffer_name = buffer_name
-      builder
+      raise NoMethodError, "Fast.builder_for(#{buffer_name.inspect}) was removed; Fast now parses Ruby with Prism"
     end
 
     # @return [Fast::Node] parsed from file content
@@ -152,18 +153,7 @@ module Fast
     # @example
     #   Fast.ast_from_file("example.rb") # => s(...)
     def ast_from_file(file)
-      @cache ||= {}
-      @cache[file] ||=
-        begin
-          method =
-            if file.end_with?('.sql')
-              require_relative 'fast/sql' unless respond_to?(:parse_sql)
-              :parse_sql
-            else
-              :ast
-            end
-          Fast.public_send(method, IO.read(file), buffer_name: file)
-        end
+      parse_file(file)
     end
 
     # Verify if a given AST matches with a specific pattern
@@ -330,6 +320,73 @@ module Fast
       files.reject(&dir_filter)
     end
 
+    # Folds the AST to a maximum depth, replacing deeper branches with `...`
+    # @param node [Fast::Node]
+    # @param level [Integer] maximum depth to explore
+    # @param current_level [Integer] internal tracker for depth
+    # @return [Fast::Node] the folded AST
+    def fold_ast(node, level: nil, current_level: 1)
+      return node unless ast_node?(node) && node.respond_to?(:updated)
+      return node if level.nil?
+
+      if current_level >= level
+        if node.children.any?
+          node.updated(nil, [:'...'])
+        else
+          node
+        end
+      else
+        new_children = node.children.map { |c| fold_ast(c, level: level, current_level: current_level + 1) }
+        node.updated(nil, new_children)
+      end
+    end
+
+    # Folds ruby source code to a maximum depth, replacing deep block bodies with `# ...`
+    # @param node [Fast::Node]
+    # @param level [Integer] maximum depth to explore
+    # @return [String] the folded source representation
+    def fold_source(node, level: 1)
+      return node if node.is_a?(String)
+      return node.loc.expression.source rescue node.to_s unless ast_node?(node) && node.respond_to?(:loc)
+
+      source = node.loc.expression.source.dup
+      root_begin = node.loc.expression.begin_pos
+
+      regions = []
+
+      walker = ->(n, current_level) do
+        return unless ast_node?(n)
+
+        if current_level >= level
+          body_node = nil
+          case n.type
+          when :class, :module, :def, :defs, :block
+            body_node = n.children.last
+          when :begin
+            body_node = n
+          end
+
+          if body_node && body_node.loc && body_node.loc.respond_to?(:expression) && body_node.loc.expression
+            regions << [
+              body_node.loc.expression.begin_pos - root_begin,
+              body_node.loc.expression.end_pos - root_begin
+            ]
+            return
+          end
+        end
+
+        n.children.each { |c| walker.call(c, current_level + 1) if ast_node?(c) }
+      end
+
+      walker.call(node, 1)
+
+      regions.sort_by { |r| -r[0] }.each do |start_pos, end_pos|
+        source[start_pos...end_pos] = "# ..."
+      end
+
+      source
+    end
+
     # Extracts a node pattern expression from a given node supressing identifiers and primitive types.
     # Useful to index abstract patterns or similar code structure.
     # @see https://jonatas.github.io/fast/similarity_tutorial/
@@ -341,7 +398,7 @@ module Fast
     #   Fast.expression_from(Fast.ast('def name; person.name end')) # => '(def _ (args) (send (send nil _) _))'
     def expression_from(node)
       case node
-      when Parser::AST::Node
+      when ->(candidate) { ast_node?(candidate) }
         children_expression = node.children.map(&method(:expression_from)).join(' ')
         "(#{node.type}#{" #{children_expression}" if node.children.any?})"
       when nil, 'nil'
@@ -456,7 +513,7 @@ module Fast
 
     def compare_symbol_or_head(expression, node)
       case node
-      when Parser::AST::Node
+      when ->(candidate) { Fast.ast_node?(candidate) }
         node.type == expression.to_sym
       when String
         node == expression.to_s

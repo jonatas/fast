@@ -13,10 +13,10 @@ end
 
 def method_complexity(file)
   ast = Fast.ast_from_file(file)
-  Fast.search(ast, '(class ...)').map do |node_class|
+  Fast.search('(class ...)', ast).map do |node_class|
     manager_name = node_class.children.first.children.last
 
-    defs = Fast.search(node_class, '(def !{initialize} ... ... )')
+    defs = Fast.search('(def !{initialize} ... ... )', node_class)
 
     defs.map do |node|
       complexity = node_size(node)
@@ -26,7 +26,11 @@ def method_complexity(file)
   end
 end
 
-files = ARGV || Dir['**/*.rb']
+files = if ARGV.empty?
+          Dir['**/*.rb']
+        else
+          Fast.ruby_files_from(*ARGV)
+        end
 
 complexities = files.map(&method(:method_complexity)).flatten.inject(:merge!)
 

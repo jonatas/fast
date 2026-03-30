@@ -13,6 +13,30 @@ RSpec.describe Fast do
   let(:defined_proc) { described_class::LITERAL }
   let(:code) { ->(string) { described_class.ast(string) } }
 
+  describe '.validate_ruby!' do
+    it 'wraps Prism validation errors in Fast::SyntaxError' do
+      expect do
+        described_class.validate_ruby!('def invalid(')
+      end.to raise_error(Fast::SyntaxError)
+    end
+  end
+
+  describe '.summary' do
+    it 'builds a summary object' do
+      summary = described_class.summary('class Post; end')
+
+      expect(summary).to be_a(Fast::Summary)
+    end
+  end
+
+  describe '.scan' do
+    it 'builds a scan object' do
+      scan = described_class.scan(['lib'])
+
+      expect(scan).to be_a(Fast::Scan)
+    end
+  end
+
   describe '.expression' do
     it 'parses ... as Find' do
       expect(described_class.expression('...')).to be_a(Fast::Find)
@@ -206,7 +230,7 @@ RSpec.describe Fast do
       it { expect(described_class).to be_match('(float 111.2345)', code['111.2345']) }
       it { expect(described_class).to be_match('(const nil I18n)', code['I18n']) }
 
-      context 'with astrolable node methods' do
+      context 'with parser-compatible node methods' do
         it { expect(described_class).to be_match('.send_type?', code['method']) }
         it { expect(described_class).to be_match('(.root? (!.root?))', code['a.b']) }
         it { expect(described_class).not_to be_match('(!.root? (.root?))', code['a.b']) }
@@ -572,6 +596,32 @@ RSpec.describe Fast do
       it 'ignores the folder' do
         expect(described_class.ruby_files_from('.')).not_to include('create-directory-with-ruby-extension.rb')
       end
+    end
+  end
+
+  describe 'Fast.fold_source' do
+    let(:ast) { code['module M; class A; def b(x); 1+1; end; end; end'] }
+
+    it 'folds Ruby source text to a given level' do
+      folded = described_class.fold_source(ast, level: 3)
+      expect(folded).to eq(<<~RUBY.chomp)
+        module M; class A; def b(x); # ...; end; end; end
+      RUBY
+    end
+  end
+
+  describe 'Fast.fold_ast' do
+    let(:ast) { code['module M; class A; def b(x); 1+1; end; end; end'] }
+
+    it 'folds AST to a given level' do
+      folded = described_class.fold_ast(ast, level: 3)
+      expect(folded.to_sexp).to eq(<<~SEXP.chomp)
+        (module
+          (const nil :M)
+          (class
+            (const :"...") nil
+            (def :"...")))
+      SEXP
     end
   end
 

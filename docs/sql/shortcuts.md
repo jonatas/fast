@@ -42,7 +42,7 @@ Fast.shortcut :format_sql do
     sb = root.loc.expression.source_buffer
     sb.tokens.each do |token|
       if token.keyword_kind == :RESERVED_KEYWORD
-        range = Parser::Source::Range.new(sb, token.start, token.end)
+        range = Fast::Source.range(sb, token.start, token.end)
         replace(range, range.source.upcase)
       end
     end
@@ -76,5 +76,5 @@ Fast.shortcut :anonymize_sql do
 end
 ```
 
- Check out the default [shortcuts](/shortcuts) guide if you need more content
+ Check out the default [shortcuts](../shortcuts.md) guide if you need more content
  about shortcuts.

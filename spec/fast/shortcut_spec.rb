@@ -4,6 +4,15 @@ require 'spec_helper'
 require 'fast/shortcut'
 
 describe Fast::Shortcut do
+  describe 'terminal markdown rendering' do
+    it 'falls back to plain text when tty-markdown is unavailable' do
+      allow(Kernel).to receive(:require).and_call_original
+      allow(Kernel).to receive(:require).with('tty-markdown').and_raise(LoadError)
+
+      expect(Fast.render_markdown_for_terminal("# Heading\n")).to eq("# Heading\n")
+    end
+  end
+
   context 'when the params are arguments' do
     subject(:shortcut) do
       Fast.shortcut(:match_methods, '(def match?)', 'lib/fast.rb')

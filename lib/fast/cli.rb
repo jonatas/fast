@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fast'
+require 'fast/source'
 require 'fast/version'
 require 'fast/sql'
 require 'coderay'
@@ -17,12 +18,21 @@ module Fast
   # Useful for printing code with syntax highlight.
   # @param show_sexp [Boolean] prints node expression instead of code
   # @param colorize [Boolean] skips `CodeRay` processing when false.
-  def highlight(node, show_sexp: false, colorize: true, sql: false)
-    output =
-      if node.respond_to?(:loc) && !show_sexp
-        wrap_source_range(node).source
-      else
-        node
+  # @param level [Integer] defines the max depth to print the AST.
+  def highlight(node, show_sexp: false, colorize: true, sql: false, level: nil)
+      output =
+        if node.respond_to?(:loc) && !show_sexp
+          if level
+            Fast.fold_source(node, level: level)
+          else
+            wrap_source_range(node).source
+          end
+        elsif show_sexp && level && Fast.ast_node?(node)
+          Fast.fold_ast(node, level: level).to_s
+        elsif show_sexp
+          node.to_s
+        else
+          node
       end
     return output unless colorize
 
@@ -33,7 +43,7 @@ module Fast
   # and fixes end of the expression including heredoc strings.
   def wrap_source_range(node)
     expression = node.loc.expression
-    Parser::Source::Range.new(
+    Fast::Source.range(
       expression.source_buffer,
       first_position_from_expression(node),
       last_position_from_expression(node) || expression.end_pos
@@ -50,7 +60,7 @@ module Fast
   # to show the proper whitespaces for identing the next lines of the code.
   def first_position_from_expression(node)
     expression = node.loc.expression
-    if node.parent && node.parent.loc.expression.line != expression.line
+    if node.respond_to?(:parent) && node.parent && node.parent.loc.expression.line != expression.line
       expression.begin_pos - expression.column
     else
       expression.begin_pos
@@ -59,15 +69,16 @@ module Fast
 
   # Combines {.highlight} with files printing file name in the head with the
   # source line.
-  # @param result [Astrolabe::Node]
+  # @param result [Fast::Node]
   # @param show_sexp [Boolean] Show string expression instead of source
   # @param file [String] Show the file name and result line before content
   # @param headless [Boolean] Skip printing the file name and line before content
+  # @param level [Integer] Skip exploring deep branches of AST when showing sexp
   # @example
   #   Fast.report(result, file: 'file.rb')
-  def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true) # rubocop:disable Metrics/ParameterLists
+  def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true, level: nil) # rubocop:disable Metrics/ParameterLists
     if file
-      line = result.loc.expression.line if result.is_a?(Parser::AST::Node)
+      line = result.loc.expression.line if Fast.ast_node?(result) && result.respond_to?(:loc)
       if show_link
         puts(result.link)
       elsif show_permalink
@@ -76,23 +87,20 @@ module Fast
         puts(highlight("# #{file}:#{line}", colorize: colorize))
       end
     end
-    puts(highlight(result, show_sexp: show_sexp, colorize: colorize)) unless bodyless
+    puts(highlight(result, show_sexp: show_sexp, colorize: colorize, level: level)) unless bodyless
   end
 
   # Command Line Interface for Fast
   class Cli # rubocop:disable Metrics/ClassLength
-    attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help
+    attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help, :level
     def initialize(args)
-      args = replace_args_with_shortcut(args) if args.first&.start_with?('.')
-
-      @pattern, *@files = args.reject { |arg| arg.start_with? '-' }
+      args = args.dup
+      args = replace_args_with_shortcut(args) if shortcut_name_from(args)
       @colorize = STDOUT.isatty
-
       option_parser.parse! args
+      @pattern, @files = extract_pattern_and_files(args)
 
-      @files = [*@files].reject { |arg| arg.start_with?('-') }
       @sql ||= @files.any? && @files.all? { |file| file.end_with?('.sql') }
-
       require 'fast/sql' if @sql
     end
 
@@ -101,6 +109,10 @@ module Fast
         opts.banner = 'Usage: fast expression <files> [options]'
         opts.on('-d', '--debug', 'Debug fast engine') do
           @debug = true
+        end
+
+        opts.on('-l', '--level LEVELS', 'Maximum depth to print the AST') do |level|
+          @level = level.to_i
         end
 
         opts.on('--ast', 'Print AST instead of code') do
@@ -166,13 +178,14 @@ module Fast
     end
 
     def replace_args_with_shortcut(args)
-      shortcut = find_shortcut args.first[1..]
+      shortcut_name = shortcut_name_from(args)
+      shortcut = find_shortcut(shortcut_name)
 
       if shortcut.single_run_with_block?
         shortcut.run
         exit
       else
-        args.one? ? shortcut.args : shortcut.merge_args(args[1..])
+        shortcut.args
       end
     end
 
@@ -206,7 +219,7 @@ module Fast
 
       if @files.empty?
         ast ||= Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
-        puts Fast.highlight(ast, show_sexp: @show_sexp, colorize: @colorize, sql: @sql)
+        puts Fast.highlight(ast, show_sexp: @show_sexp, colorize: @colorize, sql: @sql, level: @level)
       else
         search
       end
@@ -272,20 +285,39 @@ module Fast
                   show_sexp: @show_sexp,
                   headless: @headless,
                   bodyless: @bodyless,
-                  colorize: @colorize)
+                  colorize: @colorize,
+                  level: @level)
+    end
+
+    def shortcut_name_from(args)
+      command = args.find { |arg| !arg.start_with?('-') }
+      return unless command&.start_with?('.')
+
+      command[1..]
+    end
+
+    def extract_pattern_and_files(args)
+      return [nil, []] if args.empty?
+
+      files_start = args.index { |arg| File.exist?(arg) || File.directory?(arg) }
+      if files_start
+        [args[0...files_start].join(' '), args[files_start..]]
+      else
+        [args.join(' '), []]
+      end
     end
 
     # Find shortcut by name. Preloads all `Fastfiles` before start.
     # @param name [String]
-    # @return [Fast::Shortcut]
     def find_shortcut(name)
       unless defined? Fast::Shortcut
         require 'fast/shortcut'
         Fast.load_fast_files!
       end
 
-      shortcut = Fast.shortcuts[name] || Fast.shortcuts[name.to_sym]
-      shortcut || exit_shortcut_not_found(name)
+      shortcut = Fast.shortcuts[name.to_sym]
+      exit_shortcut_not_found(name) unless shortcut
+      shortcut
     end
 
     # Exit process with warning message bolding the shortcut that was not found.

@@ -6,7 +6,7 @@ require 'fast'
 require 'fast/sql'
 
 def s(type, *children)
-  Parser::AST::Node.new(type, children)
+  Fast::Node.new(type, children: children)
 end
 
 def code(string)

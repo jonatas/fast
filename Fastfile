@@ -1,4 +1,10 @@
 # frozen_string_literal: true
+begin
+  require 'fast/source'
+rescue LoadError
+  nil
+end
+
 # Fastfile is loaded when you start an expression with a dot.
 #
 # You can introduce shortcuts or methods that can be embedded during your
@@ -58,22 +64,9 @@ Fast.shortcut :intro do
   Fast.shortcuts[:walk].run
 end
 
-# Useful for `fast .walk file.md` but not required by the library.
-private
-def require_or_install_tty_md
-  require 'tty-markdown'
-rescue LoadError
-  puts 'Installing tty-markdown gem to better engage you :)'
-  Gem.install('tty-markdown')
-  puts 'Done! Now, back to our topic \o/'
-  system('clear')
-  retry
-end
-
 # Interactive command line walkthrough
 # fast .walk docs/walkthrough.md
 Fast.shortcut :walk do
-  require_or_install_tty_md
   file = ARGV.last
   execute = ->(line) { system(line) }
   walk = ->(line) { line.each_char { |c| sleep(0.02) and print(c) } }
@@ -88,7 +81,7 @@ Fast.shortcut :walk do
     when /^!{3}\s/
       # Skip warnings that are only for web tutorials
     else
-      walk[TTY::Markdown.parse(line)]
+      walk[Fast.render_markdown_for_terminal(line)]
     end
   end
 end
@@ -107,7 +100,7 @@ Fast.shortcut :format_sql do
     sb = root.loc.expression.source_buffer
     sb.tokens.each do |token|
       if eligible_kw.include?(token.keyword_kind) || eligible_tokens.include?(token.token)
-        range = Parser::Source::Range.new(sb, token.start, token.end)
+        range = Fast::Source.range(sb, token.start, token.end)
         replace(range, range.source.upcase)
       end
     end
@@ -137,5 +130,33 @@ Fast.shortcut :anonymize_sql do
   puts Fast.highlight(content, sql: true)
 end
 
+# Give all details in a shorter format
+# fast .summary file.rb
+Fast.shortcut :summary do
+  file = ARGV.reverse.find { |arg| !arg.start_with?('-') && File.exist?(arg) }
+  if file && File.exist?(file)
+    Fast.summary(IO.read(file), file: file, level: fast_option_value(ARGV, '-l', '--level')).summarize
+  else
+    puts "Please provide a valid file to summarize."
+  end
+end
 
+# Group and classify multiple Ruby files without printing full bodies
+# fast .scan lib app/models --no-color
+Fast.shortcut :scan do
+  locations = ARGV.select { |arg| !arg.start_with?('-') && File.exist?(arg) }
+  if locations.any?
+    Fast.scan(locations, level: fast_option_value(ARGV, '-l', '--level')).scan
+  else
+    puts "Please provide at least one valid file or directory to scan."
+  end
+end
 
+def fast_option_value(args, short_name, long_name)
+  args.each_with_index do |arg, index|
+    return args[index + 1] if arg == short_name || arg == long_name
+    return arg.split('=', 2).last if arg.start_with?("#{long_name}=")
+  end
+
+  nil
+end

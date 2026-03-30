@@ -4,6 +4,8 @@
 
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
+If you use Fast through `bin/fast-mcp`, treat it as a trusted local development tool. The MCP server can read files, rewrite files, and run experiment commands as the current user. See [Fast MCP Server Tutorial](mcp_tutorial.md) and [Using Fast for LLMs and Agents](agents.md) for the security notes and trust boundary.
+
 
 ??? "🍿Watch my talk at Ruby Kaigi: Grepping Ruby code like a boss" 
     <iframe width="1280" height="720" src="https://www.youtube.com/embed/YczrZQC9aP8" frameborder="0" allowfullscreen></iframe>
@@ -84,11 +86,11 @@ Fast.ast("a = 2")   # => s(:lvasgn, :a, s(:int, 2))
 Fast.ast("b += 2")  # => s(:op_asgn, s(:lvasgn, :b), :+, s(:int, 2))
 ```
 
-It uses [astrolable](https://github.com/yujinakayama/astrolabe) gem behind the scenes:
+It uses the `parser` gem behind the scenes:
 
 ```ruby
 Fast.ast(Fast.ast("1")).class
-=> Astrolabe::Node
+=> Fast::Node
 Fast.ast(Fast.ast("1")).type
 => :int
 Fast.ast(Fast.ast("1")).children
@@ -117,11 +119,11 @@ The AST can be represented with the following expression:
 
 The ast representation holds node `type` and `children`.
 
-Let's build a method `s` to represent `Parser::AST::Node` with a `#type` and `#children`.
+Let's build a method `s` to represent `Fast::Node` with a `#type` and `#children`.
 
 ```ruby
 def s(type, *children)
-  Parser::AST::Node.new(type, children)
+  Fast::Node.new(type, children: children)
 end
 ```
 
@@ -411,7 +413,7 @@ Fast.search_all("(def _)", '../other-folder')
 
     Did you like the Ruby AST?
 
-    Check out the [SQL Support](/sql-support).
+    Check out the [SQL Support](sql-support.md).
 
     You can do things like:
 
@@ -421,6 +423,3 @@ Fast.search_all("(def _)", '../other-folder')
 
     ??? "Learn how to create a SQL Formatter"
         <iframe width="1280" height="720" src="https://www.youtube.com/embed/o0FkOvJqKgs" frameborder="0" allowfullscreen></iframe>
-
-
-

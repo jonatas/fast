@@ -1,4 +1,5 @@
 require 'pg_query'
+require_relative '../fast/source'
 require_relative 'sql/rewriter'
 
 module Fast
@@ -42,10 +43,10 @@ module Fast
   #               s(:val,
   #                 s(:string,
   #                   s(:str, "hello AST"))))))))
-  # `s` represents a Fast::Node which is a subclass of Parser::AST::Node and
-  # has additional methods to access the tokens and location of the node.
+  # `s` represents a Fast::Node with additional methods to access the tokens
+  # and location of the node.
   # ast.search(:string).first.location.expression
-  #  => #<Parser::Source::Range (sql) 7...18>
+  #  => #<Fast::Source::Range (sql) 7...18>
   def parse_sql(statement, buffer_name: "(sql)")
     SQL.parse(statement, buffer_name: buffer_name)
   end
@@ -53,26 +54,26 @@ module Fast
   # This module contains methods to parse SQL statements and rewrite them.
   # It uses PGQuery to parse the SQL statements.
   # It uses Parser to rewrite the SQL statements.
-  # It uses Parser::Source::Map to map the AST nodes to the SQL tokens.
+  # It uses Fast::Source::Map to map the AST nodes to the SQL tokens.
   #
   # @example
   #  Fast::SQL.parse("select 1")
   #  => s(:select_stmt, s(:target_list, ...
   # @see Fast::SQL::Node
   module SQL
-    # The SQL source buffer is a subclass of Parser::Source::Buffer
+    # The SQL source buffer is a subclass of Fast::Source::Buffer
     # which contains the tokens of the SQL statement.
     # When you call `ast.location.expression` it will return a range
     # which is mapped to the tokens.
     # @example
     # ast = Fast::SQL.parse("select 1")
-    # ast.location.expression # => #<Parser::Source::Range (sql) 0...9>
+    # ast.location.expression # => #<Fast::Source::Range (sql) 0...9>
     # ast.location.expression.source_buffer.tokens
     # => [
     #   <PgQuery::ScanToken: start: 0, end: 6, token: :SELECT, keyword_kind: :RESERVED_KEYWORD>,
     #   <PgQuery::ScanToken: start: 7, end: 8, token: :ICONST, keyword_kind: :NO_KEYWORD>]
     # @see Fast::SQL::Node
-    class SourceBuffer < Parser::Source::Buffer
+    class SourceBuffer < Fast::Source::Buffer
       def tokens
         @tokens ||= PgQuery.scan(source).first.tokens
       end
@@ -115,8 +116,8 @@ module Fast
       stmts = tree.stmts.map do |stmt|
         from = stmt.stmt_location
         to = stmt.stmt_len.zero? ? last.end : from + stmt.stmt_len
-        expression = Parser::Source::Range.new(source_buffer, from, to)
-        source_map = Parser::Source::Map.new(expression)
+        expression = Fast::Source.range(source_buffer, from, to)
+        source_map = Fast::Source.map(expression)
         sql_tree_to_ast(clean_structure(stmt.stmt.to_h), source_buffer: source_buffer, source_map: source_map)
       end.flatten
       stmts.one? ? stmts.first : stmts
@@ -148,8 +149,8 @@ module Fast
       when Hash
         if (start = obj.delete(:location))
           if (token = source_buffer.tokens.find{|e|e.start == start})
-            expression = Parser::Source::Range.new(source_buffer, token.start, token.end)
-            source_map = Parser::Source::Map.new(expression)
+            expression = Fast::Source.range(source_buffer, token.start, token.end)
+            source_map = Fast::Source.map(expression)
           end
         end
         obj.map do |key, value|
@@ -162,4 +163,3 @@ module Fast
     end
   end
 end
-

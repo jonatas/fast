@@ -71,7 +71,7 @@ Fast.match?("(select_stmt (target_list (res_target (val ($...)))))", ast)
 #         s(:ival, 1))))]
 ```
 
-And ignoring node types or values using `_`. Check all [syntax](/syntax) options.
+And ignoring node types or values using `_`. Check all [syntax](../syntax.md) options.
 
 ```ruby
 Fast.match?("(select_stmt (_ (_ (val ($...)))))", ast)
@@ -161,8 +161,8 @@ relname = Fast.parse_sql('select name from customer').search('relname').first
 Find the location of a node.
 
 ```ruby
-relname.location # => #<Parser::Source::Map:0x00007fd3bcb0b7f0
-#  @expression=#<Parser::Source::Range (sql) 17...25>,
+relname.location # => #<Fast::Source::Map:0x00007fd3bcb0b7f0
+#  @expression=#<Fast::Source::Range (sql) 17...25>,
 #  @node=s(:relname, "customer")>
 ```
 
@@ -173,7 +173,7 @@ The attribute `expression` gives access to the source range.
 
 ```ruby
 relname.location.expression
-# => #<Parser::Source::Range (sql) 17...25>
+# => #<Fast::Source::Range (sql) 17...25>
 ```
 
 The `source_buffer` is shared and can be accessed through the expression.
@@ -285,5 +285,4 @@ fast --sql --from-code "select * from my_table" *.sql
 
 ## Reusing your patterns and statements
 
-Check out the [Shortcuts](/sql/shortcuts).
-
+Check out the [Shortcuts](shortcuts.md).

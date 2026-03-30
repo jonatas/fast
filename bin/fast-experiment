@@ -8,6 +8,7 @@ require 'fast/experiment'
 require 'coderay'
 
 arguments = ARGV
+autoclean = arguments.delete('--autoclean')
 
 experiment_files = Fast.ruby_files_from(File.expand_path('../experiments', __dir__))
 experiment_files.each(&method(:require))
@@ -23,6 +24,7 @@ end
 if arguments.any?
   ruby_files = arguments.all? { |e| File.exist?(e) && e.end_with?('.rb') }
   experiments.each do |experiment|
+    experiment.autoclean = autoclean
     if ruby_files
       experiment.files = arguments
     else
@@ -30,4 +32,5 @@ if arguments.any?
     end
   end
 end
+experiments.each { |experiment| experiment.autoclean = autoclean }
 experiments.each(&:run)

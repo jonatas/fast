@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
+require 'fast/source'
+require_relative 'source_rewriter'
+
 # Rewriter loads a set of methods related to automated replacement using
 # expressions and custom blocks of code.
 module Fast
   class << self
     # Replaces content based on a pattern.
-    # @param [Astrolabe::Node] ast with the current AST to search.
+    # @param [Fast::Node] ast with the current AST to search.
     # @param [String] pattern with the expression to be targeting nodes.
     # @param [Proc] replacement gives the [Rewriter] context in the block.
     # @example
@@ -15,7 +18,9 @@ module Fast
     # @return [String] with the new source code after apply the replacement
     # @see Fast::Rewriter
     def replace(pattern, ast, source = nil, &replacement)
-      rewriter_for(pattern, ast, source, &replacement).rewrite!
+      rewritten = rewriter_for(pattern, ast, source, &replacement).rewrite!
+      Fast.validate_ruby!(rewritten, buffer_name: ast.buffer_name) if rewritten
+      rewritten
     end
 
     # @return [Fast::Rewriter]
@@ -54,12 +59,11 @@ module Fast
   #    rewriter.search ='(lvasgn _ ...)'
   #    rewriter.replacement =  -> (node) { replace(node.location.name, 'variable_renamed') }
   #    rewriter.rewrite! # => "variable_renamed = 1"
-  class Rewriter < Parser::TreeRewriter
+  class Rewriter
     # @return [Integer] with occurrence index
     attr_reader :match_index
     attr_accessor :search, :replacement, :source, :ast
     def initialize(*_args)
-      super()
       @match_index = 0
     end
 
@@ -69,14 +73,18 @@ module Fast
     end
 
     def buffer
-      buffer = Parser::Source::Buffer.new('replacement')
-      buffer.source = source || ast.loc.expression.source
-      buffer
+      Fast::Source.buffer('replacement', source: source || ast.loc.expression.source)
+    end
+
+    def rewrite(source_buffer, root)
+      @source_rewriter = Fast::SourceRewriter.new(source_buffer)
+      traverse(root)
+      @source_rewriter.process
     end
 
     # @return [Array<Symbol>] with all types that matches
     def types
-      Fast.search(search, ast).grep(Parser::AST::Node).map(&:type).uniq
+      Fast.search(search, ast).select { |node| Fast.ast_node?(node) }.map(&:type).uniq
     end
 
     def match?(node)
@@ -92,19 +100,65 @@ module Fast
             @match_index += 1
             execute_replacement(node, captures)
           end
-          super(node)
+          traverse_children(node)
         end
       end
     end
 
+    def remove(range)
+      @source_rewriter.remove(range)
+    end
+
+    def wrap(range, before, after)
+      @source_rewriter.wrap(range, before, after)
+    end
+
+    def insert_before(range, content)
+      @source_rewriter.insert_before(range, content)
+    end
+
+    def insert_after(range, content)
+      @source_rewriter.insert_after(range, content)
+    end
+
+    def replace(range, content)
+      @source_rewriter.replace(range, content)
+    end
+
     # Execute {#replacement} block
-    # @param [Astrolabe::Node] node that will be yield in the replacement block
+    # @param [Fast::Node] node that will be yield in the replacement block
     # @param [Array<Object>, nil] captures are yield if {#replacement} take second argument.
     def execute_replacement(node, captures)
       if replacement.parameters.length == 1
         instance_exec node, &replacement
       else
         instance_exec node, captures, &replacement
+      end
+    end
+
+    private
+
+    def traverse(node)
+      return if node.nil?
+
+      if node.is_a?(Array)
+        node.each { |child| traverse(child) }
+        return
+      end
+
+      return unless Fast.ast_node?(node)
+
+      handler = :"on_#{node.type}"
+      if respond_to?(handler, true)
+        public_send(handler, node)
+      else
+        traverse_children(node)
+      end
+    end
+
+    def traverse_children(node)
+      node.children.each do |child|
+        traverse(child) if Fast.ast_node?(child) || child.is_a?(Array)
       end
     end
   end

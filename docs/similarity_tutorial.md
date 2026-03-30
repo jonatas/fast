@@ -16,7 +16,7 @@ pattern that can be used as a search expression.
 ```ruby
 def expression_from(node)
   case node
-  when Parser::AST::Node
+  when Fast::Node
     if node.children.any?
       children_expression = node.children
         .map(&method(:expression_from))
@@ -173,4 +173,3 @@ return false unless File.exist?(new)
 # /Users/jonatasdp/.rbenv/versions/2.5.1/lib/ruby/2.5.0/matrix.rb:1862
 return false unless Vector === other
 ```
-

@@ -133,13 +133,26 @@ If the file contains multiple `before` or `after` blocks, each removal will
 occur independently and the successful removals will be combined as a
 secondary change. The process repeats until find all possible combinations.
 
-See more examples in [experiments](experiments) folder.
+See more examples in the
+[`experiments/`](https://github.com/jonatas/fast/tree/master/experiments)
+folder.
 
 To run multiple experiments, use `fast-experiment` runner:
 
 ```
 fast-experiment <experiment-names> <files-or-folders>
 ```
+
+If you want the runner to remove generated `experiment_*` files before and after
+the run, add `--autoclean`:
+
+```
+fast-experiment --autoclean <experiment-names> <files-or-folders>
+```
+
+This is especially useful for spec files, because leftover generated
+`experiment_*_spec.rb` files can be picked up by later RSpec runs and create
+confusing failures.
 
 You can limit experiments or file escope:
 
@@ -153,3 +166,48 @@ Or a single file:
 fast-experiment RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
 ```
 
+For ad hoc experiment runs in tests, prefer:
+
+```
+fast-experiment --autoclean RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
+```
+
+## Common Enterprise Refactoring Scenarios
+
+Below is a catalog of experiments that we've found to be highly useful for quick, "little win" refactorings in large Ruby/Rails ecosystems. You can create these in an `experiments/` folder in your repository to handle automated API upgrades and cleanups.
+
+### `expect(x).to eq(true)` to `expect(x).to be(true)`
+**Problem**: RSpec 3+ discourages `eq(true)` in favor of `be(true)` or `be_truthy`.
+```ruby
+Fast.experiment('RSpec/ReplaceEqTrueWithBeTrue') do
+  lookup 'spec'
+  # Search specifically for eq matcher with a literal true
+  search '(send nil :eq (true))'
+  edit { |node| replace(node.loc.selector, 'be') }
+  policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") }
+end
+```
+
+### Rails `update_attributes` to `update`
+**Problem**: Rails deprecated `update_attributes` in Rails 6.
+```ruby
+Fast.experiment('Rails/ReplaceUpdateAttributesWithUpdate') do
+  lookup 'app'
+  # Find any caller sending the message update_attributes
+  search '(send _ :update_attributes ...)'
+  edit { |node| replace(node.loc.selector, 'update') }
+  policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") } # Or rails test
+end
+```
+
+### Ruby `File.exists?` to `File.exist?`
+**Problem**: `File.exists?` and `Dir.exists?` were deprecated in Ruby 2.1 and removed entirely in Ruby 3.2. This code is widespread in older repositories.
+```ruby
+Fast.experiment('Ruby/ReplaceFileExistsWithExist') do
+  lookup 'lib'
+  # Matches `File.exists?(...)` ensuring the constant receiver is `File`
+  search '(send (const nil :File) :exists? ...)'
+  edit { |node| replace(node.loc.selector, 'exist?') }
+  policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") }
+end
+```

@@ -12,6 +12,20 @@ the code was written without an AST.
 
 Check out the official documentation: https://jonatas.github.io/fast.
 
+## Documentation locally
+
+The documentation site is built with MkDocs Material and a few Markdown
+extensions. To run it locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements-docs.txt
+mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000`.
+
 ## Token Syntax for `find` in AST
 
 The current version of Fast covers the following token elements:
@@ -63,12 +77,12 @@ Its corresponding s-expression would be:
 s(:int, 1)
 ```
 
-`s` in `Fast` and `Parser` are a shorthand for creating an `Parser::AST::Node`.
+`s` in `Fast` is a shorthand for creating a `Fast::Node`.
 Each of these nodes has a `#type` and `#children` contained in it:
 
 ```ruby
 def s(type, *children)
-  Parser::AST::Node.new(type, children)
+  Fast::Node.new(type, children: children)
 end
 ```
 
@@ -372,7 +386,7 @@ ast = Fast.ast("def name; person.name end")
 Generally, we  use the `location.expression`:
 
 ```ruby
-ast.location.expression # => #<Parser::Source::Range (string) 0...25>
+ast.location.expression # => #<Fast::Source::Range (string) 0...25>
 ```
 
 But location also brings some metadata about specific fragments:
@@ -383,7 +397,7 @@ ast.location.instance_variables # => [:@keyword, :@operator, :@name, :@end, :@ex
 
 Range for the keyword that identifies the method definition:
 ```ruby
-ast.location.keyword # => #<Parser::Source::Range (string) 0...3>
+ast.location.keyword # => #<Fast::Source::Range (string) 0...3>
 ```
 
 You can always pick the source of a source range:
@@ -395,7 +409,7 @@ ast.location.keyword.source # => "def"
 Or only the method name:
 
 ```ruby
-ast.location.name # => #<Parser::Source::Range (string) 4...8>
+ast.location.name # => #<Fast::Source::Range (string) 4...8>
 ast.location.name.source # => "name"
 ```
 

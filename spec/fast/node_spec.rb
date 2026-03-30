@@ -10,6 +10,19 @@ RSpec.describe Fast::Node do
 
   it { expect(node).to be_a(Fast::Node) }
 
+  it 'keeps value equality with identical nodes' do
+    expect(Fast::Node.new(:send, [nil, :call])).to eq(Fast::Node.new(:send, [nil, :call]))
+    expect(Fast::Node.new(:send, [nil, :call]).hash).to eq(Fast::Node.new(:send, [nil, :call]).hash)
+  end
+
+  it 'supports updated nodes without mutating the original' do
+    original = Fast::Node.new(:send, [nil, :call])
+    updated = original.updated(:send, [nil, :other_call])
+
+    expect(original.children).to eq([nil, :call])
+    expect(updated.children).to eq([nil, :other_call])
+  end
+
   it 'uses buffer name as file name' do
     expect(node.buffer_name).to eq('lib/fast.rb')
   end
