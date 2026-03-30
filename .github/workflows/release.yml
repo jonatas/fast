@@ -1,0 +1,27 @@
+name: Release Gem
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers when a new tag like v0.2.0 is pushed
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read     # Required to checkout the code
+      id-token: write    # Required for RubyGems Trusted Publishing
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Publish to RubyGems
+        uses: rubygems/release-gem@v1
