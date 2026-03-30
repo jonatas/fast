@@ -154,3 +154,43 @@ Or a single file:
 ```
 fast-experiment RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
 ```
+
+## Common Enterprise Refactoring Scenarios
+
+Below is a catalog of experiments that we've found to be highly useful for quick, "little win" refactorings in large Ruby/Rails ecosystems. You can create these in an `experiments/` folder in your repository to handle automated API upgrades and cleanups.
+
+### `expect(x).to eq(true)` to `expect(x).to be(true)`
+**Problem**: RSpec 3+ discourages `eq(true)` in favor of `be(true)` or `be_truthy`.
+```ruby
+Fast.experiment('RSpec/ReplaceEqTrueWithBeTrue') do
+  lookup 'spec'
+  # Search specifically for eq matcher with a literal true
+  search '(send nil :eq (true))'
+  edit { |node| replace(node.loc.selector, 'be') }
+  policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") }
+end
+```
+
+### Rails `update_attributes` to `update`
+**Problem**: Rails deprecated `update_attributes` in Rails 6.
+```ruby
+Fast.experiment('Rails/ReplaceUpdateAttributesWithUpdate') do
+  lookup 'app'
+  # Find any caller sending the message update_attributes
+  search '(send _ :update_attributes ...)'
+  edit { |node| replace(node.loc.selector, 'update') }
+  policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") } # Or rails test
+end
+```
+
+### Ruby `File.exists?` to `File.exist?`
+**Problem**: `File.exists?` and `Dir.exists?` were deprecated in Ruby 2.1 and removed entirely in Ruby 3.2. This code is widespread in older repositories.
+```ruby
+Fast.experiment('Ruby/ReplaceFileExistsWithExist') do
+  lookup 'lib'
+  # Matches `File.exists?(...)` ensuring the constant receiver is `File`
+  search '(send (const _ :File) :exists? ...)'
+  edit { |node| replace(node.loc.selector, 'exist?') }
+  policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") }
+end
+```

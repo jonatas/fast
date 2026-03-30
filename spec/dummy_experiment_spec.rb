@@ -36,7 +36,7 @@ RSpec.describe 'Dummy API' do
       self.name = hash[:name]
     end
 
-    expect(File.exist?(__FILE__)).to eq(true)
+    expect(File.exists?('foo.txt')).to eq(true)
     user.update_attributes(name: 'Jonatas')
     expect(user.name).to eq('Jonatas')
   end
