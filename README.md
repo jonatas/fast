@@ -12,20 +12,6 @@ the code was written without an AST.
 
 Check out the official documentation: https://jonatas.github.io/fast.
 
-## Documentation locally
-
-The documentation site is built with MkDocs Material and a few Markdown
-extensions. To run it locally:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install -r requirements-docs.txt
-mkdocs serve
-```
-
-Then open `http://127.0.0.1:8000`.
-
 ## Token Syntax for `find` in AST
 
 The current version of Fast covers the following token elements:
@@ -693,6 +679,20 @@ code("a = 1") # => s(:lvasgn, s(:int, 1))
 ```
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+## Documentation locally
+
+The documentation site is built with MkDocs Material and a few Markdown
+extensions. To run it locally:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements-docs.txt
+mkdocs serve
+```
+
+Then open `http://127.0.0.1:8000`.
 
 ## Contributing
 
