@@ -176,7 +176,7 @@ module Fast
         when :class, :module
           summary[:nested] << node
         when :casgn
-          summary[:constants] << constant_summary(node)
+          summary[:constants] << constant_line(node)
         when :def
           summary[:methods][visibility] << method_signature(node)
         when :defs
@@ -206,7 +206,7 @@ module Fast
         when :class, :module
           summary[:nested] << child
         when :casgn
-          summary[:constants] << constant_summary(child)
+          summary[:constants] << constant_line(child)
         end
       end
     end
@@ -218,17 +218,17 @@ module Fast
       if Fast.match?('(send nil {has_many belongs_to has_one has_and_belongs_to_many} ...)', node)
         summary[:relationships] << compact_node_source(node)
       elsif Fast.match?('(send nil {attr_accessor attr_reader attr_writer} ...)', node)
-        summary[:attributes] << attribute_summary(node)
+        summary[:attributes] << attribute_line(node)
       elsif Fast.match?('(send nil {include extend prepend} ...)', node)
         summary[:mixins] << compact_node_source(node)
       elsif Fast.match?('(send nil scope ...)', node)
-        summary[:scopes] << scope_summary(node)
+        summary[:scopes] << scope_line(node)
       elsif Fast.match?('(send nil validates ...)', node)
-        summary[:validations] << validates_summary(node)
+        summary[:validations] << node_source(node).delete_prefix('validates ')
       elsif Fast.match?('(send nil validate ...)', node)
-        summary[:validations] << validate_summary(node)
+        summary[:validations] << node_source(node).delete_prefix('validate ')
       elsif Fast.match?('(send nil {require require_relative} (str _))', node)
-        summary[:requires] << require_summary(node)
+        summary[:requires] << required_path(node)
       elsif Fast.match?('(send nil {private protected public})', node)
         nil
       else
@@ -284,7 +284,7 @@ module Fast
       @level >= 3
     end
 
-    def constant_summary(node)
+    def constant_line(node)
       lhs = node_source(node.children[0])
       name = node.children[1]
       rhs = node.children[2]
@@ -292,37 +292,26 @@ module Fast
       rhs ? "#{target} = #{compact_value(rhs)}" : target
     end
 
-    def attribute_summary(node)
-      args = node.children[2..].map do |arg|
-        if Fast.match?('(sym _)', arg)
-          ":#{arg.children[0]}"
-        else
-          node_source(arg)
-        end
-      end
-      "#{node.children[1]} #{args.join(', ')}"
+    def attribute_line(node)
+      method_name, = captures_for('(send nil $_ ...)', node)
+      args = direct_symbol_arguments(node).map { |symbol| ":#{symbol}" }
+      "#{method_name} #{args.join(', ')}"
     end
 
-    def require_summary(node)
-      path = node.children[2]&.children&.first
-      "#{node.children[1]} #{path.inspect}"
+    def required_path(node)
+      _, path_node = captures_for('(send nil $_ $(str _))', node)
+      path_node.children.first.inspect
     end
 
-    def scope_summary(node)
-      name = node.children[2]&.children&.first
-      lambda_node = node.children[3]
+    def scope_line(node)
+      name = captures_for('(send nil :scope (sym $_) ...)', node).first
+      lambda_node = captures_for('(send nil :scope (sym _) $({lambda block} ... ...))', node).first
       args = lambda_args(lambda_node)
       [name, args].join
     end
 
-    def validates_summary(node)
-      fields = node.children[2..].take_while { |arg| Fast.match?('(sym _)', arg) }.map { |arg| ":#{arg.children[0]}" }
-      options = node.children[2 + fields.length..].to_a.map { |arg| node_source(arg) }
-      ([fields.join(', ')] + options).reject(&:empty?).join(', ')
-    end
-
-    def validate_summary(node)
-      node.children[2..].map { |arg| node_source(arg) }.join(', ')
+    def captures_for(pattern, node)
+      Fast.match?(pattern, node) || []
     end
 
     def lambda_args(node)
@@ -339,6 +328,13 @@ module Fast
       return '' if args_node.children.empty?
 
       "(#{args_node.children.map { |arg| node_source(arg) }.join(', ')})"
+    end
+
+    def direct_symbol_arguments(node)
+      node.children.drop(2).filter_map do |child|
+        captures = captures_for('(sym $_)', child)
+        captures.first if captures.any?
+      end
     end
 
     def method_signature(node)
