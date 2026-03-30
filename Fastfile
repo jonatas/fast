@@ -28,6 +28,7 @@ Fast.shortcut(:sql_parser, '(def parse', 'lib/fast/sql.rb')
 
 # Use `fast .bump_version` to rewrite the version file
 Fast.shortcut :bump_version do
+  new_version = nil
   rewrite_file('(casgn nil VERSION (str _)', version_file) do |node|
     target = node.children.last.loc.expression
     pieces = target.source.split('.').map(&:to_i)
@@ -39,7 +40,24 @@ Fast.shortcut :bump_version do
         pieces[-(i + 1)] = 0
       end
     end
-    replace(target, "'#{pieces.join('.')}'")
+    new_version = pieces.join('.')
+    replace(target, "'#{new_version}'")
+  end
+
+  print "Commit bumped version v#{new_version}? (y/n) "
+  if $stdin.gets.chomp.downcase == 'y'
+    system("git add #{version_file} && git commit -m 'Bump version to v#{new_version}'")
+
+    print "Tag version v#{new_version}? (y/n) "
+    if $stdin.gets.chomp.downcase == 'y'
+      system("git tag v#{new_version}")
+
+      print "Push commit and tag to origin? (y/n) "
+      if $stdin.gets.chomp.downcase == 'y'
+        system("git push origin HEAD")
+        system("git push origin v#{new_version}")
+      end
+    end
   end
 end
 
