@@ -38,7 +38,13 @@ module Fast
 
     # Loads `Fastfiles` from {.fast_files} list
     def load_fast_files!
-      fast_files.each(&method(:load))
+      @loaded_fast_files ||= []
+      fast_files.each do |file|
+        next if @loaded_fast_files.include?(file)
+
+        load file
+        @loaded_fast_files << file
+      end
     end
 
     def render_markdown_for_terminal(line)
