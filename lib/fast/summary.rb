@@ -299,7 +299,7 @@ module Fast
     end
 
     def required_path(node)
-      _, path_node = captures_for('(send nil $_ $(str _))', node)
+      path_node = captures_for('(send nil $_ $(str _))', node).last
       path_node.children.first.inspect
     end
 
