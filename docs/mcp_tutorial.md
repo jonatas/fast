@@ -11,6 +11,7 @@ The current server exposes five tools:
 3. `ruby_class_source`
 4. `rewrite_ruby`
 5. `rewrite_ruby_file`
+6. `run_fast_experiment`
 
 These are MCP `tools`, not MCP `resources`. If your host lists resources/templates and shows nothing, that does not mean the server is broken. It means the host has not connected to the server's tool interface.
 
@@ -91,6 +92,22 @@ printf '%s\n' \
 ```
 
 Prefer `rewrite_ruby` first to preview the change.
+
+### 7. Run an automated experiment to validate a refactoring hypothesis
+
+The `run_fast_experiment` tool allows you to safely test refactoring hypotheses across an entire folder. It uses Fast's internal divide-and-conquer testing algorithm. The mutation is only applied if the `policy` block executes successfully (e.g. your tests pass).
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"run_fast_experiment","arguments":{"name":"RSpec/UseBuildStubbed","lookup":"spec","search":"(send nil :create)","edit":"replace(node.loc.expression, \"build_stubbed\")","policy":"bin/spring rspec --fail-fast {file}"}}}' \
+  | ruby -Ilib bin/fast-mcp
+```
+
+This is particularly useful for agents that need to introduce large-scale replacements or code refactoring across a codebase, such as:
+- Replacing `FactoryBot.create` with `build_stubbed`.
+- Migrating deprecated test assertions (e.g. `expect(a).to eq(true)` to `expect(a).to be(true)`).
+- Automatically dropping useless `before` and `after` blocks.
+- Exploring any global Search-and-Replace ideas that need automated validation.
 
 ## Error behavior
 

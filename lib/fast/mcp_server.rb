@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'stringio'
 require 'fast'
 require 'fast/version'
 require 'fast/cli'
@@ -74,8 +75,24 @@ module Fast
           },
           required: ['file', 'pattern', 'replacement']
         }
+      },
+      {
+        name: 'run_fast_experiment',
+        description: 'Propose and execute a Fast experiment to safely refactor code. The experiment is validated against a policy command (e.g. tests) and only successful rewrites are applied. Always use {file} in the policy command to refer to the modified test file.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Name of the experiment, e.g. "RSpec/UseBuildStubbed"' },
+            lookup: { type: 'string', description: 'Folder or file to target, e.g. "spec"' },
+            search: { type: 'string', description: 'Fast AST search pattern to find nodes.' },
+            edit: { type: 'string', description: 'Ruby code to evaluate in Rewriter context. Has access to `node` variable. Example: `replace(node.loc.expression, "build_stubbed")`' },
+            policy: { type: 'string', description: 'Shell command returning exit status 0 on success. Uses {file} for the temporary file created during the rewrite round. Example: `bin/spring rspec --fail-fast {file}`' }
+          },
+          required: ['name', 'lookup', 'search', 'edit', 'policy']
+        }
       }
     ].freeze
+
 
     def self.run!
       new.run
@@ -142,6 +159,8 @@ module Fast
           execute_rewrite(args['source'], args['pattern'], args['replacement'])
         when 'rewrite_ruby_file'
           execute_rewrite_file(args['file'], args['pattern'], args['replacement'])
+        when 'run_fast_experiment'
+          execute_fast_experiment(args['name'], args['lookup'], args['search'], args['edit'], args['policy'])
         else
           raise "Unknown tool: #{tool_name}"
         end
@@ -236,6 +255,35 @@ module Fast
 
       File.write(file, rewritten)
       { file: file, changed: true, diff: diff }
+    end
+
+    def execute_fast_experiment(name, lookup_path, search_pattern, edit_code, policy_command)
+      require 'fast/experiment'
+      original_stdout = $stdout.dup
+      capture_output = StringIO.new
+      $stdout = capture_output
+
+      begin
+        experiment = Fast.experiment(name) do
+          lookup lookup_path
+          search search_pattern
+          edit do |node, *captures|
+            eval(edit_code)
+          end
+          policy do |new_file|
+            cmd = policy_command.gsub('{file}', new_file)
+            system(cmd)
+          end
+        end
+        experiment.run
+      ensure
+        $stdout = original_stdout
+      end
+
+      # Exclude any color from captured output
+      log = capture_output.string.gsub(/\e\[([;\d]+)?m/, '')
+      
+      { experiment: name, log: log }
     end
 
     # Returns loc.expression if available

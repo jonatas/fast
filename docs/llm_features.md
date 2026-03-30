@@ -51,7 +51,8 @@ LLMs sometimes need the structural match but also a few surrounding lines of con
   - `search_ruby_ast(pattern, dir)`: Search for a RuboCop AST pattern natively, returning JSON results.
   - `get_method(method_name, dir)`: Shortcut tool that extracts a specific method by name.
   - `get_class(class_name, dir)`: Shortcut tool that extracts the body of a specific class.
-  - `replace_ruby_ast(pattern, replacement, dir)`: Structured search and replace.
+  - `rewrite_ruby_file(file, pattern, replacement)`: Apply a Fast replacement to a Ruby file in-place.
+  - `run_fast_experiment(name, lookup, search, edit, policy)`: Use Fast experiments to apply iterative code refactorings safely, validated automatically via test policies.
 - **Next gaps**:
   - Add examples for Codex, Claude Desktop, and other MCP-capable hosts.
   - Consider exposing resources/templates only if they add value beyond tools.
