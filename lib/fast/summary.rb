@@ -21,7 +21,12 @@ module Fast
         if unsupported_template?
           nil
         elsif code_or_ast.is_a?(String)
-          Fast.parse_ruby(code_or_ast, buffer_name: file || '(string)')
+          begin
+            Fast.parse_ruby(code_or_ast, buffer_name: file || '(string)')
+          rescue StandardError => e
+            warn "Error parsing #{file || 'source'}: #{e.message}" if Fast.debugging
+            nil
+          end
         else
           code_or_ast
         end

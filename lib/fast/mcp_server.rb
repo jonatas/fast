@@ -146,6 +146,10 @@ module Fast
       args      = params['arguments'] || {}
       show_ast  = args['show_ast'] || false
 
+      if args['pattern'] && !args['pattern'].start_with?('(', '{', '[') && !args['pattern'].match?(/^[a-z_]+$/)
+        raise "Invalid Fast AST pattern: '#{args['pattern']}'. Did you mean to use an s-expression like '(#{args['pattern']})'?"
+      end
+
       result =
         case tool_name
         when 'search_ruby_ast'

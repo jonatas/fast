@@ -25,10 +25,14 @@ module Fast
     def scan
       files = Fast.ruby_files_from(*@locations)
       grouped = files.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |file, memo|
-        entries = flatten_entries(Fast.summary(IO.read(file), file: file, command_name: @command_name).outline)
-        next if entries.empty?
+        begin
+          entries = flatten_entries(Fast.summary(IO.read(file), file: file, command_name: @command_name).outline)
+          next if entries.empty?
 
-        memo[classify(file, entries)] << [file, entries]
+          memo[classify(file, entries)] << [file, entries]
+        rescue StandardError => e
+          warn "Error scanning #{file}: #{e.message}" if Fast.debugging
+        end
       end
 
       print_grouped(grouped)

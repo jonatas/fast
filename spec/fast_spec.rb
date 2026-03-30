@@ -529,7 +529,7 @@ RSpec.describe Fast do
 
       after { File.delete('test-empty-file.rb') }
 
-      it { expect(described_class.search_all('(casgn nil VERSION)', ['test-empty-file.rb'])).to be_nil }
+      it { expect(described_class.search_all('(casgn nil VERSION)', ['test-empty-file.rb'])).to eq({}) }
     end
   end
 
@@ -544,7 +544,7 @@ RSpec.describe Fast do
 
       after { File.delete('test-empty-file.rb') }
 
-      it { expect(described_class.capture_all('(casgn nil VERSION)', ['test-empty-file.rb'])).to be_nil }
+      it { expect(described_class.capture_all('(casgn nil VERSION)', ['test-empty-file.rb'])).to eq({}) }
     end
   end
 

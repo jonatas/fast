@@ -220,12 +220,24 @@ module Fast
     # @return [Hash[String, Array]] with files and results
     def group_results(group_files, locations, parallel: true)
       files = ruby_files_from(*locations)
-      if parallel
-        require 'parallel' unless defined?(Parallel)
-        Parallel.map(files, &group_files)
-      else
-        files.map(&group_files)
-      end.compact.inject(&:merge!)
+      results =
+        if parallel
+          require 'parallel' unless defined?(Parallel)
+          Parallel.map(files) do |file|
+            group_files.call(file)
+          rescue StandardError => e
+            warn "Error processing #{file}: #{e.message}" if Fast.debugging
+            nil
+          end
+        else
+          files.map do |file|
+            group_files.call(file)
+          rescue StandardError => e
+            warn "Error processing #{file}: #{e.message}" if Fast.debugging
+            nil
+          end
+        end
+      results.compact.inject(&:merge!) || {}
     end
 
     # Capture elements from searches in files. Keep in mind you need to use `$`
@@ -503,8 +515,14 @@ module Fast
       when Find then expression.match?(node)
       when Symbol then compare_symbol_or_head(expression, node)
       when Enumerable
-        expression.each_with_index.all? do |exp, i|
-          match_recursive(exp, i.zero? ? node : node.children[i - 1])
+        if expression.last == :'...' || expression.last.is_a?(Find) && expression.last.token == '...'
+          expression[0...-1].each_with_index.all? do |exp, i|
+            match_recursive(exp, i.zero? ? node : node.children[i - 1])
+          end
+        else
+          expression.each_with_index.all? do |exp, i|
+            match_recursive(exp, i.zero? ? node : node.children[i - 1])
+          end
         end
       else
         node == expression
@@ -798,10 +816,17 @@ module Fast
 
     # @return [true] if all children matches with tail
     def match_tail?(tail, child)
-      tail.each_with_index.all? do |token, i|
-        prepare_token(token)
-        token.is_a?(Array) ? match?(token, child[i]) : token.match?(child[i])
-      end && find_captures
+      if tail.last.is_a?(Find) && tail.last.token == '...'
+        tail[0...-1].each_with_index.all? do |token, i|
+          prepare_token(token)
+          token.is_a?(Array) ? match?(token, child[i]) : token.match?(child[i])
+        end && find_captures
+      else
+        tail.each_with_index.all? do |token, i|
+          prepare_token(token)
+          token.is_a?(Array) ? match?(token, child[i]) : token.match?(child[i])
+        end && find_captures
+      end
     end
 
     # Look recursively into @param expression to check if the expression is have

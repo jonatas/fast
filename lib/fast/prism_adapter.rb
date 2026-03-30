@@ -135,8 +135,12 @@ module Fast
         build_node(:sym, [node.unescaped], node, source, buffer_name)
       when Prism::StringNode
         build_node(:str, [node.unescaped], node, source, buffer_name)
+      when Prism::XStringNode
+        build_node(:xstr, [node.unescaped], node, source, buffer_name)
       when Prism::InterpolatedStringNode
         build_node(:dstr, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
+      when Prism::InterpolatedXStringNode
+        build_node(:dxstr, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
       when Prism::InterpolatedSymbolNode
         build_node(:dsym, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
       when Prism::ArrayNode
@@ -183,6 +187,8 @@ module Fast
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.statements, source, buffer_name), adapt(node.consequent, source, buffer_name)], node, source, buffer_name)
       when Prism::UnlessNode
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.consequent, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::RescueModifierNode
+        build_node(:rescue, [adapt(node.expression, source, buffer_name), build_node(:resbody, [nil, nil, adapt(node.rescue_expression, source, buffer_name)], node, source, buffer_name), nil], node, source, buffer_name)
       when Prism::CaseNode
         children = [adapt(node.predicate, source, buffer_name)]
         children.concat(node.conditions.map { |condition| adapt(condition, source, buffer_name) })
@@ -232,7 +238,7 @@ module Fast
 
       children = []
       children.concat(node.requireds.map { |child| adapt_required_parameter(child, source, buffer_name) }) if node.respond_to?(:requireds)
-      children.concat(node.optionals.map { |child| build_node(:optarg, [child.name, adapt(child.value, source, buffer_name)], child, source, buffer_name) }) if node.respond_to?(:optionals)
+      children.concat(node.optionals.map { |child| build_node(:optarg, [parameter_name(child), adapt(child.value, source, buffer_name)], child, source, buffer_name) }) if node.respond_to?(:optionals)
       children << build_node(:restarg, [parameter_name(node.rest)], node.rest, source, buffer_name) if node.respond_to?(:rest) && node.rest
       children.concat(node.posts.map { |child| adapt_required_parameter(child, source, buffer_name) }) if node.respond_to?(:posts)
       children.concat(node.keywords.map { |child| adapt_keyword_parameter(child, source, buffer_name) }) if node.respond_to?(:keywords)
@@ -255,18 +261,18 @@ module Fast
         mlhs_children.concat(child.rights.map { |c| adapt_required_parameter(c, source, buffer_name) }) if child.respond_to?(:rights)
         build_node(:mlhs, mlhs_children, child, source, buffer_name)
       else
-        build_node(:arg, [child.name], child, source, buffer_name)
+        build_node(:arg, [parameter_name(child)], child, source, buffer_name)
       end
     end
 
     def adapt_keyword_parameter(node, source, buffer_name)
       case node
       when Prism::RequiredKeywordParameterNode
-        build_node(:kwarg, [node.name], node, source, buffer_name)
+        build_node(:kwarg, [parameter_name(node)], node, source, buffer_name)
       when Prism::OptionalKeywordParameterNode
-        build_node(:kwoptarg, [node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
+        build_node(:kwoptarg, [parameter_name(node), adapt(node.value, source, buffer_name)], node, source, buffer_name)
       else
-        build_node(:arg, [node.name], node, source, buffer_name)
+        build_node(:arg, [parameter_name(node)], node, source, buffer_name)
       end
     end
 
