@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
-    f.match(%r{^(test|spec|features|docs\/(assets|stylesheets))/})
+    f.match(%r{^(test|spec|experiments|examples|features|docs|assets|stylesheets|site)/})
   end
 
   spec.post_install_message = <<~THANKS
