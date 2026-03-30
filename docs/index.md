@@ -119,11 +119,11 @@ The AST can be represented with the following expression:
 
 The ast representation holds node `type` and `children`.
 
-Let's build a method `s` to represent `Parser::AST::Node` with a `#type` and `#children`.
+Let's build a method `s` to represent `Fast::Node` with a `#type` and `#children`.
 
 ```ruby
 def s(type, *children)
-  Parser::AST::Node.new(type, children)
+  Fast::Node.new(type, children: children)
 end
 ```
 

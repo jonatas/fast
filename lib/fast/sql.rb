@@ -43,8 +43,8 @@ module Fast
   #               s(:val,
   #                 s(:string,
   #                   s(:str, "hello AST"))))))))
-  # `s` represents a Fast::Node which is a subclass of Parser::AST::Node and
-  # has additional methods to access the tokens and location of the node.
+  # `s` represents a Fast::Node with additional methods to access the tokens
+  # and location of the node.
   # ast.search(:string).first.location.expression
   #  => #<Fast::Source::Range (sql) 7...18>
   def parse_sql(statement, buffer_name: "(sql)")

@@ -290,7 +290,7 @@ module Fast
       @fail_experiments << combination
     end
 
-    # @return [Array<Parser::AST::Node>]
+    # @return [Array<Fast::Node>]
     def search_cases
       Fast.search(experiment.expression, @ast) || []
     end

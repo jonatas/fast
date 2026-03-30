@@ -60,7 +60,7 @@ Fast.shortcut(:ref) do
       case identifier
       when Symbol, String
         regex.match?(identifier) || identifier.to_s.include?(search)
-      when Parser::AST::Node
+      when Fast::Node
         regex.match?(identifier.to_sexp)
       end
     end

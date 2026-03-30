@@ -77,12 +77,12 @@ It's corresponding s-expression would be:
 s(:int, 1)
 ```
 
-`s` in `Fast` and `Parser` are a shorthand for creating an `Parser::AST::Node`.
+`s` in `Fast` is a shorthand for creating a `Fast::Node`.
 Each of these nodes has a `#type` and `#children` contained in it:
 
 ```ruby
 def s(type, *children)
-  Parser::AST::Node.new(type, children)
+  Fast::Node.new(type, children: children)
 end
 ```
 
