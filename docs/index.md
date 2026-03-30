@@ -4,6 +4,8 @@
 
 Fast is a "Find AST" tool to help you search in the code abstract syntax tree.
 
+If you use Fast through `bin/fast-mcp`, treat it as a trusted local development tool. The MCP server can read files, rewrite files, and run experiment commands as the current user. See [Fast MCP Server Tutorial](mcp_tutorial.md) and [Using Fast for LLMs and Agents](agents.md) for the security notes and trust boundary.
+
 
 ??? "🍿Watch my talk at Ruby Kaigi: Grepping Ruby code like a boss" 
     <iframe width="1280" height="720" src="https://www.youtube.com/embed/YczrZQC9aP8" frameborder="0" allowfullscreen></iframe>
@@ -421,4 +423,3 @@ Fast.search_all("(def _)", '../other-folder')
 
     ??? "Learn how to create a SQL Formatter"
         <iframe width="1280" height="720" src="https://www.youtube.com/embed/o0FkOvJqKgs" frameborder="0" allowfullscreen></iframe>
-

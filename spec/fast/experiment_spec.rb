@@ -127,6 +127,20 @@ RSpec.describe Fast::Experiment do
       ensure
         File.delete(winning_file) if winning_file && File.exist?(winning_file)
       end
+
+      it 'removes generated files when autoclean is enabled' do
+        experiment.autoclean = true
+        experiment_file.ok_with([1, 3])
+        winning_file = experiment_file.experimental_filename([1, 3])
+        stale_file = experiment_file.experimental_filename([2])
+        File.write(winning_file, "let(:user) { build_stubbed(:user) }\n")
+        File.write(stale_file, "stale\n")
+
+        experiment_file.done!
+
+        expect(File).not_to exist(winning_file)
+        expect(File).not_to exist(stale_file)
+      end
     end
 
     describe '#run' do
@@ -137,6 +151,18 @@ RSpec.describe Fast::Experiment do
         expect do
           experiment_file.run
         end.to output(/Ignoring .* because it has 1001 possible combinations/).to_stdout
+      end
+
+      it 'removes stale generated files before running when autoclean is enabled' do
+        experiment.autoclean = true
+        stale_file = experiment_file.experimental_filename([99])
+        File.write(stale_file, "stale\n")
+        allow(experiment_file).to receive(:build_combinations).and_return([])
+        allow(experiment_file).to receive(:done!)
+
+        experiment_file.run
+
+        expect(File).not_to exist(stale_file)
       end
     end
   end

@@ -31,6 +31,20 @@ Choose MCP when:
 
 For Codex-style terminal agents, the CLI is immediately useful and often enough. For IDE agents and multi-tool hosts, MCP is usually the better interface because it removes output parsing and makes tool selection explicit.
 
+## Trust boundary and security
+
+`fast` is a local developer tool. The CLI and MCP server should only be used with trusted local hosts, trusted repositories, and trusted prompts.
+
+This matters more for MCP than for plain CLI usage:
+
+- search tools can read and return source from files you point them at
+- `rewrite_ruby_file` can modify files on disk
+- `run_fast_experiment` can execute Ruby and shell commands as the current user
+
+That means `bin/fast-mcp` is not appropriate to expose to untrusted remote clients, shared multi-tenant environments, or any host you would not trust with normal shell access to your machine.
+
+If you only need read-only exploration and do not trust the host with file writes or command execution, prefer the CLI and avoid registering the MCP server.
+
 ## Essential CLI flags for agents
 
 To maximize reliability and reduce context noise, use these flags when invoking `fast` from the command line:
@@ -158,6 +172,7 @@ fast "(send nil {def_node_matcher def_node_search})" lib/ --no-color
 7. **Preview before writing**: Prefer `rewrite_ruby` before `rewrite_ruby_file` so the agent can inspect the result even though invalid rewrites are already rejected.
 8. **Use `.summary` before deep reads**: For unfamiliar large files, a summary is often the cheapest way to understand the shape before pulling full source.
 9. **Use `.scan` before `.summary` at repo scale**: Scan first, then summarize only the small set of files that look relevant.
+10. **Use `fast-experiment --autoclean` for experiment runs**: It removes generated `experiment_*` files so follow-up test runs do not accidentally load leftover temporary specs.
 
 ## Larger scenarios
 

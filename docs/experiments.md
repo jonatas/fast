@@ -143,6 +143,17 @@ To run multiple experiments, use `fast-experiment` runner:
 fast-experiment <experiment-names> <files-or-folders>
 ```
 
+If you want the runner to remove generated `experiment_*` files before and after
+the run, add `--autoclean`:
+
+```
+fast-experiment --autoclean <experiment-names> <files-or-folders>
+```
+
+This is especially useful for spec files, because leftover generated
+`experiment_*_spec.rb` files can be picked up by later RSpec runs and create
+confusing failures.
+
 You can limit experiments or file escope:
 
 ```
@@ -153,6 +164,12 @@ Or a single file:
 
 ```
 fast-experiment RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
+```
+
+For ad hoc experiment runs in tests, prefer:
+
+```
+fast-experiment --autoclean RSpec/ReplaceCreateWithBuildStubbed spec/models/my_spec.rb
 ```
 
 ## Common Enterprise Refactoring Scenarios
@@ -189,7 +206,7 @@ end
 Fast.experiment('Ruby/ReplaceFileExistsWithExist') do
   lookup 'lib'
   # Matches `File.exists?(...)` ensuring the constant receiver is `File`
-  search '(send (const _ :File) :exists? ...)'
+  search '(send (const nil :File) :exists? ...)'
   edit { |node| replace(node.loc.selector, 'exist?') }
   policy { |new_file| system("bundle exec rspec --fail-fast #{new_file}") }
 end

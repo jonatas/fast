@@ -91,6 +91,7 @@ module Fast
   class Experiment
     attr_writer :files
     attr_reader :name, :replacement, :expression, :files_or_folders, :ok_if
+    attr_accessor :autoclean
 
     def initialize(name, &block)
       @name = name
@@ -136,6 +137,10 @@ module Fast
     # @return [void]
     def run
       files.map(&method(:run_with))
+    end
+
+    def autoclean?
+      !!@autoclean
     end
   end
 
@@ -323,15 +328,25 @@ module Fast
       filename
     end
 
+    def cleanup_generated_files!
+      Dir.glob(File.join(File.dirname(@file), "experiment_*_#{File.basename(@file)}")).each do |generated_file|
+        File.delete(generated_file) if File.exist?(generated_file)
+      end
+    end
+
     def done!
       count_executed_combinations = @fail_experiments.size + @ok_experiments.size
       puts "Done with #{@file} after #{count_executed_combinations} combinations"
-      return unless perfect_combination = @ok_experiments.last # rubocop:disable Lint/AssignmentInCondition
+      unless perfect_combination = @ok_experiments.last # rubocop:disable Lint/AssignmentInCondition
+        cleanup_generated_files! if experiment.autoclean?
+        return
+      end
 
       puts 'The following changes were applied to the file:'
       `diff #{experimental_filename(perfect_combination)} #{@file}`
       puts "mv #{experimental_filename(perfect_combination)} #{@file}"
       `mv #{experimental_filename(perfect_combination)} #{@file}`
+      cleanup_generated_files! if experiment.autoclean?
     end
 
     # Increase the `@round` by 1 to {ExperimentCombinations#generate_combinations}.
@@ -346,6 +361,7 @@ module Fast
     end
 
     def run
+      cleanup_generated_files! if experiment.autoclean?
       while (combinations = build_combinations).any?
         if combinations.size > 1000
           puts "Ignoring #{@file} because it has #{combinations.size} possible combinations"
@@ -378,6 +394,7 @@ module Fast
       else
         failed_with(combination)
         puts "🔴 #{experimental_file} - Combination: #{combination}"
+        File.delete(experimental_file) if experiment.autoclean? && File.exist?(experimental_file)
       end
     end
   end

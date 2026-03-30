@@ -31,6 +31,20 @@ Use the CLI when:
 
 In practice, CLI is the easiest integration to get working. MCP is the better long-term interface for LLM agents because it preserves typed arguments and structured responses.
 
+## Security warning
+
+`fast-mcp` must be treated as a trusted local development tool.
+
+Register it only with hosts you trust with the same level of access you would grant to a local shell session in the repository. The server can:
+
+- read and return source code from files under the paths you provide
+- rewrite files in place through `rewrite_ruby_file`
+- execute Ruby and shell commands through `run_fast_experiment`
+
+Because of that, do not expose `bin/fast-mcp` to untrusted remote clients, browser-accessible services, shared multi-tenant environments, or arbitrary third-party prompts.
+
+If your use case only needs search and inspection, the CLI is the safer integration surface because it avoids registering a long-lived tool server with write and command-execution capabilities.
+
 ## Testing it locally with JSON-RPC
 
 The server speaks JSON-RPC 2.0 over stdio through `bin/fast-mcp`.
@@ -97,6 +111,8 @@ Prefer `rewrite_ruby` first to preview the change.
 
 The `run_fast_experiment` tool allows you to safely test refactoring hypotheses across an entire folder. It uses Fast's internal divide-and-conquer testing algorithm. The mutation is only applied if the `policy` block executes successfully (e.g. your tests pass).
 
+This tool is intentionally powerful and should be considered high trust. It evaluates the edit expression and executes the policy command as the current user.
+
 ```bash
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"run_fast_experiment","arguments":{"name":"RSpec/UseBuildStubbed","lookup":"spec","search":"(send nil :create)","edit":"replace(node.loc.expression, \"build_stubbed\")","policy":"bin/spring rspec --fail-fast {file}"}}}' \
@@ -128,3 +144,4 @@ This is particularly useful for agents that need to introduce large-scale replac
 - Use `search_ruby_ast` for call sites and structural queries.
 - Prefer method-level extraction over class-level extraction to save tokens.
 - Fall back to the CLI for hosts that cannot call MCP tools yet.
+- Avoid `run_fast_experiment` unless the host and prompt are fully trusted.
