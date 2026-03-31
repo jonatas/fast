@@ -87,6 +87,14 @@ module Fast
         statements.is_a?(Node) ? statements : build_node(:begin, statements, node, source, buffer_name)
       when Prism::StatementsNode
         adapt_statements(node, source, buffer_name)
+      when Prism::AliasMethodNode
+        build_node(:alias, [adapt(node.new_name, source, buffer_name), adapt(node.old_name, source, buffer_name)], node, source, buffer_name)
+      when Prism::AliasGlobalVariableNode
+        build_node(:gvasgn, [node.new_name.name, node.old_name.name], node, source, buffer_name)
+      when Prism::DefinedNode
+        build_node(:defined?, [adapt(node.value, source, buffer_name)], node, source, buffer_name)
+      when Prism::UndefNode
+        build_node(:undef, node.names.map { |name| adapt(name, source, buffer_name) }, node, source, buffer_name)
       when Prism::ModuleNode
         build_node(:module, [adapt(node.constant_path, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
       when Prism::ClassNode
@@ -125,6 +133,18 @@ module Fast
         build_node(node.exclude_end? ? :erange : :irange, [adapt(node.left, source, buffer_name), adapt(node.right, source, buffer_name)], node, source, buffer_name)
       when Prism::BlockArgumentNode
         build_node(:block_pass, [adapt(node.expression, source, buffer_name)], node, source, buffer_name)
+      when Prism::ReturnNode
+        build_node(:return, node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }, node, source, buffer_name)
+      when Prism::NextNode
+        build_node(:next, node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }, node, source, buffer_name)
+      when Prism::BreakNode
+        build_node(:break, node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }, node, source, buffer_name)
+      when Prism::YieldNode
+        build_node(:yield, node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }, node, source, buffer_name)
+      when Prism::SuperNode
+        build_node(:super, node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }, node, source, buffer_name)
+      when Prism::ForwardingSuperNode
+        build_node(:zsuper, [], node, source, buffer_name)
       when Prism::ConstantPathNode
         build_const_path(node, source, buffer_name)
       when Prism::ConstantReadNode
@@ -143,6 +163,10 @@ module Fast
         build_node(:dxstr, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
       when Prism::InterpolatedSymbolNode
         build_node(:dsym, node.parts.filter_map { |part| adapt(part, source, buffer_name) }, node, source, buffer_name)
+      when Prism::RegularExpressionNode
+        build_node(:regexp, [build_node(:str, [node.unescaped], node, source, buffer_name), build_node(:regopt, regexp_options(node), node, source, buffer_name)], node, source, buffer_name)
+      when Prism::InterpolatedRegularExpressionNode
+        build_node(:regexp, node.parts.filter_map { |part| adapt(part, source, buffer_name) } + [build_node(:regopt, regexp_options(node), node, source, buffer_name)], node, source, buffer_name)
       when Prism::ArrayNode
         build_node(:array, node.elements.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
       when Prism::HashNode
@@ -157,8 +181,12 @@ module Fast
         build_node(:lvar, [node.name], node, source, buffer_name)
       when Prism::InstanceVariableReadNode
         build_node(:ivar, [node.name], node, source, buffer_name)
+      when Prism::GlobalVariableReadNode
+        build_node(:gvar, [node.name], node, source, buffer_name)
       when Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode
         build_node(:ivasgn, [node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
+      when Prism::GlobalVariableWriteNode
+        build_node(:gvasgn, [node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::LocalVariableWriteNode, Prism::LocalVariableOrWriteNode
         build_node(:lvasgn, [node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::LocalVariableOperatorWriteNode
@@ -183,6 +211,10 @@ module Fast
         build_node(:false, [], node, source, buffer_name)
       when Prism::NilNode
         build_node(:nil, [], node, source, buffer_name)
+      when Prism::AndNode
+        build_node(:and, [adapt(node.left, source, buffer_name), adapt(node.right, source, buffer_name)], node, source, buffer_name)
+      when Prism::OrNode
+        build_node(:or, [adapt(node.left, source, buffer_name), adapt(node.right, source, buffer_name)], node, source, buffer_name)
       when Prism::IfNode
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.statements, source, buffer_name), adapt(node.consequent, source, buffer_name)], node, source, buffer_name)
       when Prism::UnlessNode
@@ -303,13 +335,27 @@ module Fast
       adapt(node.statements, source, buffer_name)
     end
 
+    def regexp_options(node)
+      options = []
+      options << :i if node.ignore_case?
+      options << :m if node.multi_line?
+      options << :x if node.extended?
+      options
+    end
+
     def parameter_name(node)
       node.respond_to?(:name) ? node.name : nil
     end
 
     def build_const_path(node, source, buffer_name)
-      parent = node.parent ? adapt(node.parent, source, buffer_name) : nil
-      build_node(:const, [parent, node.child.name], node, source, buffer_name)
+      parent =
+        if node.parent
+          adapt(node.parent, source, buffer_name)
+        elsif node.delimiter_loc
+          build_node(:cbase, [], nil, source, buffer_name)
+        end
+      name = node.respond_to?(:child) && node.child ? node.child.name : node.name
+      build_node(:const, [parent, name], node, source, buffer_name)
     end
 
     def build_node(type, children, prism_node, source, buffer_name)
