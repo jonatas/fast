@@ -177,8 +177,22 @@ module Fast
         build_node(:pair, [adapt(node.key, source, buffer_name), adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::SelfNode
         build_node(:self, [], node, source, buffer_name)
+      when Prism::RedoNode
+        build_node(:redo, [], node, source, buffer_name)
+      when Prism::RetryNode
+        build_node(:retry, [], node, source, buffer_name)
+      when Prism::PreExecutionNode
+        build_node(:preexe, [adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::PostExecutionNode
+        build_node(:postexe, [adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::NumberedReferenceReadNode
+        build_node(:nth_ref, [node.number], node, source, buffer_name)
+      when Prism::BackReferenceReadNode
+        build_node(:back_ref, [node.name], node, source, buffer_name)
       when Prism::LocalVariableReadNode
         build_node(:lvar, [node.name], node, source, buffer_name)
+      when Prism::LocalVariableTargetNode
+        build_node(:lvasgn, [node.name], node, source, buffer_name)
       when Prism::InstanceVariableReadNode
         build_node(:ivar, [node.name], node, source, buffer_name)
       when Prism::GlobalVariableReadNode
@@ -201,10 +215,18 @@ module Fast
           source,
           buffer_name
         )
+      when Prism::MatchWriteNode
+        build_node(:match_with_lvasgn, [adapt(node.call.receiver, source, buffer_name), adapt(node.call.arguments&.arguments&.first, source, buffer_name)], node, source, buffer_name)
+      when Prism::MatchLastLineNode
+        build_node(:match_current_line, [build_node(:regexp, [build_node(:str, [node.unescaped], node, source, buffer_name), build_node(:regopt, regexp_options(node), node, source, buffer_name)], node, source, buffer_name)], node, source, buffer_name)
       when Prism::IntegerNode
         build_node(:int, [node.value], node, source, buffer_name)
       when Prism::FloatNode
         build_node(:float, [node.value], node, source, buffer_name)
+      when Prism::RationalNode
+        build_node(:rational, [node.value], node, source, buffer_name)
+      when Prism::ImaginaryNode
+        build_node(:complex, [node.value], node, source, buffer_name)
       when Prism::TrueNode
         build_node(:true, [], node, source, buffer_name)
       when Prism::FalseNode
@@ -219,6 +241,14 @@ module Fast
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.statements, source, buffer_name), adapt(node.consequent, source, buffer_name)], node, source, buffer_name)
       when Prism::UnlessNode
         build_node(:if, [adapt(node.predicate, source, buffer_name), adapt(node.consequent, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::WhileNode
+        build_node(:while, [adapt(node.predicate, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::UntilNode
+        build_node(:until, [adapt(node.predicate, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::ForNode
+        build_node(:for, [adapt(node.index, source, buffer_name), adapt(node.collection, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+      when Prism::MultiWriteNode
+        build_node(:masgn, [build_node(:mlhs, node.lefts.map { |left| adapt(left, source, buffer_name) }, node, source, buffer_name), adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::RescueModifierNode
         build_node(:rescue, [adapt(node.expression, source, buffer_name), build_node(:resbody, [nil, nil, adapt(node.rescue_expression, source, buffer_name)], node, source, buffer_name), nil], node, source, buffer_name)
       when Prism::CaseNode
