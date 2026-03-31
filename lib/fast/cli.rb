@@ -12,6 +12,12 @@ require 'ostruct'
 # It defines #report and #highlight functions that can be used to pretty print
 # code and results from the search.
 module Fast
+  module SymbolExtension
+    def loc
+      OpenStruct.new(expression: OpenStruct.new(line: 0))
+    end
+  end
+
   module_function
 
   # Highligh some source code based on the node.
@@ -20,19 +26,19 @@ module Fast
   # @param colorize [Boolean] skips `CodeRay` processing when false.
   # @param level [Integer] defines the max depth to print the AST.
   def highlight(node, show_sexp: false, colorize: true, sql: false, level: nil)
-      output =
-        if node.respond_to?(:loc) && !show_sexp
-          if level
-            Fast.fold_source(node, level: level)
-          else
-            wrap_source_range(node).source
-          end
-        elsif show_sexp && level && Fast.ast_node?(node)
-          Fast.fold_ast(node, level: level).to_s
-        elsif show_sexp
-          node.to_s
+    output =
+      if node.respond_to?(:loc) && !show_sexp
+        if level
+          Fast.fold_source(node, level: level)
         else
-          node
+          wrap_source_range(node).source
+        end
+      elsif show_sexp && level && Fast.ast_node?(node)
+        Fast.fold_ast(node, level: level).to_s
+      elsif show_sexp
+        node.to_s
+      else
+        node.to_s
       end
     return output unless colorize
 
@@ -78,6 +84,9 @@ module Fast
   #   Fast.report(result, file: 'file.rb')
   def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true, level: nil) # rubocop:disable Metrics/ParameterLists
     if file
+      if result.is_a?(Symbol) && !result.respond_to?(:loc)
+        result.extend(SymbolExtension)
+      end
       line = result.loc.expression.line if Fast.ast_node?(result) && result.respond_to?(:loc)
       if show_link
         puts(result.link)
@@ -164,6 +173,16 @@ module Fast
 
         opts.on('--from-code', 'From code') do
           @from_code = true
+        end
+
+        opts.on('--validate-pattern PATTERN', 'Validate a node pattern') do |pattern|
+          begin
+            Fast.expression(pattern)
+            puts "Pattern is valid."
+          rescue StandardError => e
+            puts "Invalid pattern: #{e.message}"
+          end
+          exit
         end
 
         opts.on_tail('--version', 'Show version') do

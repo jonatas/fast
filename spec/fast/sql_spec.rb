@@ -9,7 +9,7 @@ RSpec.describe Fast do
         let(:sql) { "select 1" }
         it do
           expect(ast.type).to eq(:select_stmt)
-          expect(ast.first("(ival (ival 1)")).to eq(s(:ival, s(:ival, 1)))
+          expect(ast.first("(ival (ival 1))")).to eq(s(:ival, s(:ival, 1)))
         end
       end
     end
@@ -62,7 +62,7 @@ RSpec.describe Fast do
     context "when use from" do
       let(:sql) { "select 1 from a" }
       specify do
-        expect(ast.first("(relname 'a'")).not_to be_nil
+        expect(ast.first("(relname 'a')")).not_to be_nil
       end
     end
   end

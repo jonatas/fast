@@ -287,7 +287,11 @@ module Fast
     end
 
     def expression(string)
-      ExpressionParser.new(string).parse
+      parser = ExpressionParser.new(string)
+      res = parser.parse
+      raise SyntaxError, parser.error_message if parser.tokens_left?
+
+      res
     end
 
     attr_accessor :debugging
@@ -456,6 +460,7 @@ module Fast
     # @param expression [String]
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
+      @nesting = []
     end
 
     # rubocop:disable Metrics/CyclomaticComplexity
@@ -463,19 +468,40 @@ module Fast
     # rubocop:disable Metrics/MethodLength
     def parse
       case (token = next_token)
-      when '(' then parse_until_peek(')')
-      when '{' then Any.new(parse_until_peek('}'))
-      when '[' then All.new(parse_until_peek(']'))
+      when '('
+        @nesting << ')'
+        parse_until_peek(')')
+      when '{'
+        @nesting << '}'
+        Any.new(parse_until_peek('}'))
+      when '['
+        @nesting << ']'
+        All.new(parse_until_peek(']'))
+      when ')', '}', ']'
+        raise SyntaxError, "Unexpected token: #{token}"
       when /^"/ then FindString.new(token[1..-2])
       when /^#\w/ then MethodCall.new(token[1..])
       when /^\.\w[\w\d_]+\?/ then InstanceMethodCall.new(token[1..])
       when '$' then Capture.new(parse)
-      when '!' then (@tokens.any? ? Not.new(parse) : Find.new(token))
+      when '!' then (@tokens.any? && !closing_token?(@tokens.first) ? Not.new(parse) : Find.new(token))
       when '?' then Maybe.new(parse)
       when '^' then Parent.new(parse)
       when '\\' then FindWithCapture.new(parse)
       when /^%\d/ then FindFromArgument.new(token[1..])
+      when nil then nil
       else Find.new(token)
+      end
+    end
+
+    def tokens_left?
+      @tokens.any? || @nesting.any?
+    end
+
+    def error_message
+      if @tokens.any?
+        "Unconsumed tokens after parsing: #{@tokens.join(' ')}"
+      elsif @nesting.any?
+        "Unclosed nesting: expected #{@nesting.reverse.join(', ')}"
       end
     end
 
@@ -489,10 +515,19 @@ module Fast
       @tokens.shift
     end
 
+    def closing_token?(token)
+      [')', '}', ']'].include?(token)
+    end
+
     def parse_until_peek(token)
       list = []
       list << parse until @tokens.empty? || @tokens.first == token
-      next_token
+      last = next_token
+      if last == token
+        @nesting.pop
+      else
+        raise SyntaxError, "Expected #{token} but got #{last || 'end of string'}"
+      end
       list
     end
   end

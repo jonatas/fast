@@ -264,15 +264,15 @@ RSpec.describe Fast do
 
     describe '`{}`' do
       it 'allows match `or` operator' do
-        expect(described_class).to be_match('{int float} _', code['1.2'])
+        expect(described_class).to be_match('({int float} _)', code['1.2'])
       end
 
       it 'allows match first case' do
-        expect(described_class).to be_match('{int float} _', code['1'])
+        expect(described_class).to be_match('({int float} _)', code['1'])
       end
 
       it 'return false if does not match' do
-        expect(described_class).not_to be_match('{int float} _', code['""'])
+        expect(described_class).not_to be_match('({int float} _)', code['""'])
       end
 
       it 'works in nested levels' do

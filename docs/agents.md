@@ -116,8 +116,19 @@ If your host supports MCP, register `bin/fast-mcp` and call these tools:
 - `ruby_class_source`
 - `rewrite_ruby`
 - `rewrite_ruby_file`
+- `validate_fast_pattern`
 
-These return JSON text payloads with file paths, line bounds, and trimmed code snippets. They are usually more robust for agents than scraping pretty CLI output.
+These return JSON text payloads with file paths, line bounds, and trimmed code snippets. They are more robust for agents than scraping pretty CLI output.
+
+## Translating Natural Language to Fast Patterns
+
+Building AST patterns can be challenging. To assist, you can activate the `fast-pattern-expert` skill which provides a deep syntax guide and common examples.
+
+### Best practices for pattern building:
+1. **Use `Fast.ast("...")`**: If you're unsure how a piece of Ruby code is represented in the AST, use `fast --ast "your code"` or `search_ruby_ast` with `show_ast: true`.
+2. **Validate early**: Use the `validate_fast_pattern` MCP tool or `fast --validate-pattern "(...)"` from the CLI to check your syntax before running broad searches.
+3. **Start broad, then narrow**: Use `_` or `...` to match sections you're unsure about, then replace them with more specific sub-patterns once you see the results.
+4. **Leverage the Skill**: Activate `fast-pattern-expert` when you need to construct a complex search or refactor.
 
 ## Why rewrite safety matters for agents
 

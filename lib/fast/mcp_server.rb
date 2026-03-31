@@ -11,6 +11,17 @@ module Fast
   class McpServer
     TOOLS = [
       {
+        name: 'validate_fast_pattern',
+        description: 'Validate a Fast AST pattern. Returns true if valid, or a specific syntax error message if invalid.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            pattern: { type: 'string', description: 'Fast AST pattern to validate.' }
+          },
+          required: ['pattern']
+        }
+      },
+      {
         name: 'search_ruby_ast',
         description: 'Search Ruby files using a Fast AST pattern. Returns file, line range, and source. Use show_ast=true only when you need the s-expression.',
         inputSchema: {
@@ -152,6 +163,8 @@ module Fast
 
       result =
         case tool_name
+        when 'validate_fast_pattern'
+          execute_validate_pattern(args['pattern'])
         when 'search_ruby_ast'
           execute_search(args['pattern'], args['paths'], show_ast: show_ast)
         when 'ruby_method_source'
@@ -172,6 +185,13 @@ module Fast
       write_response(id, { content: [{ type: 'text', text: JSON.generate(result) }] })
     rescue => e
       write_error(id, -32603, 'Tool execution failed', e.message)
+    end
+
+    def execute_validate_pattern(pattern)
+      Fast.expression(pattern)
+      { valid: true }
+    rescue StandardError => e
+      { valid: false, error: e.message }
     end
 
     def execute_search(pattern, paths, show_ast: false)

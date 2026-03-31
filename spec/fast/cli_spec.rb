@@ -232,7 +232,7 @@ RSpec.describe Fast::Cli do
     it 'uses coderay to make ruby syntax highlight' do
       out = instance_double('term')
       allow(out).to receive(:term)
-      allow(CodeRay).to receive(:scan).with(:symbol, :ruby).and_return(out)
+      allow(CodeRay).to receive(:scan).with('symbol', :ruby).and_return(out)
       Fast.highlight(:symbol)
     end
   end

@@ -43,7 +43,7 @@ RSpec.describe Fast::Node do
 
   describe '#capture' do
     specify 'all inherited classes' do
-      expect(node.capture('(casgn nil $_) (regexp _))'))
+      expect(node.capture('(casgn nil $_)'))
         .to include(:TOKENIZER)
     end
   end
