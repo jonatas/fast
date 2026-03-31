@@ -96,8 +96,8 @@ RSpec.describe Fast::PrismAdapter do
 
       it 'adapts control flow and execution blocks' do
       source = <<~RUBY
-        redo
-        retry
+        loop { redo }
+        begin; rescue; retry; end
         BEGIN { 1 }
         END { 2 }
       RUBY

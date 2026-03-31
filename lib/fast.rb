@@ -265,6 +265,8 @@ module Fast
     # otherwise it recursively collect possible children nodes
     # @yield node and capture if block given
     def search(pattern, node, *args)
+      return [] if node.nil?
+
       if (match = match?(pattern, node, *args))
         yield node, match if block_given?
         match != true ? [node, match] : [node]
@@ -283,6 +285,8 @@ module Fast
     # Only captures from a search
     # @return [Array<Object>] with all captured elements.
     def capture(pattern, node)
+      return [] if node.nil?
+
       if (match = match?(pattern, node))
         match == true ? node : match
       else
