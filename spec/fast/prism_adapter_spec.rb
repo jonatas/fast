@@ -76,9 +76,69 @@ RSpec.describe Fast::PrismAdapter do
       expect(Fast.search('(block ...)', tree).map(&:type)).to eq([:block])
       expect(Fast.capture('$(dstr _)', tree).map(&:loc).map { |loc| loc.expression.source })
         .to eq(['"#{value}"'])
+      end
+
+      it 'adapts loops and multiple assignments' do
+      source = <<~RUBY
+        while a; b; end
+        until c; d; end
+        for i in items; j; end
+        x, y = 1, 2
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(while (send nil a) (send nil b))', tree)).not_to be_empty
+      expect(Fast.search('(until (send nil c) (send nil d))', tree)).not_to be_empty
+      expect(Fast.search('(for (lvasgn i) (send nil items) (send nil j))', tree)).not_to be_empty
+      expect(Fast.search('(masgn (mlhs (lvasgn x) (lvasgn y)) (array (int 1) (int 2)))', tree)).not_to be_empty
+      end
+
+      it 'adapts control flow and execution blocks' do
+      source = <<~RUBY
+        redo
+        retry
+        BEGIN { 1 }
+        END { 2 }
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(redo)', tree)).not_to be_empty
+      expect(Fast.search('(retry)', tree)).not_to be_empty
+      expect(Fast.search('(preexe (int 1))', tree)).not_to be_empty
+      expect(Fast.search('(postexe (int 2))', tree)).not_to be_empty
+      end
+
+    it 'adapts special references and literals' do
+      source = <<~RUBY
+        $1
+        $&
+        1r
+        1i
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(nth_ref 1)', tree)).not_to be_empty
+      expect(Fast.search('(back_ref :$&)', tree)).not_to be_empty
+      expect(Fast.search('(rational _)', tree)).not_to be_empty
+      expect(Fast.search('(complex _)', tree)).not_to be_empty
     end
-  end
-end
+
+      it 'adapts regex matching constructs' do
+      source = <<~RUBY
+        /(?<a>)/ =~ b
+        if /a/; end
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(match_with_lvasgn (regexp (str "(?<a>)") (regopt)) (send nil b))', tree)).not_to be_empty
+      expect(Fast.search('(if (match_current_line (regexp (str a) (regopt))) nil nil)', tree)).not_to be_empty
+      end
+      end
+      end
 
 RSpec.describe Fast do
   describe '.ast' do
