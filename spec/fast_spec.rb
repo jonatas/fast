@@ -102,8 +102,8 @@ RSpec.describe Fast do
       expect(described_class.expression('attribute=')).to eq(f['attribute='])
     end
 
-    it 'ignores semicolon' do
-      expect(described_class.expression(':send')).to eq(described_class.expression('send'))
+    it 'fails with semicolon' do
+      expect { described_class.expression('(send ;)') }.to raise_error(Fast::SyntaxError, /Semicolons are not allowed/)
     end
 
     it 'ignores empty spaces' do
