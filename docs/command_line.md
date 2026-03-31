@@ -12,6 +12,19 @@ $ fast '(def match?)' lib/fast.rb
 - Use `-c` to search from code example
 - Use `-s` to search similar code
 - Use `-p` to or `--parallel` to use multi core search
+- Use `--validate-pattern PATTERN` to check if a pattern is syntactically correct.
+
+## `--validate-pattern`
+
+This option allows you to verify if an AST pattern is valid without running a search. It checks for balanced parentheses, brackets, and braces, as well as valid token types.
+
+```bash
+$ fast --validate-pattern "(def process (args) ...)"
+# Pattern is valid.
+
+$ fast --validate-pattern "(def {process)"
+# Invalid pattern: Unclosed nesting: expected }, )
+```
 
 ## `--pry`
 

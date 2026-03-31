@@ -4,10 +4,14 @@
 
 ## Existing strengths
 
-Before the remaining gaps, there are already two high-value agent workflows available today:
+Before the remaining gaps, there are already high-value agent workflows available today:
 
-- `.summary` for single-file structural reconnaissance
-- `.scan` for multi-file repo triage with bounded output
+- `.summary` for single-file structural reconnaissance.
+- `.scan` for multi-file repo triage with bounded output.
+- **Pattern Validation**: Use `--validate-pattern` (CLI) or `validate_fast_pattern` (MCP) to check syntax before running searches.
+- **NL Translation Skill**: The `fast-pattern-expert` skill helps agents translate natural language into `Fast` AST patterns.
+- **Robustness**: Graceful degradation on parse failures during multi-file scans.
+- **Extended Matching**: `...` literal matches zero or more remaining children when used at the end of a pattern.
 
 In local validation on `lib/fast`:
 
