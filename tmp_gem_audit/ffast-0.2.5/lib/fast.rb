@@ -548,6 +548,7 @@ module Fast
       case expression
       when Proc then expression.call(node)
       when Find then expression.match?(node)
+      when Symbol then compare_symbol_or_head(expression, node)
       when Enumerable
         if expression.last == :'...' || expression.last.is_a?(Find) && expression.last.token == '...'
           expression[0...-1].each_with_index.all? do |exp, i|
@@ -773,7 +774,7 @@ module Fast
   #   Fast.expression("{int float}")
   class Any < Find
     def match?(node)
-      token.any? { |expression| !!Fast.match?(expression, node) }
+      token.any? { |expression| Fast.match?(expression, node) }
     end
 
     def to_s
@@ -784,7 +785,7 @@ module Fast
   # Intersect expressions. Works like a **AND** operator.
   class All < Find
     def match?(node)
-      token.all? { |expression| !!expression.match?(node) }
+      token.all? { |expression| expression.match?(node) }
     end
 
     def to_s
