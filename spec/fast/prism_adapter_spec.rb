@@ -136,9 +136,85 @@ RSpec.describe Fast::PrismAdapter do
 
       expect(Fast.search('(match_with_lvasgn (regexp (str "(?<a>)") (regopt)) (send nil b))', tree)).not_to be_empty
       expect(Fast.search('(if (match_current_line (regexp (str a) (regopt))) nil nil)', tree)).not_to be_empty
-      end
-      end
-      end
+    end
+
+    it 'adapts modifiers' do
+      source = <<~RUBY
+        a if b
+        c unless d
+        e while f
+        g until h
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(if (send nil b) (send nil a) nil)', tree)).not_to be_empty
+      expect(Fast.search('(if (send nil d) nil (send nil c))', tree)).not_to be_empty
+      expect(Fast.search('(while (send nil f) (send nil e))', tree)).not_to be_empty
+      expect(Fast.search('(until (send nil h) (send nil g))', tree)).not_to be_empty
+    end
+
+    it 'adapts full rescue and ensure blocks' do
+      source = <<~RUBY
+        begin
+          a
+        rescue Error => e
+          b
+        else
+          c
+        ensure
+          d
+        end
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(rescue (send nil a) (resbody (array (const nil Error)) (lvasgn e) (send nil b)) (send nil c))', tree)).not_to be_empty
+      expect(Fast.search('(ensure (rescue ...) (send nil d))', tree)).not_to be_empty
+    end
+
+    it 'adapts op-assignment on calls and indices' do
+      source = <<~RUBY
+        a.b += 1
+        c[:d] *= 2
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(op_asgn (send (send nil a) b) :+ (int 1))', tree)).not_to be_empty
+      expect(Fast.search('(op_asgn (send (send nil c) [] (sym d)) :* (int 2))', tree)).not_to be_empty
+    end
+
+    it 'adapts alias, undef, and constant paths' do
+      source = <<~RUBY
+        alias a b
+        undef c
+        ::A::B = 1
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(alias (sym a) (sym b))', tree)).not_to be_empty
+      expect(Fast.search('(undef (sym c))', tree)).not_to be_empty
+      expect(Fast.search('(casgn (const (const (cbase) :A) :B) nil (int 1))', tree)).not_to be_empty
+    end
+
+    it 'adapts modules and lambda literals' do
+      source = <<~RUBY
+        module M
+          def self.l
+            -> (a) { a }
+          end
+        end
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(module (const nil M) (defs ...))', tree)).not_to be_empty
+      expect(Fast.search('(lambda (args (arg a)) (lvar a))', tree)).not_to be_empty
+    end
+  end
+end
 
 RSpec.describe Fast do
   describe '.ast' do

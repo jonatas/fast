@@ -151,6 +151,8 @@ module Fast
         build_node(:const, [nil, node.name], node, source, buffer_name)
       when Prism::ConstantWriteNode
         build_node(:casgn, [nil, node.name, adapt(node.value, source, buffer_name)], node, source, buffer_name)
+      when Prism::ConstantPathWriteNode
+        build_node(:casgn, [adapt(node.target, source, buffer_name), nil, adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::SymbolNode
         build_node(:sym, [node.unescaped], node, source, buffer_name)
       when Prism::StringNode
@@ -182,9 +184,9 @@ module Fast
       when Prism::RetryNode
         build_node(:retry, [], node, source, buffer_name)
       when Prism::PreExecutionNode
-        build_node(:preexe, [adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+        build_node(:preexe, [adapt_statements(node.statements, source, buffer_name)], node, source, buffer_name)
       when Prism::PostExecutionNode
-        build_node(:postexe, [adapt(node.statements, source, buffer_name)], node, source, buffer_name)
+        build_node(:postexe, [adapt_statements(node.statements, source, buffer_name)], node, source, buffer_name)
       when Prism::NumberedReferenceReadNode
         build_node(:nth_ref, [node.number], node, source, buffer_name)
       when Prism::BackReferenceReadNode
@@ -254,14 +256,10 @@ module Fast
       when Prism::CaseNode
         children = [adapt(node.predicate, source, buffer_name)]
         children.concat(node.conditions.map { |condition| adapt(condition, source, buffer_name) })
-        else_clause =
-          if node.respond_to?(:else_clause)
-            node.else_clause
-          elsif node.respond_to?(:consequent)
-            node.consequent
-          end
-        children << adapt_else_clause(else_clause, source, buffer_name) if else_clause
+        children << adapt(node.consequent, source, buffer_name) if node.consequent
         build_node(:case, children, node, source, buffer_name)
+      when Prism::HashPatternNode
+        build_node(:hash, node.elements.map { |child| adapt(child, source, buffer_name) }, node, source, buffer_name)
       when Prism::WhenNode
         condition =
           if node.conditions.length == 1
@@ -272,16 +270,58 @@ module Fast
         build_node(:when, [condition, adapt(node.statements, source, buffer_name)].compact, node, source, buffer_name)
       when Prism::ElseNode
         adapt_else_clause(node, source, buffer_name)
+      when Prism::CallOperatorWriteNode
+        operator = node.respond_to?(:binary_operator) ? node.binary_operator : node.operator
+        build_node(:op_asgn, [build_node(:send, [adapt(node.receiver, source, buffer_name), node.read_name], node, source, buffer_name), operator, adapt(node.value, source, buffer_name)], node, source, buffer_name)
+      when Prism::IndexOperatorWriteNode
+        operator = node.respond_to?(:binary_operator) ? node.binary_operator : node.operator
+        build_node(:op_asgn, [build_node(:send, [adapt(node.receiver, source, buffer_name), :[]].concat(node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }), node, source, buffer_name), operator, adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::BeginNode, Prism::EmbeddedStatementsNode
-        statements = adapt_statements(node.statements, source, buffer_name)
-        children = statements.is_a?(Node) && statements.type == :begin ? statements.children : Array(statements)
-        build_node(:begin, children, node, source, buffer_name)
+        res = adapt_statements(node.statements, source, buffer_name)
+        if node.respond_to?(:rescue_clause) && node.rescue_clause
+          res = build_node(:rescue, [res].concat(adapt_rescue_clause(node.rescue_clause, source, buffer_name)).concat([adapt(node.else_clause, source, buffer_name)]), node, source, buffer_name)
+        end
+        if node.respond_to?(:ensure_clause) && node.ensure_clause
+          res = build_node(:ensure, [res, adapt(node.ensure_clause, source, buffer_name)], node, source, buffer_name)
+        end
+        res
+      when Prism::RescueNode
+        adapt_rescue_clause(node, source, buffer_name)
+      when Prism::EnsureNode
+        adapt_statements(node.statements, source, buffer_name)
       when Prism::EmbeddedVariableNode
         build_node(:begin, [adapt(node.variable, source, buffer_name)].compact, node, source, buffer_name)
       when Prism::LambdaNode
         build_node(:lambda, [adapt_block_parameters(node.parameters, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
       else
         nil
+      end
+    end
+
+    def adapt_rescue_clause(node, source, buffer_name)
+      resbodies = []
+      current = node
+      while current && current.is_a?(Prism::RescueNode)
+        exceptions = current.exceptions.map { |e| adapt(e, source, buffer_name) }
+        exceptions = build_node(:array, exceptions, current, source, buffer_name) if exceptions.any?
+        resbodies << build_node(:resbody, [exceptions, adapt(current.reference, source, buffer_name), adapt(current.statements, source, buffer_name)], current, source, buffer_name)
+        current = current.respond_to?(:subsequent) ? current.subsequent : current.consequent
+      end
+      resbodies
+    end
+
+    def adapt_else_clause(node, source, buffer_name)
+      adapt(node&.statements, source, buffer_name)
+    end
+
+    def wrap_begin(node, source, buffer_name)
+      return nil unless node
+
+      res = adapt(node, source, buffer_name)
+      if res.is_a?(Node) && res.type == :begin
+        res
+      else
+        build_node(:begin, [nil, res], node, source, buffer_name)
       end
     end
 
@@ -361,10 +401,6 @@ module Fast
       send_node
     end
 
-    def adapt_else_clause(node, source, buffer_name)
-      adapt(node.statements, source, buffer_name)
-    end
-
     def regexp_options(node)
       options = []
       options << :i if node.ignore_case?
@@ -384,7 +420,7 @@ module Fast
         elsif node.delimiter_loc
           build_node(:cbase, [], nil, source, buffer_name)
         end
-      name = node.respond_to?(:child) && node.child ? node.child.name : node.name
+      name = node.respond_to?(:name) ? node.name : node.child.name
       build_node(:const, [parent, name], node, source, buffer_name)
     end
 

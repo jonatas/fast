@@ -572,6 +572,8 @@ module Fast
     end
 
     def compare_symbol_or_head(expression, node)
+      return true if node.nil? && (expression.nil? || expression == :nil)
+
       case node
       when ->(candidate) { Fast.ast_node?(candidate) }
         node.type == expression&.to_sym

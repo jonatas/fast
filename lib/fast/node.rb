@@ -70,13 +70,11 @@ module Fast
     end
 
     def updated(type = nil, children = nil, properties = nil)
-      updated_node = self.class.new(
+      self.class.new(
         type || self.type,
         children || self.children,
         { location: properties&.fetch(:location, loc) || loc }
       )
-      updated_node.send(:assign_parents!)
-      updated_node
     end
 
     def ==(other)
@@ -159,7 +157,6 @@ module Fast
     def assign_parents!
       each_child_node do |child|
         self.class.set_parent(child, self)
-        child.send(:assign_parents!) if child.respond_to?(:assign_parents!, true)
       end
     end
 
