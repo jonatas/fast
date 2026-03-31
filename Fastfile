@@ -15,7 +15,7 @@ version_file = Dir['lib/*/version.rb'].first
 Fast.shortcut(:version, '(casgn nil VERSION (str _))', version_file)
 
 # Show all classes that inherits Fast::Find
-Fast.shortcut(:finders, '(class ... (const nil Find)', 'lib')
+Fast.shortcut(:finders, '(class ... (const nil Find))', 'lib')
 
 # You can run shortcuts appending a dot to the shortcut.
 #   $ fast .version
@@ -23,13 +23,13 @@ Fast.shortcut(:finders, '(class ... (const nil Find)', 'lib')
 #   VERSION = '0.1.2'
 
 # Simple shortcut that I used often to show how the expression parser works
-Fast.shortcut(:parser, '(class (const nil ExpressionParser)', 'lib/fast.rb')
-Fast.shortcut(:sql_parser, '(def parse', 'lib/fast/sql.rb')
+Fast.shortcut(:parser, '(class (const nil ExpressionParser))', 'lib/fast.rb')
+Fast.shortcut(:sql_parser, '(def parse ...)', 'lib/fast/sql.rb')
 
 # Use `fast .bump_version` to rewrite the version file
 Fast.shortcut :bump_version do
   new_version = nil
-  rewrite_file('(casgn nil VERSION (str _)', version_file) do |node|
+  rewrite_file('(casgn nil VERSION (str _))', version_file) do |node|
     target = node.children.last.loc.expression
     pieces = target.source.split('.').map(&:to_i)
     pieces.reverse.each_with_index do |fragment, i|

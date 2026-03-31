@@ -17,7 +17,8 @@ Gem::Specification.new do |spec|
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
-    f.match(%r{^(test|spec|experiments|examples|features|docs|assets|stylesheets|site)/})
+    f.match(%r{^(test|spec|experiments|examples|features|docs|assets|stylesheets|site)/}) ||
+      f.match(%r{^(\.git|\.github|\.travis|\.sourcelevel|\.rubocop|\.projections|\.rspec|Gemfile|Rakefile|Guardfile|mkdocs|requirements-docs|TODO|ideia_blog_post)})
   end
 
   spec.post_install_message = <<~THANKS
@@ -39,8 +40,8 @@ Gem::Specification.new do |spec|
   THANKS
 
   spec.bindir        = 'bin'
-  spec.executables   = %w[fast fast-experiment]
-  spec.require_paths = %w[lib experiments]
+  spec.executables   = %w[fast fast-experiment fast-mcp]
+  spec.require_paths = %w[lib]
 
   spec.add_dependency 'coderay'
   spec.add_dependency 'parallel'
