@@ -41,6 +41,12 @@ module Fast
     |
     [\d\w_]+[=\\!\?]?     # method names or numbers
     |
+    :[^(){}\[\]\s;]+      # symbols
+    |
+    \/[^\/ \n]+\/         # regex literals
+    |
+    ;                     # semicolons
+    |
     \(|\)                 # parens `(` and `)` for tuples
     |
     \{|\}                 # curly brackets `{` and `}` for any
@@ -488,6 +494,8 @@ module Fast
       when '^' then Parent.new(parse)
       when '\\' then FindWithCapture.new(parse)
       when /^%\d/ then FindFromArgument.new(token[1..])
+      when ';'
+        raise SyntaxError, "Semicolons are not allowed in patterns: #{token}"
       when nil then nil
       else Find.new(token)
       end
@@ -614,6 +622,8 @@ module Fast
       case token
       when /^\d+\.\d*/ then token.to_f
       when /^\d+/ then token.to_i
+      when /^:/ then token[1..].to_sym
+      when /^\/.*\/$/ then Regexp.new(token[1..-2])
       else token.to_sym
       end
     end
