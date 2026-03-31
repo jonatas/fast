@@ -559,14 +559,14 @@ module Fast
           end
         end
       else
-        node == expression
+        compare_symbol_or_head(expression, node)
       end
     end
 
     def compare_symbol_or_head(expression, node)
       case node
       when ->(candidate) { Fast.ast_node?(candidate) }
-        node.type == expression.to_sym
+        node.type == expression&.to_sym
       when String
         node == expression.to_s
       when TrueClass
@@ -830,7 +830,7 @@ module Fast
     def initialize(pattern, ast, *args)
       @ast = ast
       @expression = if pattern.is_a?(String)
-                      Fast.expression(pattern)
+                      Array(Fast.expression(pattern))
                     else
                       [*pattern].map(&Find.method(:new))
                     end

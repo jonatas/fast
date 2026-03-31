@@ -16,10 +16,33 @@ Gem::Specification.new do |spec|
   spec.description   = 'Allow you to search for code using node pattern syntax.'
   spec.license       = 'MIT'
 
-  spec.files         = `git ls-files -z`.split("\x0").reject do |f|
-    f.match(%r{^(test|spec|experiments|examples|features|docs|assets|stylesheets|site)/}) ||
-      f.match(%r{^(\.git|\.github|\.travis|\.sourcelevel|\.rubocop|\.projections|\.rspec|Gemfile|Rakefile|Guardfile|mkdocs|requirements-docs|TODO|ideia_blog_post)})
-  end
+  spec.files = %w[
+    lib/fast.rb
+    lib/fast/cli.rb
+    lib/fast/experiment.rb
+    lib/fast/git.rb
+    lib/fast/mcp_server.rb
+    lib/fast/node.rb
+    lib/fast/prism_adapter.rb
+    lib/fast/rewriter.rb
+    lib/fast/scan.rb
+    lib/fast/shortcut.rb
+    lib/fast/source.rb
+    lib/fast/source_rewriter.rb
+    lib/fast/sql.rb
+    lib/fast/sql/rewriter.rb
+    lib/fast/summary.rb
+    lib/fast/version.rb
+    bin/fast
+    bin/fast-mcp
+    bin/fast-experiment
+    bin/setup
+    bin/console
+    .agents/fast-pattern-expert/SKILL.md
+    LICENSE.txt
+    README.md
+    Fastfile
+  ]
 
   spec.post_install_message = <<~THANKS
 
