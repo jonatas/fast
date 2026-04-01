@@ -198,5 +198,52 @@ RSpec.describe Fast::Summary do
         end
       EXPECTED
     end
+
+    it 'summarizes singleton classes with nested modules' do
+      source = <<~RUBY
+        class MyClass
+          class << self
+            module Internal
+            end
+          end
+        end
+      RUBY
+      expect { described_class.new(source).summarize }.to output(<<~EXPECTED).to_stdout
+        class MyClass
+          module Internal
+          end
+        end
+      EXPECTED
+    end
+
+    it 'compacts multi-line macros' do
+      source = <<~RUBY
+        class MyClass
+          acts_as_awesome :foo,
+            :bar
+        end
+      RUBY
+      expect { described_class.new(source).summarize }.to output(<<~EXPECTED).to_stdout
+        class MyClass
+
+          Macros: acts_as_awesome :foo, ...
+        end
+      EXPECTED
+    end
+
+    it 'compacts multi-line mixins' do
+      source = <<~RUBY
+        class MyClass
+          include SomeModule,
+            OtherModule
+        end
+      RUBY
+      expect { described_class.new(source).summarize }.to output(<<~EXPECTED).to_stdout
+        class MyClass
+
+          include SomeModule, ...
+        end
+      EXPECTED
+    end
   end
 end

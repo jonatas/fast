@@ -226,6 +226,50 @@ RSpec.describe Fast::Cli do
         end
       end
     end
+
+    context 'with --link' do
+      let(:args) { %w[--no-color --link def lib/fast.rb] }
+      it 'sets show_link to true' do
+        expect(cli.instance_variable_get(:@show_link)).to be_truthy
+      end
+    end
+
+    context 'with --permalink' do
+      let(:args) { %w[--no-color --permalink def lib/fast.rb] }
+      it 'sets show_permalink to true' do
+        expect(cli.instance_variable_get(:@show_permalink)).to be_truthy
+      end
+    end
+
+    context 'with --bodyless' do
+      let(:args) { %w[--no-color --bodyless def lib/fast.rb] }
+      it 'sets bodyless to true' do
+        expect(cli.instance_variable_get(:@bodyless)).to be_truthy
+      end
+    end
+
+    context 'with --validate-pattern' do
+      context 'with valid pattern' do
+        let(:args) { ['--no-color', '--validate-pattern', '(int _)'] }
+        it 'outputs pattern is valid and exits' do
+          expect { cli.run! }.to output("Pattern is valid.\n").to_stdout.and raise_error(SystemExit)
+        end
+      end
+
+      context 'with invalid pattern' do
+        let(:args) { ['--no-color', '--validate-pattern', '(int'] }
+        it 'outputs invalid pattern and exits' do
+          expect { cli.run! }.to output(/Invalid pattern: /).to_stdout.and raise_error(SystemExit)
+        end
+      end
+    end
+
+    context 'when shortcut not found' do
+      let(:args) { %w[--no-color .non_existent_shortcut] }
+      it 'outputs shortcut not found and exits' do
+        expect { cli.run! }.to output(/Shortcut \e\[1mnon_existent_shortcut\e\[0m not found/).to_stdout.and raise_error(SystemExit)
+      end
+    end
   end
 
   describe 'Fast.highlight' do

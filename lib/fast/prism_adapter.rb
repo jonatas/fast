@@ -87,10 +87,8 @@ module Fast
         statements.is_a?(Node) ? statements : build_node(:begin, statements, node, source, buffer_name)
       when Prism::StatementsNode
         adapt_statements(node, source, buffer_name)
-      when Prism::AliasMethodNode
+      when Prism::AliasMethodNode, Prism::AliasGlobalVariableNode
         build_node(:alias, [adapt(node.new_name, source, buffer_name), adapt(node.old_name, source, buffer_name)], node, source, buffer_name)
-      when Prism::AliasGlobalVariableNode
-        build_node(:gvasgn, [node.new_name.name, node.old_name.name], node, source, buffer_name)
       when Prism::DefinedNode
         build_node(:defined?, [adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::UndefNode
@@ -145,8 +143,13 @@ module Fast
         build_node(:super, node.arguments&.arguments.to_a.map { |arg| adapt(arg, source, buffer_name) }, node, source, buffer_name)
       when Prism::ForwardingSuperNode
         build_node(:zsuper, [], node, source, buffer_name)
+      when Prism::SplatNode
+        build_node(:splat, [adapt(node.expression, source, buffer_name)], node, source, buffer_name)
+      when Prism::AssocSplatNode
+        build_node(:kwsplat, [adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::ConstantPathNode
         build_const_path(node, source, buffer_name)
+
       when Prism::ConstantReadNode
         build_node(:const, [nil, node.name], node, source, buffer_name)
       when Prism::ConstantWriteNode
@@ -250,7 +253,10 @@ module Fast
       when Prism::ForNode
         build_node(:for, [adapt(node.index, source, buffer_name), adapt(node.collection, source, buffer_name), adapt(node.statements, source, buffer_name)], node, source, buffer_name)
       when Prism::MultiWriteNode
-        build_node(:masgn, [build_node(:mlhs, node.lefts.map { |left| adapt(left, source, buffer_name) }, node, source, buffer_name), adapt(node.value, source, buffer_name)], node, source, buffer_name)
+        mlhs_children = node.lefts.map { |left| adapt(left, source, buffer_name) }
+        mlhs_children << adapt(node.rest, source, buffer_name) if node.rest
+        mlhs_children.concat(node.rights.map { |right| adapt(right, source, buffer_name) }) if node.respond_to?(:rights)
+        build_node(:masgn, [build_node(:mlhs, mlhs_children, node, source, buffer_name), adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::RescueModifierNode
         build_node(:rescue, [adapt(node.expression, source, buffer_name), build_node(:resbody, [nil, nil, adapt(node.rescue_expression, source, buffer_name)], node, source, buffer_name), nil], node, source, buffer_name)
       when Prism::CaseNode
@@ -291,6 +297,8 @@ module Fast
         adapt_statements(node.statements, source, buffer_name)
       when Prism::EmbeddedVariableNode
         build_node(:begin, [adapt(node.variable, source, buffer_name)].compact, node, source, buffer_name)
+      when Prism::ImplicitNode
+        adapt(node.value, source, buffer_name)
       when Prism::LambdaNode
         build_node(:lambda, [adapt_block_parameters(node.parameters, source, buffer_name), adapt(node.body, source, buffer_name)], node, source, buffer_name)
       else

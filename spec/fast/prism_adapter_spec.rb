@@ -213,6 +213,71 @@ RSpec.describe Fast::PrismAdapter do
       expect(Fast.search('(module (const nil M) (defs ...))', tree)).not_to be_empty
       expect(Fast.search('(lambda (args (arg a)) (lvar a))', tree)).not_to be_empty
     end
+
+    it 'adapts alias, break, super, xstr, dxstr, dsym, regexp' do
+      source = <<~'RUBY'
+        alias old new
+        alias :old_sym :new_sym
+        alias $a $b
+        break 1
+        super(2)
+        `ls`
+        `ls #{dir}`
+        :"symbol_#{index}"
+        /regex/i
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(alias (sym "old") (sym "new"))', tree)).not_to be_empty
+      expect(Fast.search('(alias (sym "old_sym") (sym "new_sym"))', tree)).not_to be_empty
+      expect(Fast.search('(alias (gvar :$a) (gvar :$b))', tree)).not_to be_empty
+      expect(Fast.search('(break (int 1))', tree)).not_to be_empty
+      expect(Fast.search('(super (int 2))', tree)).not_to be_empty
+      expect(Fast.search('(xstr "ls")', tree)).not_to be_empty
+      expect(Fast.search('(dxstr (str "ls ") (send nil dir))', tree)).not_to be_empty
+      expect(Fast.search('(dsym (str "symbol_") (send nil index))', tree)).not_to be_empty
+      expect(Fast.search('(regexp (str "regex") (regopt :i))', tree)).not_to be_empty
+    end
+
+    it 'adapts gvasgn and hash elements' do
+      source = <<~RUBY
+        $global = 1
+        { a: 1, **options }
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(gvasgn :$global (int 1))', tree)).not_to be_empty
+      expect(Fast.search('(hash (pair (sym a) (int 1)) (kwsplat (send nil options)))', tree)).not_to be_empty
+    end
+
+    it 'adapts full rescue and ensure blocks' do
+      source = <<~RUBY
+        begin
+          1
+        rescue StandardError => e
+          2
+        ensure
+          3
+        end
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(rescue (int 1) (resbody (array (const nil StandardError)) (lvasgn e) (int 2)))', tree)).not_to be_empty
+      expect(Fast.search('(ensure (rescue ...) (int 3))', tree)).not_to be_empty
+    end
+
+    it 'adapts mlhs with rest and rights' do
+      source = <<~RUBY
+        a, *b, c = [1, 2, 3, 4]
+      RUBY
+
+      tree = described_class.parse(source)
+
+      expect(Fast.search('(masgn (mlhs (lvasgn a) (splat (lvasgn b)) (lvasgn c)) (array ...))', tree)).not_to be_empty
+    end
   end
 end
 

@@ -37,6 +37,28 @@ RSpec.describe Fast do
     end
   end
 
+  describe 'removed methods' do
+    it 'raises NoMethodError for parser_class' do
+      expect { described_class.parser_class }.to raise_error(NoMethodError, /Fast.parser_class was removed/)
+    end
+
+    it 'raises NoMethodError for parser_require_path' do
+      expect { described_class.parser_require_path }.to raise_error(NoMethodError, /Fast.parser_require_path was removed/)
+    end
+
+    it 'raises NoMethodError for parser_const_name' do
+      expect { described_class.parser_const_name }.to raise_error(NoMethodError, /Fast.parser_const_name was removed/)
+    end
+
+    it 'raises NoMethodError for parser_version_supported?' do
+      expect { described_class.parser_version_supported?(:A) }.to raise_error(NoMethodError, /Fast.parser_version_supported\?\(:A\) was removed/)
+    end
+
+    it 'raises NoMethodError for builder_for' do
+      expect { described_class.builder_for('file.rb') }.to raise_error(NoMethodError, /Fast.builder_for\("file.rb"\) was removed/)
+    end
+  end
+
   describe '.expression' do
     it 'parses ... as Find' do
       expect(described_class.expression('...')).to be_a(Fast::Find)
