@@ -38,6 +38,10 @@ Gem::Specification.new do |spec|
     bin/fast-experiment
     bin/setup
     bin/console
+    experiments/replace_create_with_build_stubbed.rb
+    experiments/let_it_be_experiment.rb
+    experiments/remove_useless_hook.rb
+    experiments/replace_update_attributes_with_update.rb
     .agents/fast-pattern-expert/SKILL.md
     LICENSE.txt
     README.md
