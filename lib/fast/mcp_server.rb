@@ -156,6 +156,7 @@ module Fast
       tool_name = params['name']
       args      = params['arguments'] || {}
       show_ast  = args['show_ast'] || false
+      @gains    = Gains.new("mcp:#{tool_name}")
 
       if args['pattern'] && !args['pattern'].start_with?('(', '{', '[') && !args['pattern'].match?(/^[a-z_]+$/)
         raise "Invalid Fast AST pattern: '#{args['pattern']}'. Did you mean to use an s-expression like '(#{args['pattern']})'?"
@@ -182,6 +183,8 @@ module Fast
           raise "Unknown tool: #{tool_name}"
         end
 
+      @gains.record_report(result.to_json)
+      @gains.save!
       write_response(id, { content: [{ type: 'text', text: JSON.generate(result) }] })
     rescue => e
       write_error(id, -32603, 'Tool execution failed', e.message)
@@ -197,6 +200,7 @@ module Fast
     def execute_search(pattern, paths, show_ast: false)
       results = []
       on_result = ->(file, matches) do
+        @gains&.record_match(file) if matches.any?
         matches.compact.each do |node|
           next unless (exp = node_expression(node))
 
@@ -210,8 +214,9 @@ module Fast
           results << entry
         end
       end
+      on_search = ->(file) { @gains&.record_search(file) }
 
-      Fast.search_all(pattern, paths, parallel: false, on_result: on_result)
+      Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
       results
     end
 
@@ -230,6 +235,7 @@ module Fast
       # Use simple (class ...) pattern then filter by name — avoids nil/superclass edge cases
       results = []
       on_result = ->(file, matches) do
+        @gains&.record_match(file) if matches.any?
         matches.compact.each do |node|
           next unless node.type == :class
           next unless node.children.first&.children&.last&.to_s == class_name
@@ -245,7 +251,8 @@ module Fast
           results << entry
         end
       end
-      Fast.search_all('(class ...)', paths, parallel: false, on_result: on_result)
+      on_search = ->(file) { @gains&.record_search(file) }
+      Fast.search_all('(class ...)', paths, parallel: false, on_result: on_result, on_search: on_search)
       results.select { |r| r[:file] } # already filtered above
     end
 
@@ -260,8 +267,10 @@ module Fast
     def execute_rewrite_file(file, pattern, replacement)
       raise "File not found: #{file}" unless File.exist?(file)
 
+      @gains&.record_search(file)
       original = File.read(file)
       rewritten = Fast.replace_file(pattern, file) do |node|
+        @gains&.record_match(file)
         replace(node.loc.expression, replacement)
       end
 
@@ -299,6 +308,7 @@ module Fast
             system(cmd)
           end
         end
+        experiment.files.each { |f| @gains&.record_search(f) }
         experiment.run
       ensure
         $stdout = original_stdout

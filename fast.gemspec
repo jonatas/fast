@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
     lib/fast/cli.rb
     lib/fast/experiment.rb
     lib/fast/git.rb
+    lib/fast/gains.rb
     lib/fast/mcp_server.rb
     lib/fast/node.rb
     lib/fast/prism_adapter.rb

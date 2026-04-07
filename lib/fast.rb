@@ -188,18 +188,18 @@ module Fast
     # @param [String] pattern
     # @param [Array<String>] *locations where to search. Default is '.'
     # @return [Hash<String,Array<Fast::Node>>] with files and results
-    def search_all(pattern, locations = ['.'], parallel: true, on_result: nil)
+    def search_all(pattern, locations = ['.'], parallel: true, on_result: nil, on_search: nil)
       group_results(build_grouped_search(:search_file, pattern, on_result),
-                    locations, parallel: parallel)
+                    locations, parallel: parallel, on_search: on_search)
     end
 
     # Capture with pattern on a directory or multiple files
     # @param [String] pattern
     # @param [Array<String>] locations where to search. Default is '.'
     # @return [Hash<String,Object>] with files and captures
-    def capture_all(pattern, locations = ['.'], parallel: true, on_result: nil)
+    def capture_all(pattern, locations = ['.'], parallel: true, on_result: nil, on_search: nil)
       group_results(build_grouped_search(:capture_file, pattern, on_result),
-                    locations, parallel: parallel)
+                    locations, parallel: parallel, on_search: on_search)
     end
 
     # @return [Proc] binding `pattern` argument from a given `method_name`.
@@ -224,12 +224,13 @@ module Fast
     # while it process several locations in parallel.
     # @param [Boolean] parallel runs the `group_files` in parallel
     # @return [Hash[String, Array]] with files and results
-    def group_results(group_files, locations, parallel: true)
+    def group_results(group_files, locations, parallel: true, on_search: nil)
       files = ruby_files_from(*locations)
       results =
         if parallel
           require 'parallel' unless defined?(Parallel)
           Parallel.map(files) do |file|
+            on_search&.call(file)
             group_files.call(file)
           rescue StandardError => e
             warn "Error processing #{file}: #{e.message}" if Fast.debugging
@@ -237,6 +238,7 @@ module Fast
           end
         else
           files.map do |file|
+            on_search&.call(file)
             group_files.call(file)
           rescue StandardError => e
             warn "Error processing #{file}: #{e.message}" if Fast.debugging
