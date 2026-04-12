@@ -82,6 +82,10 @@ module Fast
       return if node.nil?
 
       case node
+      when Symbol
+        build_node(:sym, [node.to_s], nil, source, buffer_name)
+      when String
+        build_node(:str, [node], nil, source, buffer_name)
       when Prism::ProgramNode
         statements = adapt_statements(node.statements, source, buffer_name)
         statements.is_a?(Node) ? statements : build_node(:begin, statements, node, source, buffer_name)
