@@ -216,15 +216,17 @@ RSpec.describe Fast::PrismAdapter do
 
     it 'adapts alias, break, super, xstr, dxstr, dsym, regexp' do
       source = <<~'RUBY'
-        alias old new
-        alias :old_sym :new_sym
-        alias $a $b
-        break 1
-        super(2)
-        `ls`
-        `ls #{dir}`
-        :"symbol_#{index}"
-        /regex/i
+        def method
+          alias old new
+          alias :old_sym :new_sym
+          alias $a $b
+          break 1
+          super(2)
+          `ls`
+          `ls #{dir}`
+          :"symbol_#{index}"
+          /regex/i
+        end
       RUBY
 
       tree = described_class.parse(source)

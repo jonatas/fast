@@ -58,10 +58,7 @@ module Fast
     class << self
       def parse(source, buffer_name: '(string)')
         result = Prism.parse(source)
-        unless result.success?
-          puts "PRISM ERRORS: #{result.errors.map(&:message).join(', ')}"
-          return
-        end
+        return unless result.success?
 
         source_buffer = Fast::Source::Buffer.new(buffer_name, source: source)
         adapt(result.value, source_buffer)
