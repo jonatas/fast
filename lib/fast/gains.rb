@@ -84,21 +84,22 @@ module Fast
           end
         end
 
-        summarized = summarize(all_data)
-        
+        # Keep only the last 1000 runs to avoid file growing too much
+        all_data = all_data.last(1000)
+
         f.rewind
         f.truncate(0)
-        f.write(JSON.pretty_generate(summarized))
-        summarized
+        f.write(JSON.pretty_generate(all_data))
+        all_data
       end
     end
 
     def self.summarize(data)
       return [] if data.nil? || data.empty?
       data.group_by do |h|
-        timestamp = h[:hour] || h[:timestamp] || Time.now.iso8601
+        timestamp = h[:timestamp] || Time.now.iso8601
         hour = Time.parse(timestamp).strftime('%Y-%m-%d %H:00')
-        category = h[:category] || (h[:command]&.start_with?('mcp:') ? 'mcp' : 'cli')
+        category = h[:command]&.start_with?('mcp:') ? 'mcp' : 'cli'
         [hour, category]
       end.map do |(hour, category), runs|
         {
@@ -108,14 +109,16 @@ module Fast
           matched_files_count: runs.sum { |r| r[:matched_files_count] || 0 },
           bytes_searched: runs.sum { |r| r[:bytes_searched] || 0 },
           bytes_reported: runs.sum { |r| r[:bytes_reported] || 0 },
-          runs_count: runs.sum { |r| r[:runs_count] || 1 }
+          runs_count: runs.size
         }
       end.sort_by { |h| h[:hour] }
     end
 
     def self.report(filter = nil)
-      all_history = consolidate!
-      return puts "No gains recorded yet. Start searching with `fast`!" if all_history.empty?
+      all_raw_history = consolidate!
+      return puts "No gains recorded yet. Start searching with `fast`!" if all_raw_history.empty?
+
+      all_history = summarize(all_raw_history)
 
       title = filter ? "Fast Gains Report (#{filter.upcase})" : "Fast Gains Report"
       history = filter ? all_history.select { |h| h[:category] == filter } : all_history

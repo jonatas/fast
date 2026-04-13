@@ -50,7 +50,7 @@ RSpec.describe Fast::Gains do
   end
 
   describe '#save!' do
-    it 'saves summarized data' do
+    it 'saves raw data' do
       file = File.join(temp_dir, 'test.rb')
       File.write(file, 'test content')
       
@@ -62,8 +62,7 @@ RSpec.describe Fast::Gains do
       data = JSON.parse(File.read(temp_file))
       expect(data.last['bytes_searched']).to eq(File.size(file))
       expect(data.last['bytes_reported']).to eq('match'.bytesize)
-      expect(data.last['hour']).not_to be_nil
-      expect(data.last['category']).to eq('cli')
+      expect(data.last['timestamp']).not_to be_nil
     end
 
     it 'does NOT save data if there are no reports (honest gain)' do
@@ -77,7 +76,7 @@ RSpec.describe Fast::Gains do
       expect(temp_files).to be_empty
     end
 
-    it 'saves multiple runs and consolidates them into hours' do
+    it 'saves multiple runs and consolidates them into the file' do
       # Run 1
       g1 = Fast::Gains.new('run 1')
       File.write(File.join(temp_dir, 'f1.rb'), 'hello')
@@ -97,9 +96,9 @@ RSpec.describe Fast::Gains do
       expect(File.exist?(temp_file)).to be true
       
       data = JSON.parse(File.read(temp_file), symbolize_names: true)
-      expect(data.size).to eq(1) # Both runs are in the same hour
-      expect(data.last[:runs_count]).to eq(2)
-      expect(data.last[:bytes_reported]).to eq('match 1'.bytesize + 'match 2'.bytesize)
+      expect(data.size).to eq(2) # Both runs are stored
+      expect(data.first[:command]).to eq('run 1')
+      expect(data.last[:command]).to eq('run 2')
     end
 
     it 'does NOT record or save anything if disabled' do
@@ -143,11 +142,11 @@ RSpec.describe Fast::Gains do
     end
 
     context 'with history' do
-      let(:now_hour) { Time.now.strftime('%Y-%m-%d %H:00') }
+      let(:now) { Time.now.iso8601 }
       let(:data) do
         [
-          { hour: now_hour, category: 'cli', files_count: 10, bytes_searched: 1000, bytes_reported: 100, runs_count: 1 },
-          { hour: now_hour, category: 'mcp', files_count: 5, bytes_searched: 500, bytes_reported: 50, runs_count: 1 }
+          { timestamp: now, command: 'cli:search', files_count: 10, bytes_searched: 1000, bytes_reported: 100 },
+          { timestamp: now, command: 'mcp:search', files_count: 5, bytes_searched: 500, bytes_reported: 50 }
         ]
       end
 

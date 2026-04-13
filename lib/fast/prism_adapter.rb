@@ -200,11 +200,11 @@ module Fast
         when Prism::LocalVariableWriteNode, Prism::LocalVariableOrWriteNode
           build_node(:lvasgn, [node.name, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::LocalVariableOperatorWriteNode
-          build_node(:op_asgn, [build_node(:lvasgn, [node.name], node, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:op_asgn, [build_node(:lvasgn, [node.name], node, source_buffer), extract_operator(node), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::LocalVariableAndWriteNode
           build_node(:and_asgn, [build_node(:lvasgn, [node.name], node, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::InstanceVariableOperatorWriteNode
-          build_node(:op_asgn, [build_node(:ivasgn, [node.name], node, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:op_asgn, [build_node(:ivasgn, [node.name], node, source_buffer), extract_operator(node), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::InstanceVariableAndWriteNode
           build_node(:and_asgn, [build_node(:ivasgn, [node.name], node, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::ClassVariableWriteNode
@@ -212,17 +212,21 @@ module Fast
         when Prism::ClassVariableReadNode
           build_node(:cvar, [node.name], node, source_buffer)
         when Prism::CallAndWriteNode
-          build_node(:and_asgn, [adapt(node.target, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:and_asgn, [adapt(node.receiver, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::CallOperatorWriteNode
-          build_node(:op_asgn, [adapt(node.target, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
+          target = build_node(:send, [adapt(node.receiver, source_buffer), node.message_loc.slice.to_sym], node, source_buffer)
+          build_node(:op_asgn, [target, extract_operator(node), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::IndexAndWriteNode
-          build_node(:and_asgn, [adapt(node.target, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
+          target = build_node(:send, [adapt(node.receiver, source_buffer), :[], *node.arguments.arguments.map { |a| adapt(a, source_buffer) }], node, source_buffer)
+          build_node(:and_asgn, [target, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::IndexOperatorWriteNode
-          build_node(:op_asgn, [adapt(node.target, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
+          target = build_node(:send, [adapt(node.receiver, source_buffer), :[], *node.arguments.arguments.map { |a| adapt(a, source_buffer) }], node, source_buffer)
+          build_node(:op_asgn, [target, extract_operator(node), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::MatchWriteNode
-          build_node(:match_with_lvasgn, [adapt(node.call, source_buffer), node.targets.map { |t| adapt(t, source_buffer) }], node, source_buffer)
+          build_node(:match_with_lvasgn, [adapt(node.call.receiver, source_buffer), adapt(node.call.arguments&.arguments&.first, source_buffer)], node, source_buffer)
         when Prism::MatchLastLineNode
-          build_node(:match_current_line, [node.location.slice], node, source_buffer)
+          regexp = build_node(:regexp, [build_node(:str, [node.unescaped], node, source_buffer), build_node(:regopt, [], node, source_buffer)], node, source_buffer)
+          build_node(:match_current_line, [regexp], node, source_buffer)
         when Prism::IntegerNode
           build_node(:int, [node.value], node, source_buffer)
         when Prism::FloatNode
@@ -276,10 +280,14 @@ module Fast
         when Prism::BeginNode
           rescue_bodies = node.rescue_clause ? adapt_rescue_clause(node.rescue_clause, source_buffer) : []
           ensure_body = node.ensure_clause ? adapt(node.ensure_clause.statements, source_buffer) : nil
+          else_body = node.else_clause ? adapt(node.else_clause.statements, source_buffer) : nil
           res = adapt(node.statements, source_buffer)
-          res = build_node(:kwbegin, [res], node, source_buffer) if node.location.slice.start_with?('begin')
-          if rescue_bodies.any? || ensure_body
-            build_node(:ensure, [build_node(:rescue, [res, *rescue_bodies, nil], node, source_buffer), ensure_body], node, source_buffer)
+
+          res = build_node(:rescue, [res, *rescue_bodies, else_body], node, source_buffer) if rescue_bodies.any?
+          res = build_node(:ensure, [res, ensure_body], node, source_buffer) if ensure_body
+
+          if node.begin_keyword_loc
+            build_node(:kwbegin, [res], node, source_buffer)
           else
             res
           end
@@ -287,9 +295,18 @@ module Fast
           adapt_rescue_clause(node, source_buffer)
         when Prism::EnsureNode
           adapt(node.statements, source_buffer)
+        when Prism::ElseNode
+          adapt(node.statements, source_buffer)
         when Prism::LambdaNode
-          build_node(:block, [build_node(:send, [nil, :lambda], node, source_buffer), adapt_block_parameters(node.parameters, source_buffer), adapt(node.body, source_buffer)], node, source_buffer)
+          build_node(:lambda, [adapt_block_parameters(node.parameters, source_buffer), adapt(node.body, source_buffer)], node, source_buffer)
         end
+      end
+
+      def extract_operator(node)
+        return node.operator if node.respond_to?(:operator)
+        return node.binary_operator if node.respond_to?(:binary_operator)
+
+        nil
       end
 
       def adapt_statements(node, source_buffer)
@@ -407,7 +424,7 @@ module Fast
           exceptions = current.exceptions.map { |e| adapt(e, source_buffer) }
           exception_variable = adapt(current.reference, source_buffer)
           resbodies << build_node(:resbody, [build_node(:array, exceptions, current, source_buffer), exception_variable, adapt(current.statements, source_buffer)], current, source_buffer)
-          current = current.consequent
+          current = current.respond_to?(:consequent) ? current.consequent : current.subsequent
         end
         resbodies
       end
