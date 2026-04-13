@@ -228,6 +228,7 @@ RSpec.describe Fast::PrismAdapter do
       RUBY
 
       tree = described_class.parse(source)
+      puts "DEBUG TREE: #{tree.inspect}"
 
       expect(Fast.search('(alias (sym "old") (sym "new"))', tree)).not_to be_empty
       expect(Fast.search('(alias (sym "old_sym") (sym "new_sym"))', tree)).not_to be_empty
