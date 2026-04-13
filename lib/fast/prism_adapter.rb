@@ -73,7 +73,10 @@ module Fast
 
     def parse(source, buffer_name: '(string)')
       result = Prism.parse(source)
-      return unless result.success?
+      unless result.success?
+        puts "PRISM ERRORS: #{result.errors.map(&:message).join(', ')}"
+        return
+      end
 
       adapt(result.value, source, buffer_name)
     end
