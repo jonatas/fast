@@ -50,7 +50,7 @@ RSpec.describe Fast::Gains do
   end
 
   describe '#save!' do
-    it 'saves data to a unique JSON file if there are reports' do
+    it 'saves summarized data' do
       file = File.join(temp_dir, 'test.rb')
       File.write(file, 'test content')
       
@@ -58,15 +58,12 @@ RSpec.describe Fast::Gains do
       subject.record_report('match')
       subject.save!
       
-      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
-      expect(temp_files).not_to be_empty
-      
-      described_class.consolidate!
-      
       expect(File.exist?(temp_file)).to be true
       data = JSON.parse(File.read(temp_file))
       expect(data.last['bytes_searched']).to eq(File.size(file))
       expect(data.last['bytes_reported']).to eq('match'.bytesize)
+      expect(data.last['hour']).not_to be_nil
+      expect(data.last['category']).to eq('cli')
     end
 
     it 'does NOT save data if there are no reports (honest gain)' do
@@ -80,7 +77,7 @@ RSpec.describe Fast::Gains do
       expect(temp_files).to be_empty
     end
 
-    it 'saves multiple runs to different files and consolidates them' do
+    it 'saves multiple runs and consolidates them into hours' do
       # Run 1
       g1 = Fast::Gains.new('run 1')
       File.write(File.join(temp_dir, 'f1.rb'), 'hello')
@@ -95,43 +92,14 @@ RSpec.describe Fast::Gains do
       g2.record_report('match 2')
       g2.save!
 
-      # Verify two temp files exist
-      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
-      expect(temp_files.size).to eq(2)
-      expect(File.exist?(temp_file)).to be false
-
-      # Consolidate
-      data = Fast::Gains.consolidate!
-
       # Verify temp files are gone and gains.json exists
       expect(Dir.glob(File.join(temp_dir, 'gains-*.json'))).to be_empty
       expect(File.exist?(temp_file)).to be true
       
-      expect(data.size).to eq(2)
-      expect(data.map { |h| h[:command] }).to contain_exactly('run 1', 'run 2')
-      expect(data.last[:reports]).to contain_exactly('match 2')
-    end
-
-    it 'keeps reports only for the latest runs' do
-      6.times do |i|
-        g = Fast::Gains.new("run #{i}")
-        File.write(File.join(temp_dir, "f#{i}.rb"), "content #{i}")
-        g.record_search(File.join(temp_dir, "f#{i}.rb"))
-        g.record_report("patch #{i}")
-        g.save!
-      end
-
-      Fast::Gains.consolidate!
-
       data = JSON.parse(File.read(temp_file), symbolize_names: true)
-      expect(data.size).to eq(6)
-      
-      # Run 0 should not have reports
-      expect(data[0][:reports]).to be_nil
-      # Run 5 should have reports
-      expect(data[5][:reports]).to contain_exactly('patch 5')
-      # Run 1 should have reports (since it's index 1 in 6 entries, it's one of the last 5)
-      expect(data[1][:reports]).to contain_exactly('patch 1')
+      expect(data.size).to eq(1) # Both runs are in the same hour
+      expect(data.last[:runs_count]).to eq(2)
+      expect(data.last[:bytes_reported]).to eq('match 1'.bytesize + 'match 2'.bytesize)
     end
 
     it 'does NOT record or save anything if disabled' do
@@ -175,11 +143,11 @@ RSpec.describe Fast::Gains do
     end
 
     context 'with history' do
-      let(:now) { Time.now.iso8601 }
+      let(:now_hour) { Time.now.strftime('%Y-%m-%d %H:00') }
       let(:data) do
         [
-          { timestamp: now, command: 'fast test', files_count: 10, bytes_searched: 1000, bytes_reported: 100, savings_percent: 90.0 },
-          { timestamp: now, command: 'mcp:search', files_count: 5, bytes_searched: 500, bytes_reported: 50, savings_percent: 90.0 }
+          { hour: now_hour, category: 'cli', files_count: 10, bytes_searched: 1000, bytes_reported: 100, runs_count: 1 },
+          { hour: now_hour, category: 'mcp', files_count: 5, bytes_searched: 500, bytes_reported: 50, runs_count: 1 }
         ]
       end
 
@@ -187,20 +155,19 @@ RSpec.describe Fast::Gains do
         File.write(temp_file, JSON.generate(data))
       end
 
-      it 'prints a breakdown if both CLI and MCP exist' do
-        expect { described_class.report }.to output(/Fast Gains Report \(CLI\)/).to_stdout
-        expect { described_class.report }.to output(/Fast Gains Report \(MCP\)/).to_stdout
-        expect { described_class.report }.to output(/Fast Gains Report \(Total\)/).to_stdout
+      it 'prints a single report with breakdown if both CLI and MCP exist' do
+        expect { described_class.report }.to output(/Fast Gains Report/).to_stdout
+        expect { described_class.report }.to output(/Breakdown:           CLI: 1, MCP: 1/).to_stdout
       end
 
       it 'prints only CLI report when filtered' do
         expect { described_class.report('cli') }.to output(/Fast Gains Report \(CLI\)/).to_stdout
-        expect { described_class.report('cli') }.not_to output(/Fast Gains Report \(MCP\)/).to_stdout
+        expect { described_class.report('cli') }.not_to output(/Breakdown:/).to_stdout
       end
 
       it 'prints only MCP report when filtered' do
         expect { described_class.report('mcp') }.to output(/Fast Gains Report \(MCP\)/).to_stdout
-        expect { described_class.report('mcp') }.not_to output(/Fast Gains Report \(CLI\)/).to_stdout
+        expect { described_class.report('mcp') }.not_to output(/Breakdown:/).to_stdout
       end
     end
   end
