@@ -220,7 +220,9 @@ RSpec.describe Fast::PrismAdapter do
           alias old new
           alias :old_sym :new_sym
           alias $a $b
-          break 1
+          while true
+            break 1
+          end
           super(2)
           `ls`
           `ls #{dir}`
