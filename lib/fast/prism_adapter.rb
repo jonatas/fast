@@ -11,7 +11,11 @@ module Fast
 
       def initialize(source_buffer, start_offset, end_offset, prism_node: nil)
         @prism_node = prism_node
-        super(source_buffer, start_offset, end_offset)
+        super(
+          source_buffer,
+          character_offset(source_buffer.source, start_offset),
+          character_offset(source_buffer.source, end_offset)
+        )
       end
 
       def name
@@ -47,7 +51,7 @@ module Fast
       end
 
       def character_offset(source, byte_offset)
-        source.byteslice(0, byte_offset).length
+        source.byteslice(0, byte_offset).size
       end
     end
 
