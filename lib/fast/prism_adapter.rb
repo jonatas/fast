@@ -200,11 +200,11 @@ module Fast
         when Prism::LocalVariableWriteNode, Prism::LocalVariableOrWriteNode
           build_node(:lvasgn, [node.name, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::LocalVariableOperatorWriteNode
-          build_node(:op_asgn, [build_node(:lvasgn, [node.name], node, source_buffer), node.operator, adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:op_asgn, [build_node(:lvasgn, [node.name], node, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::LocalVariableAndWriteNode
           build_node(:and_asgn, [build_node(:lvasgn, [node.name], node, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::InstanceVariableOperatorWriteNode
-          build_node(:op_asgn, [build_node(:ivasgn, [node.name], node, source_buffer), node.operator, adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:op_asgn, [build_node(:ivasgn, [node.name], node, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::InstanceVariableAndWriteNode
           build_node(:and_asgn, [build_node(:ivasgn, [node.name], node, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::ClassVariableWriteNode
@@ -214,11 +214,11 @@ module Fast
         when Prism::CallAndWriteNode
           build_node(:and_asgn, [adapt(node.target, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::CallOperatorWriteNode
-          build_node(:op_asgn, [adapt(node.target, source_buffer), node.operator, adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:op_asgn, [adapt(node.target, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::IndexAndWriteNode
           build_node(:and_asgn, [adapt(node.target, source_buffer), adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::IndexOperatorWriteNode
-          build_node(:op_asgn, [adapt(node.target, source_buffer), node.operator, adapt(node.value, source_buffer)], node, source_buffer)
+          build_node(:op_asgn, [adapt(node.target, source_buffer), node.binary_operator, adapt(node.value, source_buffer)], node, source_buffer)
         when Prism::MatchWriteNode
           build_node(:match_with_lvasgn, [adapt(node.call, source_buffer), node.targets.map { |t| adapt(t, source_buffer) }], node, source_buffer)
         when Prism::MatchLastLineNode
