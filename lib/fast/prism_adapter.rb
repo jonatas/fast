@@ -92,7 +92,9 @@ module Fast
       when Prism::StatementsNode
         adapt_statements(node, source, buffer_name)
       when Prism::AliasMethodNode, Prism::AliasGlobalVariableNode
-        build_node(:alias, [adapt(node.new_name, source, buffer_name), adapt(node.old_name, source, buffer_name)], node, source, buffer_name)
+        res = build_node(:alias, [adapt(node.new_name, source, buffer_name), adapt(node.old_name, source, buffer_name)], node, source, buffer_name)
+        puts "DEBUG ALIAS: #{res.inspect}" if source.include?("alias old new")
+        res
       when Prism::DefinedNode
         build_node(:defined?, [adapt(node.value, source, buffer_name)], node, source, buffer_name)
       when Prism::UndefNode
