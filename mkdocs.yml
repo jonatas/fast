@@ -38,6 +38,7 @@ nav:
   - Git Integration: git.md
   - Agents & LLMs:
     - Fast for LLMs and Agents: agents.md
+    - Gains (Efficiency Tracking): gains.md
     - MCP Server Tutorial: mcp_tutorial.md
     - Code Similarity: similarity_tutorial.md
     - LLM/Agent Feature TODOs: llm_features.md

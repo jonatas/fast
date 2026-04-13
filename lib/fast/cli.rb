@@ -109,6 +109,8 @@ module Fast
   class Cli # rubocop:disable Metrics/ClassLength
     attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help, :level, :gains
     def initialize(args)
+      require 'fast/shortcut'
+      Fast.load_fast_files!
       @gains = Gains.new(args.join(' '))
       args = args.dup
       unless args.include?('.gains')
@@ -366,11 +368,6 @@ module Fast
     # Find shortcut by name. Preloads all `Fastfiles` before start.
     # @param name [String]
     def find_shortcut(name)
-      unless defined? Fast::Shortcut
-        require 'fast/shortcut'
-        Fast.load_fast_files!
-      end
-
       shortcut = Fast.shortcuts[name.to_sym]
       exit_shortcut_not_found(name) unless shortcut
       shortcut
@@ -382,7 +379,6 @@ module Fast
       puts "Shortcut \033[1m#{name}\033[0m not found :("
       if Fast.shortcuts.any?
         puts "Available shortcuts are: #{Fast.shortcuts.keys.join(', ')}."
-        Fast.load_fast_files!
       end
       exit 1
     end

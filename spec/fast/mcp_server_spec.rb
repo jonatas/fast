@@ -38,6 +38,7 @@ RSpec.describe Fast::McpServer do
       allow(server).to receive(:write_response)
 
       server.send(:handle_tool_call, '1', params)
+      Fast::Gains.consolidate!
 
       expect(File.exist?(temp_file)).to be true
       data = JSON.parse(File.read(temp_file)).last
@@ -61,6 +62,7 @@ RSpec.describe Fast::McpServer do
       allow(server).to receive(:write_response)
 
       server.send(:handle_tool_call, '1', params)
+      Fast::Gains.consolidate!
 
       expect(File.exist?(temp_file)).to be true
       data = JSON.parse(File.read(temp_file)).last

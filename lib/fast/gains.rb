@@ -11,7 +11,7 @@ module Fast
     STORAGE_DIR = File.expand_path('~/.fast')
     STORAGE_FILE = File.join(STORAGE_DIR, 'gains.json')
 
-    attr_reader :command, :start_time, :total_bytes_searched, :total_bytes_reported, :files_count, :matched_files_count
+    attr_reader :command, :start_time, :total_bytes_searched, :total_bytes_reported, :files_count, :matched_files_count, :reports
 
     def initialize(command = nil)
       @command = command
@@ -21,15 +21,18 @@ module Fast
       @files_count = 0
       @matched_files_count = 0
       @files_with_matches = []
+      @reports = []
     end
 
     def record_search(file)
+      return unless Fast.gain_tracking_enabled?
       @files_count += 1
       size = File.size(file) rescue 0
       @total_bytes_searched += size
     end
 
     def record_match(file)
+      return unless Fast.gain_tracking_enabled?
       unless @files_with_matches.include?(file)
         @files_with_matches << file
         @matched_files_count += 1
@@ -37,26 +40,30 @@ module Fast
     end
 
     def record_report(content)
+      return unless Fast.gain_tracking_enabled?
       @total_bytes_reported += content.to_s.bytesize
+      @reports << content.to_s
     end
 
     def save!
+      return unless Fast.gain_tracking_enabled?
       return if @total_bytes_searched.zero?
       return if @total_bytes_reported.zero? # Honest gain: skip if nothing was found
 
-      data = history
-      data << {
+      data = {
         timestamp: @start_time.iso8601,
         command: @command,
         files_count: @files_count,
         matched_files_count: @matched_files_count,
         bytes_searched: @total_bytes_searched,
         bytes_reported: @total_bytes_reported,
-        savings_percent: savings_percent.round(2)
+        savings_percent: savings_percent.round(2),
+        reports: @reports
       }
 
       FileUtils.mkdir_p(STORAGE_DIR)
-      File.write(STORAGE_FILE, JSON.pretty_generate(data))
+      temp_filename = File.join(STORAGE_DIR, "gains-#{Time.now.to_f}-#{Process.pid}.json")
+      File.write(temp_filename, JSON.generate(data))
     end
 
     def savings_percent
@@ -66,15 +73,50 @@ module Fast
     end
 
     def history
-      return [] unless File.exist?(STORAGE_FILE)
+      all_data = []
+      if File.exist?(STORAGE_FILE)
+        all_data = JSON.parse(File.read(STORAGE_FILE), symbolize_names: true) rescue []
+      end
+      all_data
+    end
 
-      JSON.parse(File.read(STORAGE_FILE), symbolize_names: true)
-    rescue StandardError
-      []
+    def self.consolidate!
+      FileUtils.mkdir_p(STORAGE_DIR)
+      all_data = []
+      
+      File.open(STORAGE_FILE, File::RDWR|File::CREAT, 0644) do |f|
+        f.flock(File::LOCK_EX)
+        
+        content = f.read
+        all_data = JSON.parse(content, symbolize_names: true) rescue [] unless content.empty?
+        
+        temp_files = Dir.glob(File.join(STORAGE_DIR, 'gains-*.json'))
+        temp_files.each do |file|
+          begin
+            temp_data = JSON.parse(File.read(file), symbolize_names: true)
+            all_data << temp_data
+            File.delete(file)
+          rescue
+            # Skip corrupted files
+          end
+        end
+        
+        all_data.sort_by! { |h| h[:timestamp] || '' }
+        
+        # Keep only reports for the last 5 runs to avoid huge files
+        all_data.each_with_index do |h, i|
+          h.delete(:reports) if i < all_data.size - 5
+        end
+
+        f.rewind
+        f.truncate(0)
+        f.write(JSON.pretty_generate(all_data))
+      end
+      all_data
     end
 
     def self.report(filter = nil)
-      all_history = new.history
+      all_history = consolidate!
       return puts "No gains recorded yet. Start searching with `fast`!" if all_history.empty?
 
       if filter == 'mcp'

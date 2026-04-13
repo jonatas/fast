@@ -153,6 +153,7 @@ module Fast
     end
 
     def handle_tool_call(id, params)
+      Fast.enable_gain_track!
       tool_name = params['name']
       args      = params['arguments'] || {}
       show_ast  = args['show_ast'] || false

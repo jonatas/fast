@@ -13,6 +13,26 @@ $ fast '(def match?)' lib/fast.rb
 - Use `-s` to search similar code
 - Use `-p` to or `--parallel` to use multi core search
 - Use `--validate-pattern PATTERN` to check if a pattern is syntactically correct.
+- Use `.gains` to show search efficiency statistics.
+
+## `.gains`
+
+The `.gains` command allows you to track and visualize the efficiency of your code searches. It measures "bytes searched" (the total size of files scanned) versus "bytes reported" (the actual results returned).
+
+```bash
+$ fast .gains
+```
+
+This is particularly useful when using Fast with LLMs and Agents, as it quantifies the reduction in context data that the agent had to process.
+
+You can also filter by category:
+
+```bash
+$ fast .gains cli  # Show only CLI search history
+$ fast .gains mcp  # Show only MCP (Agent) search history
+```
+
+See [Fast Gains (Efficiency Tracking)](gains.md) for more details.
 
 ## `--validate-pattern`
 

@@ -13,6 +13,7 @@ RSpec.describe Fast::Gains do
     stub_const('Fast::Gains::STORAGE_DIR', temp_dir)
     stub_const('Fast::Gains::STORAGE_FILE', temp_file)
     FileUtils.mkdir_p(temp_dir)
+    Fast.enable_gain_track!
   end
 
   after do
@@ -49,13 +50,18 @@ RSpec.describe Fast::Gains do
   end
 
   describe '#save!' do
-    it 'saves data to the JSON file if there are reports' do
+    it 'saves data to a unique JSON file if there are reports' do
       file = File.join(temp_dir, 'test.rb')
       File.write(file, 'test content')
       
       subject.record_search(file)
       subject.record_report('match')
       subject.save!
+      
+      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
+      expect(temp_files).not_to be_empty
+      
+      described_class.consolidate!
       
       expect(File.exist?(temp_file)).to be true
       data = JSON.parse(File.read(temp_file))
@@ -70,7 +76,96 @@ RSpec.describe Fast::Gains do
       subject.record_search(file)
       subject.save!
       
+      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
+      expect(temp_files).to be_empty
+    end
+
+    it 'saves multiple runs to different files and consolidates them' do
+      # Run 1
+      g1 = Fast::Gains.new('run 1')
+      File.write(File.join(temp_dir, 'f1.rb'), 'hello')
+      g1.record_search(File.join(temp_dir, 'f1.rb'))
+      g1.record_report('match 1')
+      g1.save!
+
+      # Run 2
+      g2 = Fast::Gains.new('run 2')
+      File.write(File.join(temp_dir, 'f2.rb'), 'world')
+      g2.record_search(File.join(temp_dir, 'f2.rb'))
+      g2.record_report('match 2')
+      g2.save!
+
+      # Verify two temp files exist
+      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
+      expect(temp_files.size).to eq(2)
       expect(File.exist?(temp_file)).to be false
+
+      # Consolidate
+      data = Fast::Gains.consolidate!
+
+      # Verify temp files are gone and gains.json exists
+      expect(Dir.glob(File.join(temp_dir, 'gains-*.json'))).to be_empty
+      expect(File.exist?(temp_file)).to be true
+      
+      expect(data.size).to eq(2)
+      expect(data.map { |h| h[:command] }).to contain_exactly('run 1', 'run 2')
+      expect(data.last[:reports]).to contain_exactly('match 2')
+    end
+
+    it 'keeps reports only for the latest runs' do
+      6.times do |i|
+        g = Fast::Gains.new("run #{i}")
+        File.write(File.join(temp_dir, "f#{i}.rb"), "content #{i}")
+        g.record_search(File.join(temp_dir, "f#{i}.rb"))
+        g.record_report("patch #{i}")
+        g.save!
+      end
+
+      Fast::Gains.consolidate!
+
+      data = JSON.parse(File.read(temp_file), symbolize_names: true)
+      expect(data.size).to eq(6)
+      
+      # Run 0 should not have reports
+      expect(data[0][:reports]).to be_nil
+      # Run 5 should have reports
+      expect(data[5][:reports]).to contain_exactly('patch 5')
+      # Run 1 should have reports (since it's index 1 in 6 entries, it's one of the last 5)
+      expect(data[1][:reports]).to contain_exactly('patch 1')
+    end
+
+    it 'does NOT record or save anything if disabled' do
+      Fast.disable_gain_track!
+      file = File.join(temp_dir, 'test.rb')
+      File.write(file, 'test content')
+      
+      subject.record_search(file)
+      subject.record_match(file)
+      subject.record_report('match')
+      subject.save!
+      
+      expect(subject.files_count).to eq(0)
+      expect(subject.matched_files_count).to eq(0)
+      expect(subject.total_bytes_reported).to eq(0)
+      
+      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
+      expect(temp_files).to be_empty
+    end
+
+    it 'does NOT record or save anything if FAST_GAINS=0' do
+      stub_const('ENV', ENV.to_h.merge('FAST_GAINS' => '0'))
+      file = File.join(temp_dir, 'test.rb')
+      File.write(file, 'test content')
+      
+      subject.record_search(file)
+      subject.record_match(file)
+      subject.record_report('match')
+      subject.save!
+      
+      expect(subject.files_count).to eq(0)
+      
+      temp_files = Dir.glob(File.join(temp_dir, 'gains-*.json'))
+      expect(temp_files).to be_empty
     end
   end
 

@@ -12,6 +12,7 @@ RSpec.describe Fast::Cli do
     stub_const('Fast::Gains::STORAGE_DIR', temp_dir)
     stub_const('Fast::Gains::STORAGE_FILE', temp_file)
     FileUtils.mkdir_p(temp_dir)
+    Fast.enable_gain_track!
   end
 
   after do
@@ -25,6 +26,8 @@ RSpec.describe Fast::Cli do
 
       cli = Fast::Cli.new(['(def hello)', test_file, '--no-color'])
       expect { cli.run! }.to output(/def hello/).to_stdout
+
+      Fast::Gains.consolidate!
 
       expect(File.exist?(temp_file)).to be true
       data = JSON.parse(File.read(temp_file)).last

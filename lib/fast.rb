@@ -63,6 +63,22 @@ module Fast
   /x.freeze
 
   class << self
+    attr_accessor :gain_tracking_enabled
+
+    def enable_gain_track!
+      self.gain_tracking_enabled = true
+    end
+
+    def disable_gain_track!
+      self.gain_tracking_enabled = false
+    end
+
+    def gain_tracking_enabled?
+      return false if ENV['FAST_GAINS'] == '0'
+
+      @gain_tracking_enabled == true
+    end
+
     def ast_node?(node)
       node.respond_to?(:type) && node.respond_to?(:children)
     end
