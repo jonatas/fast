@@ -65,17 +65,22 @@ printf '%s\n' \
   | ruby -Ilib bin/fast-mcp
 ```
 
-This returns a JSON payload whose `result.content[0].text` is itself a JSON array of matches. Each match includes `file`, `line_start`, `line_end`, and the trimmed `code` snippet.
+This returns a JSON payload whose `result.content[0].text` is itself a JSON object containing:
+- `matches`: A JSON array of matches. Each match includes `file`, `line_start`, `line_end`, and the trimmed `code` snippet.
+- `total`: Total number of matches found.
+- `offset`: The current offset used.
+- `limit`: The maximum number of matches returned.
+- `has_more`: Boolean indicating if there are more results available.
 
-### 3. Extract a method from a known class
+### 3. Extract a method from a known class with pagination
 
 ```bash
 printf '%s\n' \
-  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ruby_method_source","arguments":{"method_name":"run","class_name":"McpServer","paths":["lib"]}}}' \
+  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"ruby_method_source","arguments":{"method_name":"run","class_name":"McpServer","paths":["lib"],"limit":5,"offset":0}}}' \
   | ruby -Ilib bin/fast-mcp
 ```
 
-This is often more token-efficient than returning the full class body.
+This is often more token-efficient than returning the full class body. The `limit` defaults to 20.
 
 ### 4. Search with a raw AST pattern
 
