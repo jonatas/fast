@@ -65,16 +65,24 @@ module Fast
         bytes_reported: @total_bytes_reported
       }
 
-      FileUtils.mkdir_p(self.class.storage_dir) rescue nil
-      temp_filename = File.join(self.class.storage_dir, "gains-#{Time.now.to_f}-#{Process.pid}.json")
-      File.write(temp_filename, JSON.generate(data)) rescue nil
+      begin
+        FileUtils.mkdir_p(self.class.storage_dir)
+        temp_filename = File.join(self.class.storage_dir, "gains-#{Time.now.to_f}-#{Process.pid}.json")
+        File.write(temp_filename, JSON.generate(data))
+      rescue Errno::EACCES, Errno::EPERM
+        # Fail silently if not possible to write due to permissions
+      end
       
       self.class.consolidate!
     end
 
     def self.consolidate!
       return unless File.writable?(storage_dir) || File.writable?(File.dirname(storage_dir))
-      FileUtils.mkdir_p(storage_dir) rescue nil
+      begin
+        FileUtils.mkdir_p(storage_dir)
+      rescue Errno::EACCES, Errno::EPERM
+        # Fail silently if not possible to write due to permissions
+      end
       
       File.open(storage_file, File::RDWR|File::CREAT, 0644) do |f|
         f.flock(File::LOCK_EX)
@@ -88,7 +96,7 @@ module Fast
           begin
             all_data << JSON.parse(File.read(file), symbolize_names: true)
             File.delete(file)
-          rescue
+          rescue StandardError
             # Skip corrupted files
           end
         end
@@ -101,8 +109,8 @@ module Fast
         f.write(JSON.pretty_generate(all_data))
         all_data
       end
-    rescue
-      # Fail silently if not possible to write
+    rescue Errno::EACCES, Errno::EPERM
+      # Fail silently if not possible to write due to permissions
       []
     end
 
