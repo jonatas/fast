@@ -206,7 +206,7 @@ module Fast
       { valid: false, error: e.message }
     end
 
-    def execute_search(pattern, paths, show_ast: false, offset: 0, limit: 20)
+    def execute_search(pattern, paths, show_ast: false, offset: nil, limit: nil)
       results = []
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
@@ -227,16 +227,22 @@ module Fast
 
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
       
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
       {
-        matches:  results[offset, limit] || [],
+        matches:  matches,
         total:    results.size,
         offset:   offset,
         limit:    limit,
-        has_more: offset + limit < results.size
+        has_more: (offset || 0) + (limit || results.size) < results.size
       }
     end
 
-    def execute_method_search(method_name, paths, class_name: nil, show_ast: false, offset: 0, limit: 20)
+    def execute_method_search(method_name, paths, class_name: nil, show_ast: false, offset: nil, limit: nil)
       pattern = "(def #{method_name})"
       results = []
       on_result = ->(file, matches) do
@@ -259,16 +265,22 @@ module Fast
 
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
 
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
       {
-        matches:  results[offset, limit] || [],
+        matches:  matches,
         total:    results.size,
         offset:   offset,
         limit:    limit,
-        has_more: offset + limit < results.size
+        has_more: (offset || 0) + (limit || results.size) < results.size
       }
     end
 
-    def execute_class_search(class_name, paths, show_ast: false, offset: 0, limit: 20)
+    def execute_class_search(class_name, paths, show_ast: false, offset: nil, limit: nil)
       # Use simple (class ...) pattern then filter by name — avoids nil/superclass edge cases
       results = []
       on_result = ->(file, matches) do
@@ -291,12 +303,18 @@ module Fast
       on_search = ->(file) { @gains&.record_search(file) }
       Fast.search_all('(class ...)', paths, parallel: false, on_result: on_result, on_search: on_search)
       
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
       {
-        matches:  results[offset, limit] || [],
+        matches:  matches,
         total:    results.size,
         offset:   offset,
         limit:    limit,
-        has_more: offset + limit < results.size
+        has_more: (offset || 0) + (limit || results.size) < results.size
       }
     end
 
