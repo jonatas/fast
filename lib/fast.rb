@@ -63,7 +63,7 @@ module Fast
   /x.freeze
 
   class << self
-    attr_accessor :gain_tracking_enabled
+    attr_accessor :gain_tracking_enabled, :gains_dir
 
     def enable_gain_track!
       self.gain_tracking_enabled = true
@@ -75,8 +75,12 @@ module Fast
 
     def gain_tracking_enabled?
       return false if ENV['FAST_GAINS'] == '0'
+      return false unless @gain_tracking_enabled
 
-      @gain_tracking_enabled == true
+      dir = gains_dir || (defined?(Fast::Gains::STORAGE_DIR) ? Fast::Gains::STORAGE_DIR : nil)
+      return false unless dir
+
+      File.writable?(dir) || File.writable?(File.dirname(dir))
     end
 
     def ast_node?(node)
@@ -624,6 +628,18 @@ module Fast
       "f[#{[*token].map(&:to_s).join(', ')}]"
     end
 
+    def to_h
+      { type: self.class.name.split('::').last, token: token_to_h }
+    end
+
+    def token_to_h
+      case token
+      when Array then token.map { |t| t.respond_to?(:to_h) ? t.to_h : t }
+      when Find then token.to_h
+      else token
+      end
+    end
+
     def ==(other)
       return false if other.nil? || !other.respond_to?(:token)
 
@@ -670,6 +686,10 @@ module Fast
       @method_name = method_name
     end
 
+    def to_h
+      { type: 'MethodCall', method_name: @method_name }
+    end
+
     def match?(node)
       Kernel.send(@method_name, node)
     end
@@ -679,6 +699,10 @@ module Fast
   class InstanceMethodCall < Find
     def initialize(method_name)
       @method_name = method_name
+    end
+
+    def to_h
+      { type: 'InstanceMethodCall', method_name: @method_name }
     end
 
     def match?(node)
@@ -701,6 +725,10 @@ module Fast
       raise 'You must use captures!' unless token
 
       @capture_index = token.to_i
+    end
+
+    def to_h
+      { type: 'FindWithCapture', capture_index: @capture_index }
     end
 
     def match?(node)
@@ -729,6 +757,10 @@ module Fast
 
       @capture_argument = token.to_i - 1
       raise 'Arguments start in one' if @capture_argument.negative?
+    end
+
+    def to_h
+      { type: 'FindFromArgument', capture_argument: @capture_argument + 1 }
     end
 
     def match?(node)

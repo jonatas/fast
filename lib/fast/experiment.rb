@@ -91,10 +91,11 @@ module Fast
   class Experiment
     attr_writer :files
     attr_reader :name, :replacement, :expression, :files_or_folders, :ok_if
-    attr_accessor :autoclean
+    attr_accessor :autoclean, :strategy
 
     def initialize(name, &block)
       @name = name
+      @strategy = :combinations
       puts "\nStarting experiment: #{name}"
       instance_exec(&block)
     end
@@ -128,13 +129,19 @@ module Fast
       @ok_if = block
     end
 
+    # @param [Symbol] strategy to use. Default is :combinations.
+    def strategy(strategy = nil)
+      return @strategy if strategy.nil?
+      @strategy = strategy
+    end
+
     # @return [Array<String>] with files from {#lookup} expression.
     def files
       @files ||= Fast.ruby_files_from(@files_or_folders)
     end
 
     # Iterates over all {#files} to {#run_with} them.
-    # @return [void]
+    # @return [Array<Hash>] results of the experiment for each file
     def run
       files.map(&method(:run_with))
     end
@@ -160,7 +167,7 @@ module Fast
     # Generate different combinations depending on the current round.
     # * Round 1: Use {#individual_replacements}
     # * Round 2: Tries {#all_ok_replacements_combined}
-    # * Round 3+: Follow {#ok_replacements_pair_combinations}
+    # * Round 3+: Follow {#ok_replacements_pair_combinations} or bisection/chunks
     def generate_combinations
       case @round
       when 1
@@ -168,7 +175,26 @@ module Fast
       when 2
         all_ok_replacements_combined
       else
-        ok_replacements_pair_combinations
+        if @ok_experiments.size > 10
+          bisection_combinations
+        else
+          ok_replacements_pair_combinations
+        end
+      end
+    end
+
+    def bisection_combinations
+      return [] if @ok_experiments.size <= 1
+      
+      mid = @ok_experiments.size / 2
+      left = @ok_experiments[0...mid].flatten.uniq.sort
+      right = @ok_experiments[mid..-1].flatten.uniq.sort
+      
+      [left, right].reject do |c| 
+        c.size <= 1 || 
+          @ok_experiments.include?(c) || 
+          @fail_experiments.include?(c) ||
+          (c.size == 1 && @ok_experiments.include?(c.first))
       end
     end
 
@@ -337,16 +363,55 @@ module Fast
     def done!
       count_executed_combinations = @fail_experiments.size + @ok_experiments.size
       puts "Done with #{@file} after #{count_executed_combinations} combinations"
-      unless perfect_combination = @ok_experiments.last # rubocop:disable Lint/AssignmentInCondition
+      
+      if experiment.strategy == :dry_run
         cleanup_generated_files! if experiment.autoclean?
-        return
+        return { 
+          file: @file, 
+          status: :dry_run, 
+          ok_experiments: @ok_experiments, 
+          fail_experiments: @fail_experiments
+        }
+      end
+
+      final_combination = @ok_experiments.max_by { |c| Array(c).size }
+      
+      if experiment.strategy == :apply_individual_survivors
+        final_combination = @ok_experiments.flatten.uniq.sort
+      end
+
+      unless final_combination
+        cleanup_generated_files! if experiment.autoclean?
+        return { file: @file, status: :no_changes }
+      end
+
+      # If the final combination is already applied to the file (last round succeeded)
+      # we just need to move it if it's not the same file.
+      # But usually we want to build a final file with ALL successful independent changes.
+      
+      # For now, let's just use the best one we found.
+      # If the user wants to apply all survivors, we need to create a file with all of them.
+      
+      if experiment.strategy == :apply_individual_survivors || !@ok_experiments.include?(final_combination)
+        content = partial_replace(*final_combination)
+        experimental_file = write_experiment_file(final_combination, content)
+      else
+        experimental_file = experimental_filename(final_combination)
       end
 
       puts 'The following changes were applied to the file:'
-      `diff #{experimental_filename(perfect_combination)} #{@file}`
-      puts "mv #{experimental_filename(perfect_combination)} #{@file}"
-      `mv #{experimental_filename(perfect_combination)} #{@file}`
+      `diff #{experimental_file} #{@file}`
+      puts "mv #{experimental_file} #{@file}"
+      `mv #{experimental_file} #{@file}`
       cleanup_generated_files! if experiment.autoclean?
+      
+      { 
+        file: @file, 
+        status: :applied, 
+        combination: final_combination, 
+        ok_count: @ok_experiments.size,
+        fail_count: @fail_experiments.size
+      }
     end
 
     # Increase the `@round` by 1 to {ExperimentCombinations#generate_combinations}.
@@ -371,6 +436,7 @@ module Fast
         while combination = combinations.shift # rubocop:disable Lint/AssignmentInCondition
           run_partial_replacement_with(combination)
         end
+        break if (experiment.strategy == :apply_individual_survivors || experiment.strategy == :dry_run) && @round == 1
       end
       done!
     end

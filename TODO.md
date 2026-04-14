@@ -1,3 +1,4 @@
-- [ ] Add matcher diagnostics. Allow check details of each matcher in the three
+- [x] Add matcher diagnostics. Allow check details of each matcher in the tree (via `to_h`)
 - [ ] Split stuff into files and add tests for each class
-- [ ] Validate expressions and raise errors for invalid expressions
+- [x] Validate expressions and raise errors for invalid expressions (Improved MCP validation)
+- [x] Review docs/feedback/mcp_weak_format_matcher_experiment.md and improve experiment finalization for MCP-driven refactors

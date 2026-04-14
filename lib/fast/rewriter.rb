@@ -131,6 +131,8 @@ module Fast
     def execute_replacement(node, captures)
       if replacement.parameters.length == 1
         instance_exec node, &replacement
+      elsif replacement.parameters.length > 2 && captures.is_a?(Array)
+        instance_exec node, *captures, &replacement
       else
         instance_exec node, captures, &replacement
       end

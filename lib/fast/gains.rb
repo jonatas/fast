@@ -11,6 +11,14 @@ module Fast
     STORAGE_DIR = File.expand_path('~/.fast')
     STORAGE_FILE = File.join(STORAGE_DIR, 'gains.json')
 
+    def self.storage_dir
+      Fast.gains_dir || STORAGE_DIR
+    end
+
+    def self.storage_file
+      File.join(storage_dir, 'gains.json')
+    end
+
     attr_reader :command, :start_time, :total_bytes_searched, :total_bytes_reported, :files_count, :matched_files_count
 
     def initialize(command = nil)
@@ -57,24 +65,25 @@ module Fast
         bytes_reported: @total_bytes_reported
       }
 
-      FileUtils.mkdir_p(STORAGE_DIR)
-      temp_filename = File.join(STORAGE_DIR, "gains-#{Time.now.to_f}-#{Process.pid}.json")
-      File.write(temp_filename, JSON.generate(data))
+      FileUtils.mkdir_p(self.class.storage_dir) rescue nil
+      temp_filename = File.join(self.class.storage_dir, "gains-#{Time.now.to_f}-#{Process.pid}.json")
+      File.write(temp_filename, JSON.generate(data)) rescue nil
       
       self.class.consolidate!
     end
 
     def self.consolidate!
-      FileUtils.mkdir_p(STORAGE_DIR)
+      return unless File.writable?(storage_dir) || File.writable?(File.dirname(storage_dir))
+      FileUtils.mkdir_p(storage_dir) rescue nil
       
-      File.open(STORAGE_FILE, File::RDWR|File::CREAT, 0644) do |f|
+      File.open(storage_file, File::RDWR|File::CREAT, 0644) do |f|
         f.flock(File::LOCK_EX)
         
         content = f.read
         all_data = JSON.parse(content, symbolize_names: true) rescue [] unless content.empty?
         all_data ||= []
         
-        temp_files = Dir.glob(File.join(STORAGE_DIR, 'gains-*.json'))
+        temp_files = Dir.glob(File.join(storage_dir, 'gains-*.json'))
         temp_files.each do |file|
           begin
             all_data << JSON.parse(File.read(file), symbolize_names: true)
@@ -92,6 +101,9 @@ module Fast
         f.write(JSON.pretty_generate(all_data))
         all_data
       end
+    rescue
+      # Fail silently if not possible to write
+      []
     end
 
     def self.summarize(data)
