@@ -33,7 +33,7 @@ RSpec.describe 'Gem Audit' do
   end
 
   it 'does not include any forbidden development files' do
-    forbidden_files = %w[.github .travis .rspec .rubocop Gemfile Rakefile Guardfile spec test experiments examples docs site ideia_blog_post.md]
+    forbidden_files = %w[.github .travis .rspec .rubocop Gemfile Rakefile Guardfile spec test examples docs site ideia_blog_post.md]
     included_files.each do |file|
       forbidden_files.each do |forbidden|
         expect(file).not_to start_with(forbidden), "Forbidden file or directory included: #{file}"

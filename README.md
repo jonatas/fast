@@ -6,6 +6,8 @@
 
 Fast, short for "Find AST", is a tool to search, prune, and edit Ruby ASTs.
 
+If you use Fast for LLMs and Agents, it includes an efficiency tracking feature to quantify the savings in terms of context and manual effort. See [Fast Gains (Efficiency Tracking)](https://jonatas.github.io/fast/gains) for more details.
+
 Ruby is a flexible language that allows us to write code in multiple different ways
 to achieve the same end result, and because of this it's hard to verify how
 the code was written without an AST.
@@ -519,6 +521,7 @@ The CLI tool takes the following flags
 - Use `-c` to search from code example
 - Use `-s` to search similar code
 - Use `-p` or `--parallel` to parallelize the search
+- Use `.gains` to show search efficiency statistics
 
 ### Define your `Fastfile`
 

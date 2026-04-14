@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
     lib/fast/cli.rb
     lib/fast/experiment.rb
     lib/fast/git.rb
+    lib/fast/gains.rb
     lib/fast/mcp_server.rb
     lib/fast/node.rb
     lib/fast/prism_adapter.rb
@@ -38,6 +39,10 @@ Gem::Specification.new do |spec|
     bin/fast-experiment
     bin/setup
     bin/console
+    experiments/replace_create_with_build_stubbed.rb
+    experiments/let_it_be_experiment.rb
+    experiments/remove_useless_hook.rb
+    experiments/replace_update_attributes_with_update.rb
     .agents/fast-pattern-expert/SKILL.md
     LICENSE.txt
     README.md

@@ -216,15 +216,19 @@ RSpec.describe Fast::PrismAdapter do
 
     it 'adapts alias, break, super, xstr, dxstr, dsym, regexp' do
       source = <<~'RUBY'
-        alias old new
-        alias :old_sym :new_sym
-        alias $a $b
-        break 1
-        super(2)
-        `ls`
-        `ls #{dir}`
-        :"symbol_#{index}"
-        /regex/i
+        def method
+          alias old new
+          alias :old_sym :new_sym
+          alias $a $b
+          while true
+            break 1
+          end
+          super(2)
+          `ls`
+          `ls #{dir}`
+          :"symbol_#{index}"
+          /regex/i
+        end
       RUBY
 
       tree = described_class.parse(source)
@@ -235,8 +239,8 @@ RSpec.describe Fast::PrismAdapter do
       expect(Fast.search('(break (int 1))', tree)).not_to be_empty
       expect(Fast.search('(super (int 2))', tree)).not_to be_empty
       expect(Fast.search('(xstr "ls")', tree)).not_to be_empty
-      expect(Fast.search('(dxstr (str "ls ") (send nil dir))', tree)).not_to be_empty
-      expect(Fast.search('(dsym (str "symbol_") (send nil index))', tree)).not_to be_empty
+      expect(Fast.search('(dxstr (str "ls ") (begin (send nil dir)))', tree)).not_to be_empty
+      expect(Fast.search('(dsym (str "symbol_") (begin (send nil index)))', tree)).not_to be_empty
       expect(Fast.search('(regexp (str "regex") (regopt :i))', tree)).not_to be_empty
     end
 

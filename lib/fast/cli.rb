@@ -4,6 +4,7 @@ require 'fast'
 require 'fast/source'
 require 'fast/version'
 require 'fast/sql'
+require 'fast/gains'
 require 'coderay'
 require 'optparse'
 require 'ostruct'
@@ -82,29 +83,39 @@ module Fast
   # @param level [Integer] Skip exploring deep branches of AST when showing sexp
   # @example
   #   Fast.report(result, file: 'file.rb')
-  def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true, level: nil) # rubocop:disable Metrics/ParameterLists
+  def report(result, show_link: false, show_permalink: false, show_sexp: false, file: nil, headless: false, bodyless: false, colorize: true, level: nil, gains: nil) # rubocop:disable Metrics/ParameterLists
     if file
       if result.is_a?(Symbol) && !result.respond_to?(:loc)
         result.extend(SymbolExtension)
       end
       line = result.loc.expression.line if Fast.ast_node?(result) && result.respond_to?(:loc)
       if show_link
-        puts(result.link)
+        puts_and_record(result.link, gains)
       elsif show_permalink
-        puts(result.permalink)
+        puts_and_record(result.permalink, gains)
       elsif !headless
-        puts(highlight("# #{file}:#{line}", colorize: colorize))
+        puts_and_record(highlight("# #{file}:#{line}", colorize: colorize), gains)
       end
     end
-    puts(highlight(result, show_sexp: show_sexp, colorize: colorize, level: level)) unless bodyless
+    puts_and_record(highlight(result, show_sexp: show_sexp, colorize: colorize, level: level), gains) unless bodyless
+  end
+
+  def puts_and_record(content, gains)
+    puts(content)
+    gains&.record_report(content)
   end
 
   # Command Line Interface for Fast
   class Cli # rubocop:disable Metrics/ClassLength
-    attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help, :level
+    attr_reader :pattern, :show_sexp, :pry, :from_code, :similar, :help, :level, :gains
     def initialize(args)
+      require 'fast/shortcut'
+      Fast.load_fast_files!
+      @gains = Gains.new(args.join(' '))
       args = args.dup
-      args = replace_args_with_shortcut(args) if shortcut_name_from(args)
+      unless args.include?('.gains')
+        args = replace_args_with_shortcut(args) if shortcut_name_from(args)
+      end
       @colorize = STDOUT.isatty
       @headless = false
       @bodyless = false
@@ -233,6 +244,12 @@ module Fast
     def run!
       raise 'pry and parallel options are incompatible :(' if @parallel && @pry
 
+      if @pattern&.start_with?('.gains')
+        filter = @pattern.split(' ')[1]
+        Gains.report(filter)
+        return
+      end
+
       if @help || @files.empty? && @pattern.nil?
         puts option_parser.help
         return
@@ -253,10 +270,13 @@ module Fast
 
       if @files.empty?
         ast ||= Fast.public_send( @sql ? :parse_sql : :ast, @pattern)
-        puts Fast.highlight(ast, show_sexp: @show_sexp, colorize: @colorize, sql: @sql, level: @level)
+        content = Fast.highlight(ast, show_sexp: @show_sexp, colorize: @colorize, sql: @sql, level: @level)
+        puts content
+        @gains.record_report(content)
       else
         search
       end
+      @gains.save!
     end
 
     # Create fast expression from node pattern using the command line
@@ -273,6 +293,7 @@ module Fast
       return Fast.debug(&method(:execute_search)) if debug_mode?
 
       execute_search do |file, results|
+        @gains.record_match(file) if results.any?
         results.each do |result|
           binding.pry if @pry # rubocop:disable Lint/Debugger
           report(file, result)
@@ -283,11 +304,13 @@ module Fast
     # Executes search for all files yielding the results
     # @yieldparam [String, Array] with file and respective search results
     def execute_search(&on_result)
+      on_search = ->(file) { @gains.record_search(file) }
       Fast.public_send(search_method_name,
                        @pattern,
                        @files,
                        parallel: parallel?,
-                       on_result: on_result)
+                       on_result: on_result,
+                       on_search: on_search)
     end
 
     # @return [Symbol] with `:capture_all` or `:search_all` depending the command line options
@@ -320,7 +343,8 @@ module Fast
                   headless: @headless,
                   bodyless: @bodyless,
                   colorize: @colorize,
-                  level: @level)
+                  level: @level,
+                  gains: @gains)
     end
 
     def shortcut_name_from(args)
@@ -344,11 +368,6 @@ module Fast
     # Find shortcut by name. Preloads all `Fastfiles` before start.
     # @param name [String]
     def find_shortcut(name)
-      unless defined? Fast::Shortcut
-        require 'fast/shortcut'
-        Fast.load_fast_files!
-      end
-
       shortcut = Fast.shortcuts[name.to_sym]
       exit_shortcut_not_found(name) unless shortcut
       shortcut
@@ -360,7 +379,6 @@ module Fast
       puts "Shortcut \033[1m#{name}\033[0m not found :("
       if Fast.shortcuts.any?
         puts "Available shortcuts are: #{Fast.shortcuts.keys.join(', ')}."
-        Fast.load_fast_files!
       end
       exit 1
     end
