@@ -29,7 +29,9 @@ module Fast
           properties: {
             pattern: { type: 'string', description: 'Fast AST pattern, e.g. "(def match?)" or "(send nil :raise ...)".' },
             paths:   { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
-            show_ast: { type: 'boolean', description: 'Include s-expression AST in results (default: false).' }
+            show_ast: { type: 'boolean', description: 'Include s-expression AST in results (default: false).' },
+            offset:   { type: 'integer', description: 'Offset for pagination (default: 0).' },
+            limit:    { type: 'integer', description: 'Maximum number of results to return (default: 20).' }
           },
           required: ['pattern', 'paths']
         }
@@ -43,7 +45,9 @@ module Fast
             method_name: { type: 'string', description: 'Method name, e.g. "initialize".' },
             paths:       { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
             class_name:  { type: 'string', description: 'Optional class name to restrict results, e.g. "Matcher".' },
-            show_ast:    { type: 'boolean', description: 'Include s-expression AST in results (default: false).' }
+            show_ast:    { type: 'boolean', description: 'Include s-expression AST in results (default: false).' },
+            offset:      { type: 'integer', description: 'Offset for pagination (default: 0).' },
+            limit:       { type: 'integer', description: 'Maximum number of results to return (default: 20).' }
           },
           required: ['method_name', 'paths']
         }
@@ -56,7 +60,9 @@ module Fast
           properties: {
             class_name: { type: 'string', description: 'Class name to extract, e.g. "Rewriter".' },
             paths:      { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
-            show_ast:   { type: 'boolean', description: 'Include s-expression AST in results (default: false).' }
+            show_ast:   { type: 'boolean', description: 'Include s-expression AST in results (default: false).' },
+            offset:     { type: 'integer', description: 'Offset for pagination (default: 0).' },
+            limit:      { type: 'integer', description: 'Maximum number of results to return (default: 20).' }
           },
           required: ['class_name', 'paths']
         }
@@ -157,6 +163,8 @@ module Fast
       tool_name = params['name']
       args      = params['arguments'] || {}
       show_ast  = args['show_ast'] || false
+      offset    = args['offset'] || 0
+      limit     = args['limit'] || 20
       @gains    = Gains.new("mcp:#{tool_name}")
 
       if args['pattern'] && !args['pattern'].start_with?('(', '{', '[') && !args['pattern'].match?(/^[a-z_]+$/)
@@ -168,12 +176,12 @@ module Fast
         when 'validate_fast_pattern'
           execute_validate_pattern(args['pattern'])
         when 'search_ruby_ast'
-          execute_search(args['pattern'], args['paths'], show_ast: show_ast)
+          execute_search(args['pattern'], args['paths'], show_ast: show_ast, offset: offset, limit: limit)
         when 'ruby_method_source'
           execute_method_search(args['method_name'], args['paths'],
-                                class_name: args['class_name'], show_ast: show_ast)
+                                class_name: args['class_name'], show_ast: show_ast, offset: offset, limit: limit)
         when 'ruby_class_source'
-          execute_class_search(args['class_name'], args['paths'], show_ast: show_ast)
+          execute_class_search(args['class_name'], args['paths'], show_ast: show_ast, offset: offset, limit: limit)
         when 'rewrite_ruby'
           execute_rewrite(args['source'], args['pattern'], args['replacement'])
         when 'rewrite_ruby_file'
@@ -198,7 +206,7 @@ module Fast
       { valid: false, error: e.message }
     end
 
-    def execute_search(pattern, paths, show_ast: false)
+    def execute_search(pattern, paths, show_ast: false, offset: nil, limit: nil)
       results = []
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
@@ -218,21 +226,61 @@ module Fast
       on_search = ->(file) { @gains&.record_search(file) }
 
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
-      results
+      
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
+      {
+        matches:  matches,
+        total:    results.size,
+        offset:   offset,
+        limit:    limit,
+        has_more: (offset || 0) + (limit || results.size) < results.size
+      }
     end
 
-    def execute_method_search(method_name, paths, class_name: nil, show_ast: false)
+    def execute_method_search(method_name, paths, class_name: nil, show_ast: false, offset: nil, limit: nil)
       pattern = "(def #{method_name})"
-      results = execute_search(pattern, paths, show_ast: show_ast)
-      return results unless class_name
+      results = []
+      on_result = ->(file, matches) do
+        @gains&.record_match(file) if matches.any?
+        matches.compact.each do |node|
+          next unless (exp = node_expression(node))
+          next if class_name && !class_defined_in_file?(class_name, file)
 
-      # Filter: keep only methods whose file contains the class
-      results.select do |r|
-        class_defined_in_file?(class_name, r[:file])
+          entry = {
+            file:       file,
+            line_start: exp.line,
+            line_end:   exp.last_line,
+            code:       Fast.highlight(node, colorize: false)
+          }
+          entry[:ast] = Fast.highlight(node, show_sexp: true, colorize: false) if show_ast
+          results << entry
+        end
       end
+      on_search = ->(file) { @gains&.record_search(file) }
+
+      Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
+
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
+      {
+        matches:  matches,
+        total:    results.size,
+        offset:   offset,
+        limit:    limit,
+        has_more: (offset || 0) + (limit || results.size) < results.size
+      }
     end
 
-    def execute_class_search(class_name, paths, show_ast: false)
+    def execute_class_search(class_name, paths, show_ast: false, offset: nil, limit: nil)
       # Use simple (class ...) pattern then filter by name — avoids nil/superclass edge cases
       results = []
       on_result = ->(file, matches) do
@@ -254,7 +302,20 @@ module Fast
       end
       on_search = ->(file) { @gains&.record_search(file) }
       Fast.search_all('(class ...)', paths, parallel: false, on_result: on_result, on_search: on_search)
-      results.select { |r| r[:file] } # already filtered above
+      
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
+      {
+        matches:  matches,
+        total:    results.size,
+        offset:   offset,
+        limit:    limit,
+        has_more: (offset || 0) + (limit || results.size) < results.size
+      }
     end
 
     def execute_rewrite(source, pattern, replacement)
