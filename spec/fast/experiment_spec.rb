@@ -16,18 +16,19 @@ RSpec.describe Fast::Experiment do
 
   describe Fast::ExperimentFile do
     let(:experiment_file) { Fast::ExperimentFile.new(spec, experiment) }
-    let(:spec) do
-      tempfile = Tempfile.new
-      tempfile.write <<~RUBY
+    let(:tempfile) do
+      tf = Tempfile.new
+      tf.write <<~RUBY
         let(:user) { create(:user) }
         let(:address) { create(:address) }
         let(:phone_number) { create(:phone_number) }
         let(:country) { create(:country) }
         let(:language) { create(:language) }
       RUBY
-      tempfile.close
-      tempfile.path
+      tf.close
+      tf
     end
+    let(:spec) { tempfile.path }
 
     describe '#filename' do
       it { expect(experiment_file.experimental_filename(1)).to include('experiment_1') }
