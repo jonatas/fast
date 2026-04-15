@@ -103,7 +103,12 @@ module Fast
             lookup: { type: 'string', description: 'Folder or file to target, e.g. "spec"' },
             search: { type: 'string', description: 'Fast AST search pattern to find nodes.' },
             edit: { type: 'string', description: 'Ruby code to evaluate in Rewriter context. Has access to `node` variable. Example: `replace(node.loc.expression, "build_stubbed")`' },
-            policy: { type: 'string', description: 'Shell command returning exit status 0 on success. Uses {file} for the temporary file created during the rewrite round. Example: `bin/spring rspec --fail-fast {file}`' }
+            policy: { type: 'string', description: 'Shell command returning exit status 0 on success. Uses {file} for the temporary file created during the rewrite round. Example: `bin/spring rspec --fail-fast {file}`' },
+            strategy: { type: 'string', enum: ['combinations', 'apply_individual_survivors', 'dry_run'], description: 'Strategy for the experiment (default: combinations).' },
+            cwd: { type: 'string', description: 'Optional directory to run the policy command in.' },
+            env: { type: 'object', additionalProperties: { type: 'string' }, description: 'Optional environment variables for the policy command.' },
+            gains_dir: { type: 'string', description: 'Optional directory to store gains files.' },
+            gains_enabled: { type: 'boolean', description: 'Enable or disable gains tracking for this tool call (default: true).' }
           },
           required: ['name', 'lookup', 'search', 'edit', 'policy']
         }
@@ -159,13 +164,20 @@ module Fast
     end
 
     def handle_tool_call(id, params)
-      Fast.enable_gain_track!
       tool_name = params['name']
       args      = params['arguments'] || {}
       show_ast  = args['show_ast'] || false
       offset    = args['offset'] || 0
       limit     = args['limit'] || 20
-      @gains    = Gains.new("mcp:#{tool_name}")
+
+      if args['gains_enabled'] == false
+        Fast.disable_gain_track!
+      else
+        Fast.enable_gain_track!
+      end
+      Fast.gains_dir = args['gains_dir'] if args['gains_dir']
+
+      @gains = Gains.new("mcp:#{tool_name}")
 
       if args['pattern'] && !args['pattern'].start_with?('(', '{', '[') && !args['pattern'].match?(/^[a-z_]+$/)
         raise "Invalid Fast AST pattern: '#{args['pattern']}'. Did you mean to use an s-expression like '(#{args['pattern']})'?"
@@ -187,7 +199,7 @@ module Fast
         when 'rewrite_ruby_file'
           execute_rewrite_file(args['file'], args['pattern'], args['replacement'])
         when 'run_fast_experiment'
-          execute_fast_experiment(args['name'], args['lookup'], args['search'], args['edit'], args['policy'])
+          execute_fast_experiment(args)
         else
           raise "Unknown tool: #{tool_name}"
         end
@@ -196,12 +208,12 @@ module Fast
       @gains.save!
       write_response(id, { content: [{ type: 'text', text: JSON.generate(result) }] })
     rescue => e
-      write_error(id, -32603, 'Tool execution failed', e.message)
+      write_error(id, -32603, "Tool execution failed: #{e.message}", e.backtrace.join("\n"))
     end
 
     def execute_validate_pattern(pattern)
-      Fast.expression(pattern)
-      { valid: true }
+      res = Fast.expression(pattern)
+      { valid: true, structure: res.is_a?(Array) ? res.map(&:to_h) : res.to_h }
     rescue StandardError => e
       { valid: false, error: e.message }
     end
@@ -352,26 +364,36 @@ module Fast
       { file: file, changed: true, diff: diff }
     end
 
-    def execute_fast_experiment(name, lookup_path, search_pattern, edit_code, policy_command)
+    def execute_fast_experiment(args)
+      name = args['name']
+      lookup_path = args['lookup']
+      search_pattern = args['search']
+      edit_code = args['edit']
+      policy_command = args['policy']
+      cwd = args['cwd']
+      env = args['env'] || {}
+
       require 'fast/experiment'
       original_stdout = $stdout.dup
       capture_output = StringIO.new
       $stdout = capture_output
 
+      results = []
       begin
         experiment = Fast.experiment(name) do
           lookup lookup_path
           search search_pattern
+          strategy args['strategy'].to_sym if args['strategy']
           edit do |node, *captures|
             eval(edit_code)
           end
           policy do |new_file|
             cmd = policy_command.gsub('{file}', new_file)
-            system(cmd)
+            system(env, cmd, chdir: cwd || Dir.pwd)
           end
         end
         experiment.files.each { |f| @gains&.record_search(f) }
-        experiment.run
+        results = experiment.run
       ensure
         $stdout = original_stdout
       end
@@ -379,7 +401,7 @@ module Fast
       # Exclude any color from captured output
       log = capture_output.string.gsub(/\e\[([;\d]+)?m/, '')
       
-      { experiment: name, log: log }
+      { experiment: name, log: log, results: results }
     end
 
     # Returns loc.expression if available
