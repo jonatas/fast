@@ -171,7 +171,7 @@ RSpec.describe Fast do
       let(:replacement) { ->(node) { replace(node.location.expression, 'other_table') } }
 
       specify do
-        expect { described_class.replace_sql_file('relname', file, &replacement) }
+        expect { described_class.rewrite_sql_file('relname', file, &replacement) }
           .to change { IO.read(file) }
           .from("select * from my_table")
           .to("select * from other_table")
@@ -189,7 +189,7 @@ RSpec.describe Fast do
       let(:replacement) { ->(node) { replace(node.location.expression, 'other_table') } }
 
       specify do
-        expect { described_class.replace_sql_file('relname', file, &replacement) }
+        expect { described_class.rewrite_sql_file('relname', file, &replacement) }
           .to change { IO.read(file) }
           .from(sql)
           .to(<<~SQL)
@@ -211,7 +211,7 @@ RSpec.describe Fast do
         let(:pattern) {'(relname "a")'}
 
         specify do
-          expect { described_class.replace_sql_file(pattern, file, &replacement) }
+          expect { described_class.rewrite_sql_file(pattern, file, &replacement) }
             .to change { IO.read(file) }
             .from(sql)
             .to(<<~SQL)
@@ -223,7 +223,7 @@ RSpec.describe Fast do
       context "when replace all statements" do
         let(:pattern) {'relname'}
         specify do
-          expect { described_class.replace_sql_file(pattern, file, &replacement) }
+          expect { described_class.rewrite_sql_file(pattern, file, &replacement) }
             .to change { IO.read(file) }
             .from(sql)
             .to(<<~SQL)
