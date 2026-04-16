@@ -10,6 +10,8 @@ RSpec.describe Fast::McpServer do
   let(:temp_file) { File.join(temp_dir, 'gains.json') }
 
   before do
+    Fast.instance_variable_set(:@cache, {})
+    Fast.instance_variable_set(:@parser_cache, {})
     stub_const('Fast::Gains::STORAGE_DIR', temp_dir)
     stub_const('Fast::Gains::STORAGE_FILE', temp_file)
     FileUtils.mkdir_p(temp_dir)

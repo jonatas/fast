@@ -204,7 +204,13 @@ module Fast
           raise "Unknown tool: #{tool_name}"
         end
 
-      @gains.record_report(result.to_json)
+      if result.is_a?(Hash) && result[:matches]
+        result[:matches].each do |match|
+          @gains.record_report(match[:code]) if match[:code]
+        end
+      else
+        @gains.record_report(result.to_json)
+      end
       @gains.save!
       write_response(id, { content: [{ type: 'text', text: JSON.generate(result) }] })
     rescue => e
