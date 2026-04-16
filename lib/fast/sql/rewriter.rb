@@ -24,15 +24,22 @@ module Fast
 
       # Replace a SQL file with the given pattern.
       # Use a replacement code block to change the content.
-      # @return nil in case does not update the file
-      # @return true in case the file is updated
+      # @return [String] the new content
       # @see Fast::SQL::Rewriter
       def replace_file(pattern, file, &replacement)
-        original = IO.read(file)
         ast = parse_file(file)
-        content = replace(pattern, ast, &replacement)
+        replace(pattern, ast, &replacement)
+      end
+
+      # Replaces a SQL file in place.
+      # @return nil in case does not update the file
+      # @return true in case the file is updated
+      def rewrite_file(pattern, file, &replacement)
+        original = IO.read(file)
+        content = replace_file(pattern, file, &replacement)
         if content != original
           File.open(file, 'w+') { |f| f.print content }
+          true
         end
       end
     end

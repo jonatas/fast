@@ -310,7 +310,8 @@ module Fast
                        @files,
                        parallel: parallel?,
                        on_result: on_result,
-                       on_search: on_search)
+                       on_search: on_search,
+                       files_from: @sql ? :sql_files_from : :ruby_files_from)
     end
 
     # @return [Symbol] with `:capture_all` or `:search_all` depending the command line options

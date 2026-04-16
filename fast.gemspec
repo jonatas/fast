@@ -74,6 +74,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'coderay'
   spec.add_dependency 'parallel'
   spec.add_dependency 'pg_query'
+  spec.add_dependency 'ostruct'
+  spec.add_dependency 'prism'
 
   spec.add_development_dependency 'bundler'
   spec.add_development_dependency 'git'
