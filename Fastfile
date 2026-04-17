@@ -170,6 +170,61 @@ Fast.shortcut :scan do
   end
 end
 
+# Detect duplication of CTE queries
+# fast .find_duplicate_ctes file.sql
+Fast.shortcut :find_duplicate_ctes do
+  require 'fast/sql'
+  file = ARGV.last
+
+  ast = Fast.parse_sql_file(file)
+
+  ctes = {}
+  Fast.search('(common_table_expr ...)', ast).each do |node|
+    name_node = node.search('(ctename $_)').first
+    query_wrapper = node.search('(ctequery $_)').first
+    if name_node && query_wrapper
+      name = name_node.children.first # extract string
+      ctes[name] = query_wrapper.children.first
+    end
+  end
+
+  puts "Found #{ctes.size} CTE(s): #{ctes.keys.join(', ')}."
+  puts "Hunting for duplications..."
+
+  def self.walk(node, results = [])
+    results << node if node.respond_to?(:type) && node.type == :select_stmt
+    if node.respond_to?(:children)
+      node.children.each do |child|
+        if child.is_a?(Array)
+          child.each { |c| walk(c, results) }
+        else
+          walk(child, results)
+        end
+      end
+    end
+    results
+  end
+
+  found_duplication = false
+  walk(ast).each do |node|
+    ctes.each do |name, query|
+      if node.to_s.gsub(/\s+/, ' ') == query.to_s.gsub(/\s+/, ' ') && node.object_id != query.object_id
+        found_duplication = true
+        puts "\n" + "="*80
+        puts "Found duplication of CTE '#{name}'!"
+        puts "Lines: #{node.loc.expression.first_line}..#{node.loc.expression.last_line}"
+        puts "-"*80
+        puts Fast.highlight(node, sql: true)
+        puts "="*80
+      end
+    end
+  end
+
+  unless found_duplication
+    puts "Great job! No duplicated CTE queries found."
+  end
+end
+
 def fast_option_value(args, short_name, long_name)
   args.each_with_index do |arg, index|
     return args[index + 1] if arg == short_name || arg == long_name
