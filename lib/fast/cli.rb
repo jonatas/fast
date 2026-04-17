@@ -135,7 +135,11 @@ module Fast
       @pattern, @files = extract_pattern_and_files(args)
       puts "DEBUG: pattern=#{@pattern.inspect} files=#{@files.inspect}" if @debug
 
-      @sql ||= @files.any? && @files.all? { |file| file.end_with?('.sql') }
+      @sql ||= @files.any? && @files.all? { |file| file.end_with?('.sql') || File.directory?(file) }
+      if @sql && @files.any?
+        sql_files = Fast.sql_files_from(*@files)
+        @sql = sql_files.any?
+      end
       require 'fast/sql' if @sql
     end
 
