@@ -32,6 +32,11 @@ module Fast
     SQL.replace_file(pattern, file, &replacement)
   end
 
+  # Replaces the sql content in case the pattern matches.
+  def rewrite_sql_file(pattern, file, &replacement)
+    SQL.rewrite_file(pattern, file, &replacement)
+  end
+
   # @return [Fast::Node] the AST representation of the sql statement
   # @example
   # ast = Fast.parse_sql("select 'hello AST'")
