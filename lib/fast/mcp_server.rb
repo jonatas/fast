@@ -5,6 +5,7 @@ require 'stringio'
 require 'fast'
 require 'fast/version'
 require 'fast/cli'
+require 'fast/sql'
 
 module Fast
   # Implements the Model Context Protocol (MCP) server over STDIO.
@@ -125,6 +126,47 @@ module Fast
           },
           required: ['name', 'lookup', 'search', 'edit', 'policy']
         }
+      },
+      {
+        name: 'search_sql_ast',
+        description: 'Search SQL files using a Fast AST pattern. Returns file, line range, and source.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            pattern: { type: 'string', description: 'Fast AST pattern for SQL, e.g. "(select_stmt ...)" or "(relname \"users\")".' },
+            paths:   { type: 'array', items: { type: 'string' }, description: 'Files or directories to search.' },
+            show_ast: { type: 'boolean', description: 'Include s-expression AST in results (default: false).' },
+            offset:   { type: 'integer', description: 'Offset for pagination (default: 0).' },
+            limit:    { type: 'integer', description: 'Maximum number of results to return (default: 20).' }
+          },
+          required: ['pattern', 'paths']
+        }
+      },
+      {
+        name: 'rewrite_sql',
+        description: 'Apply a Fast pattern replacement to SQL source code. Returns the rewritten source. Does NOT write to disk.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            source:      { type: 'string', description: 'SQL source code to rewrite.' },
+            pattern:     { type: 'string', description: 'Fast AST pattern to match nodes for replacement.' },
+            replacement: { type: 'string', description: 'SQL expression or value to replace matched node source with.' }
+          },
+          required: ['source', 'pattern', 'replacement']
+        }
+      },
+      {
+        name: 'rewrite_sql_file',
+        description: 'Apply a Fast pattern replacement to a SQL file in-place. Returns lines changed and a diff.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file:        { type: 'string', description: 'Path to the SQL file to rewrite.' },
+            pattern:     { type: 'string', description: 'Fast AST pattern to match nodes for replacement.' },
+            replacement: { type: 'string', description: 'SQL expression or value to replace matched node source with.' }
+          },
+          required: ['file', 'pattern', 'replacement']
+        }
       }
     ].freeze
 
@@ -215,6 +257,12 @@ module Fast
           execute_rewrite_file(args['file'], args['pattern'], args['replacement'])
         when 'run_fast_experiment'
           execute_fast_experiment(args)
+        when 'search_sql_ast'
+          execute_sql_search(args['pattern'], args['paths'], show_ast: show_ast, offset: offset, limit: limit)
+        when 'rewrite_sql'
+          execute_sql_rewrite(args['source'], args['pattern'], args['replacement'])
+        when 'rewrite_sql_file'
+          execute_sql_rewrite_file(args['file'], args['pattern'], args['replacement'])
         else
           raise "Unknown tool: #{tool_name}"
         end
@@ -471,6 +519,76 @@ module Fast
         'No matches. The pattern may not reflect the real AST shape — use code_to_pattern with a ' \
           'snippet you expect to match, and validate_fast_pattern to check syntax.'
       end
+    end
+
+    def execute_sql_search(pattern, paths, show_ast: false, offset: nil, limit: nil)
+      results = []
+      on_result = ->(file, matches) do
+        @gains&.record_match(file) if matches.any?
+        matches.compact.each do |node|
+          next unless (exp = node_expression(node))
+
+          entry = {
+            file:       file,
+            line_start: exp.line,
+            line_end:   exp.last_line,
+            code:       exp.source
+          }
+          entry[:ast] = Fast.highlight(node, show_sexp: true, colorize: false) if show_ast
+          results << entry
+        end
+      end
+      on_search = ->(file) { @gains&.record_search(file) }
+
+      Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search, files_from: :sql_files_from)
+      
+      matches = if offset || limit
+                  results[offset || 0, limit || results.size] || []
+                else
+                  results
+                end
+
+      {
+        matches:  matches,
+        total:    results.size,
+        offset:   offset,
+        limit:    limit,
+        has_more: (offset || 0) + (limit || results.size) < results.size
+      }
+    end
+
+    def execute_sql_rewrite(source, pattern, replacement)
+      ast    = Fast.parse_sql(source)
+      result = Fast.replace_sql(pattern, ast) do |node|
+        replace(node.loc.expression, replacement)
+      end
+      { original: source, rewritten: result, changed: result != source }
+    end
+
+    def execute_sql_rewrite_file(file, pattern, replacement)
+      raise "File not found: #{file}" unless File.exist?(file)
+
+      @gains&.record_search(file)
+      original = File.read(file)
+      rewritten = Fast.replace_sql_file(pattern, file) do |node|
+        @gains&.record_match(file)
+        replace(node.loc.expression, replacement)
+      end
+
+      return { file: file, changed: false } if rewritten.nil? || rewritten == original
+
+      # Build a compact line-level diff
+      orig_lines     = original.lines
+      rewritten_lines = rewritten.lines
+      diff = orig_lines.each_with_index.filter_map do |line, i|
+        new_line = rewritten_lines[i]
+        next if line == new_line
+
+        { line: i + 1, before: line.rstrip, after: (new_line&.rstrip || '') }
+      end
+
+      File.write(file, rewritten)
+      { file: file, changed: true, diff: diff }
     end
 
     # Returns loc.expression if available

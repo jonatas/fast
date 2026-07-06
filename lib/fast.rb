@@ -208,18 +208,18 @@ module Fast
     # @param [String] pattern
     # @param [Array<String>] *locations where to search. Default is '.'
     # @return [Hash<String,Array<Fast::Node>>] with files and results
-    def search_all(pattern, locations = ['.'], parallel: true, on_result: nil, on_search: nil)
+    def search_all(pattern, locations = ['.'], parallel: true, on_result: nil, on_search: nil, files_from: :ruby_files_from)
       group_results(build_grouped_search(:search_file, pattern, on_result),
-                    locations, parallel: parallel, on_search: on_search)
+                    locations, parallel: parallel, on_search: on_search, files_from: files_from)
     end
 
     # Capture with pattern on a directory or multiple files
     # @param [String] pattern
     # @param [Array<String>] locations where to search. Default is '.'
     # @return [Hash<String,Object>] with files and captures
-    def capture_all(pattern, locations = ['.'], parallel: true, on_result: nil, on_search: nil)
+    def capture_all(pattern, locations = ['.'], parallel: true, on_result: nil, on_search: nil, files_from: :ruby_files_from)
       group_results(build_grouped_search(:capture_file, pattern, on_result),
-                    locations, parallel: parallel, on_search: on_search)
+                    locations, parallel: parallel, on_search: on_search, files_from: files_from)
     end
 
     # @return [Proc] binding `pattern` argument from a given `method_name`.
@@ -244,8 +244,8 @@ module Fast
     # while it process several locations in parallel.
     # @param [Boolean] parallel runs the `group_files` in parallel
     # @return [Hash[String, Array]] with files and results
-    def group_results(group_files, locations, parallel: true, on_search: nil)
-      files = ruby_files_from(*locations)
+    def group_results(group_files, locations, parallel: true, on_search: nil, files_from: :ruby_files_from)
+      files = send(files_from, *locations)
       results =
         if parallel
           require 'parallel' unless defined?(Parallel)
@@ -363,6 +363,18 @@ module Fast
       if directories.any?
         files -= directories
         files |= directories.flat_map { |dir| Dir["#{dir}/**/*.rb"] }
+        files.uniq!
+      end
+      files.reject(&dir_filter)
+    end
+
+    def sql_files_from(*files)
+      dir_filter = File.method(:directory?)
+      directories = files.select(&dir_filter)
+
+      if directories.any?
+        files -= directories
+        files |= directories.flat_map { |dir| Dir["#{dir}/**/*.sql"] }
         files.uniq!
       end
       files.reject(&dir_filter)

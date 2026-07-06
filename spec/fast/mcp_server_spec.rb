@@ -143,4 +143,77 @@ RSpec.describe Fast::McpServer do
       expect { server.send(:execute_code_to_pattern, 'def broken(') }.to raise_error(StandardError)
     end
   end
+
+  describe 'SQL tracking' do
+    let(:server) { Fast::McpServer.new }
+
+    it 'records gains for search_sql_ast' do
+      test_file = File.join(temp_dir, 'sample.sql')
+      File.write(test_file, 'SELECT * FROM users;')
+
+      params = {
+        'name' => 'search_sql_ast',
+        'arguments' => {
+          'pattern' => '(select_stmt ...)',
+          'paths' => [test_file]
+        }
+      }
+      
+      allow(server).to receive(:write_response)
+
+      server.send(:handle_tool_call, '1', params)
+      Fast::Gains.consolidate!
+
+      expect(File.exist?(temp_file)).to be true
+      data = JSON.parse(File.read(temp_file)).last
+      expect(data['command']).to eq('mcp:search_sql_ast')
+      expect(data['bytes_searched']).to eq(File.size(test_file))
+    end
+
+    it 'processes rewrite_sql without file touching' do
+      params = {
+        'name' => 'rewrite_sql',
+        'arguments' => {
+          'pattern' => '(relname "users")',
+          'source' => 'SELECT 1 FROM users;',
+          'replacement' => '"clients"'
+        }
+      }
+
+      allow(server).to receive(:write_response) do |id, response|
+        expect(response[:content].first[:text]).to include('SELECT 1 FROM \"clients\";')
+      end
+
+      server.send(:handle_tool_call, '1', params)
+    end
+
+    it 'records gains for rewrite_sql_file and builds diff' do
+      test_file = File.join(temp_dir, 'sample.sql')
+      content = "SELECT 1 FROM users;\n"
+      File.write(test_file, content)
+
+      params = {
+        'name' => 'rewrite_sql_file',
+        'arguments' => {
+          'pattern' => '(relname "users")',
+          'file' => test_file,
+          'replacement' => '"clients"'
+        }
+      }
+      
+      allow(server).to receive(:write_response) do |id, response|
+        json = JSON.parse(response[:content].first[:text])
+        expect(json['changed']).to be true
+        expect(json['diff'].first['after']).to eq('SELECT 1 FROM "clients";')
+      end
+
+      server.send(:handle_tool_call, '1', params)
+      Fast::Gains.consolidate!
+
+      data = JSON.parse(File.read(temp_file)).last
+      expect(data['command']).to eq('mcp:rewrite_sql_file')
+      expect(data['bytes_searched']).to eq(content.size)
+      expect(File.read(test_file)).to eq("SELECT 1 FROM \"clients\";\n")
+    end
+  end
 end

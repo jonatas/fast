@@ -139,7 +139,11 @@ module Fast
       @pattern, @files = extract_pattern_and_files(args)
       puts "DEBUG: pattern=#{@pattern.inspect} files=#{@files.inspect}" if @debug
 
-      @sql ||= @files.any? && @files.all? { |file| file.end_with?('.sql') }
+      @sql ||= @files.any? && @files.all? { |file| file.end_with?('.sql') || File.directory?(file) }
+      if @sql && @files.any?
+        sql_files = Fast.sql_files_from(*@files)
+        @sql = sql_files.any?
+      end
       require 'fast/sql' if @sql
     end
 
@@ -314,7 +318,8 @@ module Fast
                        @files,
                        parallel: parallel?,
                        on_result: on_result,
-                       on_search: on_search)
+                       on_search: on_search,
+                       files_from: @sql ? :sql_files_from : :ruby_files_from)
     end
 
     # @return [Symbol] with `:capture_all` or `:search_all` depending the command line options
