@@ -14,13 +14,15 @@ module Fast
 
   # Literals are shortcuts allowed inside {ExpressionParser}
   LITERAL = {
-    '...' => ->(node) { node&.children&.any? },
+    '...' => ->(node) { node.respond_to?(:children) && node.children.any? },
     '_' => ->(node) { !node.nil? },
     'nil' => nil
   }.freeze
 
   # Allowed tokens in the node pattern domain
   TOKENIZER = %r/
+    \/[^\/ \n]+\/         # regex literals (before operators so a full literal wins over division)
+    |
     [\+\-\/\*\\!]         # operators or negation
     |
     ===?                  # == or ===
@@ -42,8 +44,6 @@ module Fast
     [\d\w_]+[=\\!\?]?     # method names or numbers
     |
     :[^(){}\[\]\s;]+      # symbols
-    |
-    \/[^\/ \n]+\/         # regex literals
     |
     ;                     # semicolons
     |
@@ -582,6 +582,7 @@ module Fast
       case expression
       when Proc then expression.call(node)
       when Find then expression.match?(node)
+      when Regexp then regexp_match?(expression, node)
       when Enumerable
         if expression.last == :'...' || expression.last.is_a?(Find) && expression.last.token == '...'
           expression[0...-1].each_with_index.all? do |exp, i|
@@ -612,6 +613,13 @@ module Fast
       else
         node == expression
       end
+    end
+
+    # Matches regex literal patterns against the node type or leaf value,
+    # e.g. `(def /^test_/)` or `(/^defs?$/ ...)`.
+    def regexp_match?(expression, node)
+      subject = Fast.ast_node?(node) ? node.type : node
+      expression.match?(subject.to_s)
     end
 
     def debug_match_recursive(expression, node)
@@ -898,7 +906,9 @@ module Fast
       @expression = if pattern.is_a?(String)
                       Array(Fast.expression(pattern))
                     else
-                      [*pattern].map(&Find.method(:new))
+                      # Keep already-parsed Find objects intact: re-wrapping would hide
+                      # their token from checks like the trailing `...` in #match_tail?
+                      [*pattern].map { |token| token.is_a?(Find) ? token : Find.new(token) }
                     end
       @captures = []
       prepare_arguments(@expression, args) if args.any?

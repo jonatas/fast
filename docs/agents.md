@@ -112,20 +112,21 @@ fast .scan lib/fast -l 1 --no-color
 If your host supports MCP, register `bin/fast-mcp` and call these tools:
 
 - `search_ruby_ast`
-- `ruby_method_source`
-- `ruby_class_source`
+- `ruby_method_source` — finds both `def name` and `def self.name`
+- `ruby_class_source` — finds classes and modules
+- `code_to_pattern` — converts a Ruby snippet into an exact and a generalized search pattern
 - `rewrite_ruby`
 - `rewrite_ruby_file`
 - `validate_fast_pattern`
 
-These return JSON text payloads with file paths, line bounds, and trimmed code snippets. They are more robust for agents than scraping pretty CLI output.
+These return JSON text payloads with file paths, line bounds, and trimmed code snippets. They are more robust for agents than scraping pretty CLI output. When a search returns zero matches, the response includes a `hint` explaining likely pattern mistakes (for example, a bare constant receiver where `(const nil :Name)` is needed).
 
 ## Translating Natural Language to Fast Patterns
 
 Building AST patterns can be challenging. To assist, you can activate the `fast-pattern-expert` skill which provides a deep syntax guide and common examples.
 
 ### Best practices for pattern building:
-1. **Use `Fast.ast("...")`**: If you're unsure how a piece of Ruby code is represented in the AST, use `fast --ast "your code"` or `search_ruby_ast` with `show_ast: true`.
+1. **Start from example code**: The `code_to_pattern` MCP tool takes a Ruby snippet and returns both an `exact_pattern` (the s-expression of that snippet) and a `generalized_pattern` (names and literals replaced with wildcards). Alternatively, use `fast --ast "your code"` or `search_ruby_ast` with `show_ast: true`.
 2. **Validate early**: Use the `validate_fast_pattern` MCP tool or `fast --validate-pattern "(...)"` from the CLI to check your syntax before running broad searches.
 3. **Start broad, then narrow**: Use `_` or `...` to match sections you're unsure about, then replace them with more specific sub-patterns once you see the results.
 4. **Leverage the Skill**: Activate `fast-pattern-expert` when you need to construct a complex search or refactor.

@@ -242,6 +242,43 @@ RSpec.describe Fast do
       end
     end
 
+    context 'with regex literals' do
+      it 'matches method names' do
+        expect(described_class).to be_match('(def /^record_/)', code['def record_match; end'])
+        expect(described_class).not_to be_match('(def /^record_/)', code['def save!; end'])
+      end
+
+      it 'matches message names' do
+        expect(described_class).to be_match('(send _ /^assert/)', code['foo.assert_equal(1)'])
+      end
+
+      it 'matches string contents' do
+        expect(described_class).to be_match('(str /json/)', code['"my json here"'])
+      end
+
+      it 'matches node types in head position' do
+        expect(described_class).to be_match('(/^defs?$/ ...)', code['def self.x; end'])
+        expect(described_class).to be_match('(/^defs?$/ ...)', code['def x; end'])
+      end
+
+      it 'keeps operators working as plain tokens' do
+        expect(described_class).to be_match('(send (int 4) :/ (int 2))', code['4 / 2'])
+        expect(described_class).to be_match('(send _ +)', code['1 + 2'])
+      end
+    end
+
+    context 'with `{}` union of node expressions' do
+      it 'matches def and defs with trailing ...' do
+        expect(described_class).to be_match('{(def ...) (defs _ ...)}', code['def foo; 1; end'])
+        expect(described_class).to be_match('{(def ...) (defs _ ...)}', code['def self.foo; 1; end'])
+      end
+
+      it 'keeps trailing ... semantics for parsed sub-expressions' do
+        results = described_class.search('{(def ...) (defs _ ...)}', code["def a; end\ndef b; end"])
+        expect(results.size).to eq(2)
+      end
+    end
+
     context 'with `Fast.expressions`' do
       it { expect(described_class).to be_match('(...)', s(:int, 1)) }
       it { expect(described_class).to be_match('(_ _)', s(:int, 1)) }

@@ -69,6 +69,7 @@ The current version cover the following elements:
 - `?` is for **maybe**
 - `\1` to use the first **previous captured** element
 - `""` surround the value with double quotes to match literal strings
+- `//` surround with slashes to match names or values with a **regular expression**, like `(def /^test_/)`
 
 Jump to [Syntax](syntax.md).
 
