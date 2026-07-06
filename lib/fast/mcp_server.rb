@@ -68,6 +68,19 @@ module Fast
         }
       },
       {
+        name: 'code_to_pattern',
+        description: 'Convert a Ruby code snippet into Fast search patterns. Use this to author search patterns ' \
+                     'from example code: "exact_pattern" is the AST s-expression and matches the exact code shape, ' \
+                     '"generalized_pattern" replaces names and literals with wildcards to find similar code.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            source: { type: 'string', description: 'Ruby code snippet, e.g. "user.save!" or "def foo; end".' }
+          },
+          required: ['source']
+        }
+      },
+      {
         name: 'rewrite_ruby',
         description: 'Apply a Fast pattern replacement to Ruby source code. Returns the rewritten source. Does NOT write to disk.',
         inputSchema: {
@@ -179,7 +192,7 @@ module Fast
 
       @gains = Gains.new("mcp:#{tool_name}")
 
-      if args['pattern'] && !args['pattern'].start_with?('(', '{', '[') && !args['pattern'].match?(/^[a-z_]+$/)
+      if args['pattern'] && !args['pattern'].start_with?('(', '{', '[', '/') && !args['pattern'].match?(/^[a-z_]+$/)
         raise "Invalid Fast AST pattern: '#{args['pattern']}'. Did you mean to use an s-expression like '(#{args['pattern']})'?"
       end
 
@@ -194,6 +207,8 @@ module Fast
                                 class_name: args['class_name'], show_ast: show_ast, offset: offset, limit: limit)
         when 'ruby_class_source'
           execute_class_search(args['class_name'], args['paths'], show_ast: show_ast, offset: offset, limit: limit)
+        when 'code_to_pattern'
+          execute_code_to_pattern(args['source'])
         when 'rewrite_ruby'
           execute_rewrite(args['source'], args['pattern'], args['replacement'])
         when 'rewrite_ruby_file'
@@ -204,7 +219,13 @@ module Fast
           raise "Unknown tool: #{tool_name}"
         end
 
-      @gains.record_report(result.to_json)
+      if result.is_a?(Hash) && result[:matches]
+        result[:matches].each do |match|
+          @gains.record_report(match[:code]) if match[:code]
+        end
+      else
+        @gains.record_report(result.to_json)
+      end
       @gains.save!
       write_response(id, { content: [{ type: 'text', text: JSON.generate(result) }] })
     rescue => e
@@ -213,9 +234,17 @@ module Fast
 
     def execute_validate_pattern(pattern)
       res = Fast.expression(pattern)
-      { valid: true, structure: res.is_a?(Array) ? res.map(&:to_h) : res.to_h }
+      { valid: true, structure: expression_structure(res) }
     rescue StandardError => e
       { valid: false, error: e.message }
+    end
+
+    # Serialize a parsed expression tree, descending into nested expressions
+    def expression_structure(exp)
+      case exp
+      when Array then exp.map { |e| expression_structure(e) }
+      else exp.respond_to?(:to_h) ? exp.to_h : exp
+      end
     end
 
     def execute_search(pattern, paths, show_ast: false, offset: nil, limit: nil)
@@ -238,24 +267,27 @@ module Fast
       on_search = ->(file) { @gains&.record_search(file) }
 
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
-      
+
       matches = if offset || limit
                   results[offset || 0, limit || results.size] || []
                 else
                   results
                 end
 
-      {
+      result = {
         matches:  matches,
         total:    results.size,
         offset:   offset,
         limit:    limit,
         has_more: (offset || 0) + (limit || results.size) < results.size
       }
+      result[:hint] = zero_match_hint(pattern) if results.empty?
+      result
     end
 
     def execute_method_search(method_name, paths, class_name: nil, show_ast: false, offset: nil, limit: nil)
-      pattern = "(def #{method_name})"
+      # Match both instance methods (def) and singleton methods (defs, e.g. def self.x)
+      pattern = "{(def #{method_name}) (defs _ #{method_name})}"
       results = []
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
@@ -283,22 +315,28 @@ module Fast
                   results
                 end
 
-      {
+      result = {
         matches:  matches,
         total:    results.size,
         offset:   offset,
         limit:    limit,
         has_more: (offset || 0) + (limit || results.size) < results.size
       }
+      if results.empty?
+        result[:hint] = "No instance (def) or singleton (defs) method named '#{method_name}' found. " \
+                        'It may be defined dynamically (define_method, delegate) — try search_ruby_ast ' \
+                        "with (send nil :define_method (sym :#{method_name})) or check the paths."
+      end
+      result
     end
 
     def execute_class_search(class_name, paths, show_ast: false, offset: nil, limit: nil)
-      # Use simple (class ...) pattern then filter by name — avoids nil/superclass edge cases
+      # Use simple {class module} pattern then filter by name — avoids nil/superclass edge cases
       results = []
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
         matches.compact.each do |node|
-          next unless node.type == :class
+          next unless %i[class module].include?(node.type)
           next unless node.children.first&.children&.last&.to_s == class_name
           next unless (exp = node_expression(node))
 
@@ -313,7 +351,7 @@ module Fast
         end
       end
       on_search = ->(file) { @gains&.record_search(file) }
-      Fast.search_all('(class ...)', paths, parallel: false, on_result: on_result, on_search: on_search)
+      Fast.search_all('{class module}', paths, parallel: false, on_result: on_result, on_search: on_search)
       
       matches = if offset || limit
                   results[offset || 0, limit || results.size] || []
@@ -321,12 +359,27 @@ module Fast
                   results
                 end
 
-      {
+      result = {
         matches:  matches,
         total:    results.size,
         offset:   offset,
         limit:    limit,
         has_more: (offset || 0) + (limit || results.size) < results.size
+      }
+      if results.empty?
+        result[:hint] = "No class or module named '#{class_name}' found. " \
+                        'Names are matched by the last constant segment (e.g. "Bar" finds Foo::Bar) — check the paths.'
+      end
+      result
+    end
+
+    def execute_code_to_pattern(source)
+      ast = Fast.ast(source)
+      raise "Could not parse Ruby source: #{source.inspect}" unless ast
+
+      {
+        exact_pattern: ast.to_sexp,
+        generalized_pattern: Fast.expression_from(ast)
       }
     end
 
@@ -404,6 +457,22 @@ module Fast
       { experiment: name, log: log, results: results }
     end
 
+    # Matches a bare capitalized token used as a send/csend receiver, e.g. (send Fast :version)
+    BARE_CONST_RECEIVER = /\((?:send|csend)\s+([A-Z]\w*)/.freeze
+
+    # Guidance returned alongside empty search results so agents can correct
+    # a wrong pattern instead of concluding the code does not exist.
+    def zero_match_hint(pattern)
+      if (match = BARE_CONST_RECEIVER.match(pattern))
+        name = match[1]
+        "No matches. '#{name}' is a bare token but constants are nodes — try (const nil :#{name}), " \
+          "e.g. (send (const nil :#{name}) ...). Use code_to_pattern with sample code to see the exact AST shape."
+      else
+        'No matches. The pattern may not reflect the real AST shape — use code_to_pattern with a ' \
+          'snippet you expect to match, and validate_fast_pattern to check syntax.'
+      end
+    end
+
     # Returns loc.expression if available
     def node_expression(node)
       return unless node.respond_to?(:loc) && node.loc.respond_to?(:expression)
@@ -411,9 +480,9 @@ module Fast
       node.loc.expression
     end
 
-    # Check whether a class is defined anywhere in the file's AST
+    # Check whether a class or module is defined anywhere in the file's AST
     def class_defined_in_file?(class_name, file)
-      Fast.search_file('(class ...)', file).any? do |node|
+      Fast.search_file('{class module}', file).any? do |node|
         node.children.first&.children&.last&.to_s == class_name
       end
     rescue

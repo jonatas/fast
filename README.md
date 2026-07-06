@@ -30,6 +30,7 @@ The current version of Fast covers the following token elements:
 - `\1` - represents a substitution for any of the **previously captured** elements
 - `%1` - to bind the first extra argument in an expression
 - `""` - will match a literal string with double quotes
+- `//` - will match a node type, name, or literal value against a **regular expression**, like `(def /^test_/)`
 - `#<method-name>` - will call `<method-name>` with `node` as param allowing you
     to build custom rules.
 - `.<method-name>` - will call `<method-name>` from the `node`

@@ -94,10 +94,14 @@ module Fast
       elsif show_permalink
         puts_and_record(result.permalink, gains)
       elsif !headless
-        puts_and_record(highlight("# #{file}:#{line}", colorize: colorize), gains)
+        puts highlight("# #{file}:#{line}", colorize: colorize)
       end
     end
-    puts_and_record(highlight(result, show_sexp: show_sexp, colorize: colorize, level: level), gains) unless bodyless
+    unless bodyless
+      content = highlight(result, show_sexp: show_sexp, colorize: colorize, level: level)
+      puts content
+      gains&.record_report(highlight(result, show_sexp: false, colorize: false))
+    end
   end
 
   def puts_and_record(content, gains)
@@ -111,7 +115,7 @@ module Fast
     def initialize(args)
       require 'fast/shortcut'
       Fast.load_fast_files!
-      @gains = Gains.new(args.join(' '))
+      @gains = Gains.new('cli')
       args = args.dup
       unless args.include?('.gains')
         args = replace_args_with_shortcut(args) if shortcut_name_from(args)

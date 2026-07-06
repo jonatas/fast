@@ -4,14 +4,16 @@
 
 ## What the server exposes
 
-The current server exposes five tools:
+The current server exposes these tools:
 
 1. `search_ruby_ast`
-2. `ruby_method_source`
-3. `ruby_class_source`
-4. `rewrite_ruby`
-5. `rewrite_ruby_file`
-6. `run_fast_experiment`
+2. `ruby_method_source` — matches both `def name` and `def self.name`
+3. `ruby_class_source` — matches classes and modules
+4. `code_to_pattern` — converts a Ruby snippet into search patterns
+5. `validate_fast_pattern`
+6. `rewrite_ruby`
+7. `rewrite_ruby_file`
+8. `run_fast_experiment`
 
 These are MCP `tools`, not MCP `resources`. If your host lists resources/templates and shows nothing, that does not mean the server is broken. It means the host has not connected to the server's tool interface.
 
