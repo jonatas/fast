@@ -267,6 +267,20 @@ RSpec.describe Fast do
       end
     end
 
+    context 'with unrecognized characters' do
+      it 'raises instead of silently degrading the pattern' do
+        expect { described_class.expression('(def <<)') }
+          .to raise_error(Fast::SyntaxError, /Unrecognized characters/)
+      end
+    end
+
+    context 'with single-quoted strings' do
+      it 'matches literal strings' do
+        expect(described_class).to be_match("(str 'json')", code['"json"'])
+        expect(described_class).not_to be_match("(str 'json')", code['"other"'])
+      end
+    end
+
     context 'with `{}` union of node expressions' do
       it 'matches def and defs with trailing ...' do
         expect(described_class).to be_match('{(def ...) (defs _ ...)}', code['def foo; 1; end'])

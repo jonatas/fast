@@ -142,6 +142,61 @@ RSpec.describe Fast::McpServer do
     it 'raises on unparseable code_to_pattern input' do
       expect { server.send(:execute_code_to_pattern, 'def broken(') }.to raise_error(StandardError)
     end
+
+    it 'finds a class nested inside a module' do
+      test_file = File.join(temp_dir, 'nested.rb')
+      File.write(test_file, "module Outer\n  class Inner\n    def x; end\n  end\nend")
+
+      result = server.send(:execute_class_search, 'Inner', [test_file])
+      expect(result[:total]).to eq(1)
+      expect(result[:matches].first[:code]).to include('class Inner')
+    end
+
+    it 'finds a class by its namespaced name' do
+      test_file = File.join(temp_dir, 'nested.rb')
+      File.write(test_file, "module Outer\n  class Inner\n  end\nend")
+
+      result = server.send(:execute_class_search, 'Outer::Inner', [test_file])
+      expect(result[:total]).to eq(1)
+    end
+
+    it 'finds operator and bracket method definitions' do
+      test_file = File.join(temp_dir, 'ops.rb')
+      File.write(test_file, "class Box\n  def [](key); end\n  def <<(item); end\n  def ==(other); end\nend")
+
+      expect(server.send(:execute_method_search, '[]', [test_file])[:total]).to eq(1)
+      expect(server.send(:execute_method_search, '<<', [test_file])[:total]).to eq(1)
+      expect(server.send(:execute_method_search, '==', [test_file])[:total]).to eq(1)
+    end
+
+    it 'does not let bracket method names match every def' do
+      test_file = File.join(temp_dir, 'plain.rb')
+      File.write(test_file, "def unrelated; end")
+
+      expect(server.send(:execute_method_search, '[]', [test_file])[:total]).to eq(0)
+    end
+
+    it 'rejects method names it cannot match safely' do
+      expect { server.send(:execute_method_search, 'a/b', ['lib']) }.to raise_error(/Unsupported method name/)
+    end
+
+    it 'hints about nonexistent paths instead of blaming the pattern' do
+      result = server.send(:execute_search, '(def hello)', ['no_such_dir'])
+      expect(result[:hint]).to include('Paths do not exist')
+    end
+
+    it 'fails loudly on invalid patterns instead of returning zero matches' do
+      expect { server.send(:execute_search, '(def <<)', ['lib']) }
+        .to raise_error(Fast::SyntaxError, /Unrecognized characters/)
+    end
+
+    it 'hints when paths exist but contain no Ruby files' do
+      empty_dir = File.join(temp_dir, 'empty')
+      FileUtils.mkdir_p(empty_dir)
+
+      result = server.send(:execute_search, '(def hello)', [empty_dir])
+      expect(result[:hint]).to include('No Ruby files found')
+    end
   end
 
   describe 'SQL tracking' do

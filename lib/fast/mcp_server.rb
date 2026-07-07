@@ -296,7 +296,12 @@ module Fast
     end
 
     def execute_search(pattern, paths, show_ast: false, offset: nil, limit: nil)
+      # Parse upfront: per-file graceful degradation would swallow a syntax
+      # error and report zero matches instead of failing the tool call.
+      Fast.expression(pattern)
+
       results = []
+      files_searched = 0
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
         matches.compact.each do |node|
@@ -312,7 +317,7 @@ module Fast
           results << entry
         end
       end
-      on_search = ->(file) { @gains&.record_search(file) }
+      on_search = ->(file) { files_searched += 1; @gains&.record_search(file) }
 
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
 
@@ -329,14 +334,14 @@ module Fast
         limit:    limit,
         has_more: (offset || 0) + (limit || results.size) < results.size
       }
-      result[:hint] = zero_match_hint(pattern) if results.empty?
+      result[:hint] = zero_result_hint(paths, files_searched, zero_match_hint(pattern)) if results.empty?
       result
     end
 
     def execute_method_search(method_name, paths, class_name: nil, show_ast: false, offset: nil, limit: nil)
-      # Match both instance methods (def) and singleton methods (defs, e.g. def self.x)
-      pattern = "{(def #{method_name}) (defs _ #{method_name})}"
+      pattern = method_pattern(method_name)
       results = []
+      files_searched = 0
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
         matches.compact.each do |node|
@@ -353,7 +358,7 @@ module Fast
           results << entry
         end
       end
-      on_search = ->(file) { @gains&.record_search(file) }
+      on_search = ->(file) { files_searched += 1; @gains&.record_search(file) }
 
       Fast.search_all(pattern, paths, parallel: false, on_result: on_result, on_search: on_search)
 
@@ -371,21 +376,22 @@ module Fast
         has_more: (offset || 0) + (limit || results.size) < results.size
       }
       if results.empty?
-        result[:hint] = "No instance (def) or singleton (defs) method named '#{method_name}' found. " \
-                        'It may be defined dynamically (define_method, delegate) — try search_ruby_ast ' \
-                        "with (send nil :define_method (sym :#{method_name})) or check the paths."
+        fallback = "No instance (def) or singleton (defs) method named '#{method_name}' found. " \
+                   'It may be defined dynamically (attr_accessor, define_method, delegate) — try ' \
+                   "search_ruby_ast with (send nil :define_method (sym :#{method_name}))."
+        result[:hint] = zero_result_hint(paths, files_searched, fallback)
       end
       result
     end
 
     def execute_class_search(class_name, paths, show_ast: false, offset: nil, limit: nil)
-      # Use simple {class module} pattern then filter by name — avoids nil/superclass edge cases
       results = []
+      files_searched = 0
       on_result = ->(file, matches) do
         @gains&.record_match(file) if matches.any?
         matches.compact.each do |node|
           next unless %i[class module].include?(node.type)
-          next unless node.children.first&.children&.last&.to_s == class_name
+          next unless node.children.first&.children&.last&.to_s == class_name.split('::').last
           next unless (exp = node_expression(node))
 
           entry = {
@@ -398,8 +404,8 @@ module Fast
           results << entry
         end
       end
-      on_search = ->(file) { @gains&.record_search(file) }
-      Fast.search_all('{class module}', paths, parallel: false, on_result: on_result, on_search: on_search)
+      on_search = ->(file) { files_searched += 1; @gains&.record_search(file) }
+      Fast.search_all(class_pattern(class_name), paths, parallel: false, on_result: on_result, on_search: on_search)
       
       matches = if offset || limit
                   results[offset || 0, limit || results.size] || []
@@ -415,8 +421,9 @@ module Fast
         has_more: (offset || 0) + (limit || results.size) < results.size
       }
       if results.empty?
-        result[:hint] = "No class or module named '#{class_name}' found. " \
-                        'Names are matched by the last constant segment (e.g. "Bar" finds Foo::Bar) — check the paths.'
+        fallback = "No class or module named '#{class_name}' found. " \
+                   'Names are matched by the last constant segment (e.g. "Bar" finds Foo::Bar).'
+        result[:hint] = zero_result_hint(paths, files_searched, fallback)
       end
       result
     end
@@ -508,6 +515,18 @@ module Fast
     # Matches a bare capitalized token used as a send/csend receiver, e.g. (send Fast :version)
     BARE_CONST_RECEIVER = /\((?:send|csend)\s+([A-Z]\w*)/.freeze
 
+    # An empty result caused by wrong paths must not read like "the code does not exist"
+    def zero_result_hint(paths, files_searched, fallback)
+      missing = paths.reject { |path| File.exist?(path) }
+      if missing.any?
+        "Paths do not exist: #{missing.inspect} — searches resolve from #{Dir.pwd}."
+      elsif files_searched.zero?
+        "No Ruby files found under #{paths.inspect} — check the paths argument."
+      else
+        fallback
+      end
+    end
+
     # Guidance returned alongside empty search results so agents can correct
     # a wrong pattern instead of concluding the code does not exist.
     def zero_match_hint(pattern)
@@ -598,12 +617,32 @@ module Fast
       node.loc.expression
     end
 
+    # Matches both instance methods (def) and singleton methods (defs, e.g. def self.x).
+    # Operator and bracket method names (==, [], <<) are not plain pattern tokens,
+    # so they are matched through an anchored regex literal instead.
+    def method_pattern(method_name)
+      if method_name.match?(/\A[a-zA-Z_][a-zA-Z0-9_]*[!?=]?\z/)
+        "{(def #{method_name}) (defs _ #{method_name})}"
+      elsif method_name.include?('/') || method_name.match?(/\s/)
+        raise "Unsupported method name: #{method_name.inspect}"
+      else
+        escaped = Regexp.escape(method_name)
+        "{(def /^#{escaped}$/) (defs _ /^#{escaped}$/)}"
+      end
+    end
+
+    # Anchors the class or module name in the search pattern itself: Fast.search
+    # stops descending once a node matches, so a bare {class module} pattern would
+    # return an enclosing module and never reach a class nested inside it.
+    def class_pattern(class_name)
+      last_segment = class_name.split('::').last
+      "{(class (const {nil _} #{last_segment})) (module (const {nil _} #{last_segment}))}"
+    end
+
     # Check whether a class or module is defined anywhere in the file's AST
     def class_defined_in_file?(class_name, file)
-      Fast.search_file('{class module}', file).any? do |node|
-        node.children.first&.children&.last&.to_s == class_name
-      end
-    rescue
+      Fast.search_file(class_pattern(class_name), file).any?
+    rescue StandardError
       false
     end
 

@@ -74,11 +74,23 @@ RSpec.describe Fast::McpServer do
     end
 
     it 'returns paginated results for ruby_method_source' do
+      methods_file = File.join(temp_dir, 'methods.rb')
+      File.write(methods_file, <<~RUBY)
+        class A
+          def hello; end
+        end
+        class B
+          def hello; end
+        end
+        class C
+          def hello; end
+        end
+      RUBY
       params = {
         'name' => 'ruby_method_source',
         'arguments' => {
-          'method_name' => '...',
-          'paths' => [test_file],
+          'method_name' => 'hello',
+          'paths' => [methods_file],
           'limit' => 1
         }
       }

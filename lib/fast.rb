@@ -29,7 +29,9 @@ module Fast
     |
     \d+\.\d*              # decimals and floats
     |
-    "[^"]+"               # strings
+    "[^"]+"               # double-quoted strings
+    |
+    '[^']+'               # single-quoted strings
     |
     _                     # something not nil: match
     |
@@ -504,7 +506,20 @@ module Fast
     # @param expression [String]
     def initialize(expression)
       @tokens = expression.scan TOKENIZER
+      reject_unrecognized_chars!(expression)
       @nesting = []
+    end
+
+    # The tokenizer silently skips characters it does not recognize, which
+    # would degrade a pattern like `(def <<)` into `(def)` and match far more
+    # than intended. Fail loudly instead so the pattern can be corrected.
+    def reject_unrecognized_chars!(expression)
+      consumed = @tokens.join.gsub(/\s/, '')
+      received = expression.gsub(/\s/, '')
+      return if consumed == received
+
+      raise SyntaxError, "Unrecognized characters in pattern: #{expression.inspect}. " \
+                         'To match names with special characters, use a regex literal like (def /^\[\]$/).'
     end
 
     # rubocop:disable Metrics/CyclomaticComplexity
@@ -523,7 +538,7 @@ module Fast
         All.new(parse_until_peek(']'))
       when ')', '}', ']'
         raise SyntaxError, "Unexpected token: #{token}"
-      when /^"/ then FindString.new(token[1..-2])
+      when /^["']/ then FindString.new(token[1..-2])
       when /^#\w/ then MethodCall.new(token[1..])
       when /^\.\w[\w\d_]+\?/ then InstanceMethodCall.new(token[1..])
       when '$' then Capture.new(parse)
