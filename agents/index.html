@@ -1,0 +1,1720 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../git/">
+      
+      
+        <link rel="next" href="../gains/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Fast for LLMs and Agents - Fast</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config","G-YKZDZDNRG2"),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","G-YKZDZDNRG2",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=G-YKZDZDNRG2",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>"undefined"!=typeof __md_analytics&&__md_analytics()</script>
+  
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#using-fast-for-llms-and-agents" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Fast" class="md-header__button md-logo" aria-label="Fast" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Fast
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Fast for LLMs and Agents
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jonatas/fast" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Fast" class="md-nav__button md-logo" aria-label="Fast" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    Fast
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jonatas/fast" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Introduction
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../walkthrough/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Walkthrough
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../syntax/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Syntax
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../command_line/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command Line
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../experiments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../shortcuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../git/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Git Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agents & LLMs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Agents & LLMs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fast for LLMs and Agents
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fast for LLMs and Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-use-fast-over-grep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why use fast over grep
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-or-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI or MCP
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-boundary-and-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust boundary and security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#essential-cli-flags-for-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Essential CLI flags for agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-summary-for-first-pass-reconnaissance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use .summary for first-pass reconnaissance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-scan-for-multi-file-triage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use .scan for multi-file triage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#essential-mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Essential MCP tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translating-natural-language-to-fast-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translating Natural Language to Fast Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Translating Natural Language to Fast Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#best-practices-for-pattern-building" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices for pattern building:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-rewrite-safety-matters-for-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why rewrite safety matters for agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#query-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Query examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finding-method-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding method definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summarizing-a-large-file-before-reading-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summarizing a large file before reading it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced search
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices-for-llm-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices for LLM context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#larger-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Larger scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Larger scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-onboarding-to-a-large-rails-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Onboarding to a large Rails model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-auditing-callback-heavy-classes-before-a-refactor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Auditing callback-heavy classes before a refactor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-planning-a-rewrite-safely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Planning a rewrite safely
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-reviewing-framework-heavy-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Reviewing framework-heavy files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-scanning-a-repository-without-losing-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Scanning a repository without losing scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gains/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gains (Efficiency Tracking)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mcp_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP Server Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../similarity_tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Similarity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm_features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM/Agent Feature TODOs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pry-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pry Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../editors-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Editors' Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ideas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ideas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../videos/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Videos
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_14" >
+        
+          
+          <label class="md-nav__link" for="__nav_14" id="__nav_14_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_14_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_14">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    SQL
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intro
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql/shortcuts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Shortcuts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-use-fast-over-grep" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why use fast over grep
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-or-mcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI or MCP
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trust-boundary-and-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust boundary and security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#essential-cli-flags-for-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Essential CLI flags for agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-summary-for-first-pass-reconnaissance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use .summary for first-pass reconnaissance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-scan-for-multi-file-triage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use .scan for multi-file triage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#essential-mcp-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Essential MCP tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#translating-natural-language-to-fast-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Translating Natural Language to Fast Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Translating Natural Language to Fast Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#best-practices-for-pattern-building" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices for pattern building:
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-rewrite-safety-matters-for-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why rewrite safety matters for agents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#query-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Query examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Query examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finding-method-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding method definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summarizing-a-large-file-before-reading-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summarizing a large file before reading it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced search
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices-for-llm-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices for LLM context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#larger-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Larger scenarios
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Larger scenarios">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-onboarding-to-a-large-rails-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Onboarding to a large Rails model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-auditing-callback-heavy-classes-before-a-refactor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Auditing callback-heavy classes before a refactor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-planning-a-rewrite-safely" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Planning a rewrite safely
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-reviewing-framework-heavy-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Reviewing framework-heavy files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-scanning-a-repository-without-losing-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Scanning a repository without losing scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="using-fast-for-llms-and-agents">Using Fast for LLMs and Agents<a class="headerlink" href="#using-fast-for-llms-and-agents" title="Permanent link">&para;</a></h1>
+<p><code>fast</code> is useful to LLM agents in two different ways:</p>
+<ol>
+<li>As a CLI command the agent can run in a terminal.</li>
+<li>As an MCP server through <code>bin/fast-mcp</code>.</li>
+</ol>
+<p>Both help reduce token waste compared with raw text grep. The right integration depends on what the host can support.</p>
+<h2 id="why-use-fast-over-grep">Why use <code>fast</code> over <code>grep</code><a class="headerlink" href="#why-use-fast-over-grep" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Precision</strong>: You can search for syntactic constructs (e.g., classes, method definitions, specific method calls) rather than just substrings.</li>
+<li><strong>Context Preservation</strong>: <code>fast</code> inherently understands the bounds of a method or block. It will print the entire body of the AST node matched, not just the single line containing the keyword.</li>
+<li><strong>Token Efficiency</strong>: Get only the function or class you want, instead of 100 lines of regex false positives.</li>
+<li><strong>File and Line Locality</strong>: Outcomes are directly prefixed with the file and line number by default (<code># file/path.rb:123</code>), making it trivial to know exactly where the code is located for further editing or patching.</li>
+<li><strong>Safer Rewrites</strong>: Fast validates rewritten Ruby before returning it or writing it to disk. Invalid replacements fail with an error instead of silently producing broken code.</li>
+</ul>
+<h2 id="cli-or-mcp">CLI or MCP<a class="headerlink" href="#cli-or-mcp" title="Permanent link">&para;</a></h2>
+<p>Choose CLI when:</p>
+<ul>
+<li>The host can run shell commands but cannot register MCP servers.</li>
+<li>You want the smallest possible setup and best portability.</li>
+<li>The agent is already comfortable parsing terminal output.</li>
+</ul>
+<p>Choose MCP when:</p>
+<ul>
+<li>The host supports MCP registration and tool calling.</li>
+<li>You want typed arguments and structured JSON results.</li>
+<li>You want the model to call targeted tools like <code>ruby_method_source</code> instead of constructing shell commands.</li>
+</ul>
+<p>For Codex-style terminal agents, the CLI is immediately useful and often enough. For IDE agents and multi-tool hosts, MCP is usually the better interface because it removes output parsing and makes tool selection explicit.</p>
+<h2 id="trust-boundary-and-security">Trust boundary and security<a class="headerlink" href="#trust-boundary-and-security" title="Permanent link">&para;</a></h2>
+<p><code>fast</code> is a local developer tool. The CLI and MCP server should only be used with trusted local hosts, trusted repositories, and trusted prompts.</p>
+<p>This matters more for MCP than for plain CLI usage:</p>
+<ul>
+<li>search tools can read and return source from files you point them at</li>
+<li><code>rewrite_ruby_file</code> can modify files on disk</li>
+<li><code>run_fast_experiment</code> can execute Ruby and shell commands as the current user</li>
+</ul>
+<p>That means <code>bin/fast-mcp</code> is not appropriate to expose to untrusted remote clients, shared multi-tenant environments, or any host you would not trust with normal shell access to your machine.</p>
+<p>If you only need read-only exploration and do not trust the host with file writes or command execution, prefer the CLI and avoid registering the MCP server.</p>
+<h2 id="essential-cli-flags-for-agents">Essential CLI flags for agents<a class="headerlink" href="#essential-cli-flags-for-agents" title="Permanent link">&para;</a></h2>
+<p>To maximize reliability and reduce context noise, use these flags when invoking <code>fast</code> from the command line:</p>
+<ul>
+<li><code>--no-color</code>: <strong>CRITICAL</strong>. Always use this flag to strip ANSI escape codes formatting out of the output. TTY color codes consume unnecessary tokens and break markdown parsing.</li>
+<li><code>--headless</code>: Omits the <code># filename.rb:line</code> header if you only want the raw code snippet and don't care about the location.</li>
+<li><code>--bodyless</code>: Omits the code block body and only shows the matched headers (useful for finding <em>where</em> something is without reading <em>what</em> it is).</li>
+<li><code>--ast</code>: Prints the S-expression representation of the matching nodes. Outstanding when you need to understand the internal AST structure of a complex ruby construct to construct more advanced <code>fast</code> queries or RuboCop node patterns.</li>
+</ul>
+<h2 id="use-summary-for-first-pass-reconnaissance">Use <code>.summary</code> for first-pass reconnaissance<a class="headerlink" href="#use-summary-for-first-pass-reconnaissance" title="Permanent link">&para;</a></h2>
+<p><code>fast .summary file.rb</code> is a high-leverage shortcut for agents entering a large file. Instead of reading the full body first, it prints a compact structural outline:</p>
+<ul>
+<li>class and module nesting</li>
+<li>constants</li>
+<li>mixins</li>
+<li>relationships such as <code>has_many</code> and <code>belongs_to</code></li>
+<li>attributes such as <code>attr_reader</code></li>
+<li>scopes, hooks, and validations</li>
+<li>method signatures grouped by visibility</li>
+<li>macro-heavy sections that would otherwise waste tokens</li>
+</ul>
+<p>This is especially useful before deciding whether to fetch full method bodies through <code>fast</code>, MCP tools, or ordinary file reads.</p>
+<p><code>.summary</code> also supports <code>-l</code> / <code>--level</code>:</p>
+<ul>
+<li><code>-l 1</code>: only class/module inventory</li>
+<li><code>-l 2</code>: inventory plus signals such as constants, hooks, validations, scopes, and macros</li>
+<li><code>-l 3</code>: inventory, signals, and method signatures</li>
+</ul>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>fast<span class="w"> </span>.summary<span class="w"> </span>lib/fast/mcp_server.rb<span class="w"> </span>-l<span class="w"> </span><span class="m">2</span><span class="w"> </span>--no-color
+</code></pre></div>
+<h2 id="use-scan-for-multi-file-triage">Use <code>.scan</code> for multi-file triage<a class="headerlink" href="#use-scan-for-multi-file-triage" title="Permanent link">&para;</a></h2>
+<p><code>fast .scan path/to/dir --no-color</code> extends the same idea across many files. It classifies files into broad groups and prints a bounded per-file outline without dumping full bodies.</p>
+<p>The scanner is designed to help agents avoid rabbit holes during repo exploration:</p>
+<ul>
+<li>group files into models, controllers, services, jobs, mailers, libraries, and other</li>
+<li>show one short headline per structural entry</li>
+<li>surface only the most useful signals such as hooks, validations, relationships, mixins, and macros</li>
+<li>list a capped set of public and private method names</li>
+<li>avoid printing method bodies, large constants, or implementation details by default</li>
+</ul>
+<p>This makes <code>.scan</code> a better first move than reading a whole directory tree when the task is still about classification and narrowing scope.</p>
+<p><code>.scan</code> also supports <code>-l</code> / <code>--level</code>:</p>
+<ul>
+<li><code>-l 1</code>: only grouped object inventory</li>
+<li><code>-l 2</code>: inventory plus high-signal metadata</li>
+<li><code>-l 3</code>: inventory, metadata, and method entrypoints</li>
+</ul>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code>fast<span class="w"> </span>.scan<span class="w"> </span>lib/fast<span class="w"> </span>-l<span class="w"> </span><span class="m">1</span><span class="w"> </span>--no-color
+</code></pre></div>
+<h2 id="essential-mcp-tools">Essential MCP tools<a class="headerlink" href="#essential-mcp-tools" title="Permanent link">&para;</a></h2>
+<p>If your host supports MCP, register <code>bin/fast-mcp</code> and call these tools:</p>
+<ul>
+<li><code>search_ruby_ast</code></li>
+<li><code>ruby_method_source</code> — finds both <code>def name</code> and <code>def self.name</code></li>
+<li><code>ruby_class_source</code> — finds classes and modules</li>
+<li><code>code_to_pattern</code> — converts a Ruby snippet into an exact and a generalized search pattern</li>
+<li><code>rewrite_ruby</code></li>
+<li><code>rewrite_ruby_file</code></li>
+<li><code>validate_fast_pattern</code></li>
+</ul>
+<p>These return JSON text payloads with file paths, line bounds, and trimmed code snippets. They are more robust for agents than scraping pretty CLI output. When a search returns zero matches, the response includes a <code>hint</code> explaining likely pattern mistakes (for example, a bare constant receiver where <code>(const nil :Name)</code> is needed).</p>
+<h2 id="translating-natural-language-to-fast-patterns">Translating Natural Language to Fast Patterns<a class="headerlink" href="#translating-natural-language-to-fast-patterns" title="Permanent link">&para;</a></h2>
+<p>Building AST patterns can be challenging. To assist, you can activate the <code>fast-pattern-expert</code> skill which provides a deep syntax guide and common examples.</p>
+<h3 id="best-practices-for-pattern-building">Best practices for pattern building:<a class="headerlink" href="#best-practices-for-pattern-building" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Start from example code</strong>: The <code>code_to_pattern</code> MCP tool takes a Ruby snippet and returns both an <code>exact_pattern</code> (the s-expression of that snippet) and a <code>generalized_pattern</code> (names and literals replaced with wildcards). Alternatively, use <code>fast --ast "your code"</code> or <code>search_ruby_ast</code> with <code>show_ast: true</code>.</li>
+<li><strong>Validate early</strong>: Use the <code>validate_fast_pattern</code> MCP tool or <code>fast --validate-pattern "(...)"</code> from the CLI to check your syntax before running broad searches.</li>
+<li><strong>Start broad, then narrow</strong>: Use <code>_</code> or <code>...</code> to match sections you're unsure about, then replace them with more specific sub-patterns once you see the results.</li>
+<li><strong>Leverage the Skill</strong>: Activate <code>fast-pattern-expert</code> when you need to construct a complex search or refactor.</li>
+</ol>
+<h2 id="why-rewrite-safety-matters-for-agents">Why rewrite safety matters for agents<a class="headerlink" href="#why-rewrite-safety-matters-for-agents" title="Permanent link">&para;</a></h2>
+<p>Many rewriting workflows only guarantee that a string replacement happened. They do not guarantee that the resulting source still parses. That is risky for LLM agents because one bad rewrite can poison the next tool call, confuse the model, or write broken files into the working tree.</p>
+<p>Fast's rewrite path validates the rewritten Ruby after applying the replacement:</p>
+<ul>
+<li><code>rewrite_ruby</code> fails instead of returning invalid Ruby.</li>
+<li><code>rewrite_ruby_file</code> fails instead of writing invalid Ruby to disk.</li>
+<li>MCP surfaces this as a normal tool error, which is easier for agents to recover from than a corrupted file.</li>
+</ul>
+<h2 id="query-examples">Query examples<a class="headerlink" href="#query-examples" title="Permanent link">&para;</a></h2>
+<h3 id="finding-method-definitions">Finding method definitions<a class="headerlink" href="#finding-method-definitions" title="Permanent link">&para;</a></h3>
+<p>Instead of <code>grep -rn "def process" .</code>:</p>
+<div class="highlight"><pre><span></span><code>fast<span class="w"> </span><span class="s2">&quot;(def process)&quot;</span><span class="w"> </span>app/<span class="w"> </span>lib/<span class="w"> </span>--no-color
+</code></pre></div>
+<p>With MCP, call <code>ruby_method_source</code> with <code>method_name: "process"</code> and <code>paths: ["app", "lib"]</code>.</p>
+<h3 id="summarizing-a-large-file-before-reading-it">Summarizing a large file before reading it<a class="headerlink" href="#summarizing-a-large-file-before-reading-it" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>fast<span class="w"> </span>.summary<span class="w"> </span>app/models/order.rb<span class="w"> </span>--no-color
+</code></pre></div>
+<p>This is often the best first step when the file is large and you need to decide which methods or macros deserve deeper inspection.</p>
+<h2 id="advanced-search">Advanced search<a class="headerlink" href="#advanced-search" title="Permanent link">&para;</a></h2>
+<p>You can use <code>^</code> to search upstream (e.g. parent nodes) or use <code>{}</code> for unions:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Find classes that contain a specific method</span>
+fast<span class="w"> </span><span class="s2">&quot;^(def my_specific_method)&quot;</span><span class="w"> </span>app/<span class="w"> </span>--no-color
+
+<span class="c1"># Find both `def_node_matcher` and `def_node_search` usage</span>
+fast<span class="w"> </span><span class="s2">&quot;(send nil {def_node_matcher def_node_search})&quot;</span><span class="w"> </span>lib/<span class="w"> </span>--no-color
+</code></pre></div>
+<h2 id="best-practices-for-llm-context">Best practices for LLM context<a class="headerlink" href="#best-practices-for-llm-context" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Initial Recon</strong>: When entering a new file or directory, if you know the name of the function, use <code>fast "(def &lt;name&gt;)" &lt;path&gt; --no-color</code>.</li>
+<li><strong>Repo Triage</strong>: When entering an unfamiliar directory, start with <code>fast .scan &lt;path&gt; --no-color</code> to classify files before reading anything deeply.</li>
+<li><strong>Finding References</strong>: To find where a method is called, use <code>fast "(send _ :&lt;name&gt;)" &lt;path&gt; --no-color</code>.</li>
+<li><strong>AST Inspection</strong>: If you need to manipulate a complex file, you can output the AST of a specific method to construct a patch: <code>fast "(def &lt;name&gt;)" &lt;file&gt; --ast --no-color</code>.</li>
+<li><strong>Prefer method-sized context</strong>: Method extraction is usually the best token-saving unit for both CLI and MCP.</li>
+<li><strong>Use MCP when available</strong>: Agents should prefer MCP over CLI once the host can register the server, because structured tool calls are easier to orchestrate than parsing terminal output.</li>
+<li><strong>Preview before writing</strong>: Prefer <code>rewrite_ruby</code> before <code>rewrite_ruby_file</code> so the agent can inspect the result even though invalid rewrites are already rejected.</li>
+<li><strong>Use <code>.summary</code> before deep reads</strong>: For unfamiliar large files, a summary is often the cheapest way to understand the shape before pulling full source.</li>
+<li><strong>Use <code>.scan</code> before <code>.summary</code> at repo scale</strong>: Scan first, then summarize only the small set of files that look relevant.</li>
+<li><strong>Use <code>fast-experiment --autoclean</code> for experiment runs</strong>: It removes generated <code>experiment_*</code> files so follow-up test runs do not accidentally load leftover temporary specs.</li>
+</ol>
+<h2 id="larger-scenarios">Larger scenarios<a class="headerlink" href="#larger-scenarios" title="Permanent link">&para;</a></h2>
+<h3 id="1-onboarding-to-a-large-rails-model">1. Onboarding to a large Rails model<a class="headerlink" href="#1-onboarding-to-a-large-rails-model" title="Permanent link">&para;</a></h3>
+<p>Start with <code>fast .summary app/models/order.rb --no-color</code>.</p>
+<p>This lets the agent see:</p>
+<ul>
+<li>associations</li>
+<li>validations</li>
+<li>callbacks</li>
+<li>scopes</li>
+<li>public vs private method shape</li>
+</ul>
+<p>That is a better starting point than reading 500 lines top to bottom, especially when most of the file is macro noise.</p>
+<h3 id="2-auditing-callback-heavy-classes-before-a-refactor">2. Auditing callback-heavy classes before a refactor<a class="headerlink" href="#2-auditing-callback-heavy-classes-before-a-refactor" title="Permanent link">&para;</a></h3>
+<p>For files with many <code>before_*</code>, <code>after_*</code>, and macro declarations, <code>.summary</code> quickly exposes lifecycle hooks and method boundaries. The agent can then fetch only the callback implementations it actually needs.</p>
+<h3 id="3-planning-a-rewrite-safely">3. Planning a rewrite safely<a class="headerlink" href="#3-planning-a-rewrite-safely" title="Permanent link">&para;</a></h3>
+<p>Use <code>.summary</code> first to identify the small set of methods or macros involved, then switch to <code>ruby_method_source</code>, <code>search_ruby_ast</code>, or <code>rewrite_ruby</code>. This reduces token use and lowers the chance of targeting the wrong scope.</p>
+<h3 id="4-reviewing-framework-heavy-files">4. Reviewing framework-heavy files<a class="headerlink" href="#4-reviewing-framework-heavy-files" title="Permanent link">&para;</a></h3>
+<p>Controllers, jobs, mailers, and serializers often contain more declarations than logic. <code>.summary</code> helps the agent separate framework declarations from the few methods that contain actual behavior.</p>
+<h3 id="5-scanning-a-repository-without-losing-scope">5. Scanning a repository without losing scope<a class="headerlink" href="#5-scanning-a-repository-without-losing-scope" title="Permanent link">&para;</a></h3>
+<p>Start with:</p>
+<div class="highlight"><pre><span></span><code>fast<span class="w"> </span>.scan<span class="w"> </span>lib<span class="w"> </span>app/services<span class="w"> </span>app/models<span class="w"> </span>--no-color
+</code></pre></div>
+<p>Then follow up with <code>.summary</code> or MCP method extraction only for the files the scan surfaces as relevant.</p>
+<p>In local validation on <code>lib/fast</code>:</p>
+<ul>
+<li>reading the whole tree was about <code>29,144</code> estimated tokens</li>
+<li><code>fast .scan lib/fast --no-color</code> was about <code>471</code></li>
+<li><code>.scan</code> plus summaries for the two most relevant files was about <code>1,654</code></li>
+</ul>
+<p>That is the main value of <code>.scan</code>: not just fewer tokens, but tighter scope control. The agent gets classification first, then chooses where to go deeper instead of committing too early to a large file.</p>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

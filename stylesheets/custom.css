@@ -1,0 +1,28 @@
+:root {
+  --md-primary-fg-color: #355E3B; /* Primary text color to match the green in the logo */
+  --md-primary-bg-color: #FAFAFA; /* Light background */
+  --md-accent-fg-color: #58A55C; /* Accent color for buttons and other elements */
+  --md-accent-bg-color: #E8F5E9; /* Light accent background, for elements like badges or tags */
+}
+
+.md-header {
+  background-color: var(--md-primary-bg-color);
+}
+
+.md-footer {
+  background-color: var(--md-primary-bg-color);
+}
+
+.md-nav__title, .md-nav__link {
+  color: var(--md-primary-fg-color);
+}
+
+.md-sidebar--primary {
+  background-color: var(--md-accent-bg-color);
+}
+
+.md-btn, .md-typeset .md-tag {
+  background-color: var(--md-accent-fg-color);
+  color: white;
+}
+
